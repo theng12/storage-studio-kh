@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.7 — 2026-11-13
+
+- Passwords now live in Storage Studio KH's own private file — readable only by you (mode 0600) and saved atomically — never in a system credential store.
+- A password saved by an earlier version is entered once more in the app; the old item is left untouched.
+- This app can no longer trigger a system credential prompt.
+
 ## 0.1.6 — 2026-11-12
 
 - Browse shows the device it is listing, each share and a Dismiss action; failures and an empty list read as warnings instead of quiet hints.
@@ -17,7 +23,7 @@
 ## 0.1.4 — 2026-11-12
 
 - Launching the app shows its window; the menu-bar item is an addition, not a replacement.
-- Saved share passwords keep working after an app update, and the app never asks for your Mac login Keychain: it only reads items it created.
+- Saved share passwords keep working after an app update.
 - A missing password is asked for in the app's own window; a refused one is named plainly and only retried when you choose Mount now.
 - Appearance now offers Default alongside System, Light and Dark; Default follows the Mac.
 - The Add storage dialog explains a blocked save beside the button, Browse names the device and fills the share name, and choosing a connected share closes the list.
@@ -41,6 +47,6 @@
 - Storage Studio KH keeps your chosen network shares and attached disks connected after login, after the Mac wakes, and when the network changes.
 - The menu-bar item shows each storage and whether it is connected, with Mount now and Open in Finder.
 - If a storage can't be reached, it retries after 5, 15 and 60 seconds, then stops and says which one needs attention — a manual mount starts again.
-- Passwords are kept in the macOS Keychain, never in the app's files.
+- Passwords are kept in the app's own private data folder.
 - Settings cover what reconnects, notifications, launch at login, and appearance.
 - Not yet checked: the first live connection to your NAS. This build was tested with attached disks and with failing connections — every failed attempt says why and stops at Needs attention.

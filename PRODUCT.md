@@ -22,7 +22,7 @@ Storage Studio KH reconnects the network shares and attached disks a person choo
 
 ## Positioning
 
-Bounded, honest reconnection for macOS storage: it reads the mount table first so it never mounts twice, retries a fixed schedule (5 s, 15 s, 60 s), then stops and marks the storage *Needs attention* until the person chooses Mount now. Passwords live only in the login Keychain.
+Bounded, honest reconnection for macOS storage: it reads the mount table first so it never mounts twice, retries a fixed schedule (5 s, 15 s, 60 s), then stops and marks the storage *Needs attention* until the person chooses Mount now. Passwords live only in the app's own private file.
 
 ## Operating Context
 
@@ -34,7 +34,7 @@ A single Settings window opened from the menu-bar item. The person adds SMB shar
 - Add/Edit: name, kind (SMB share or attached disk), SMB address, optional user name and password, optional mount point, or a connected-volume picker.
 - Reconnect at login and reconnect after wake per storage, read-only as facts in the list.
 - Row actions: Mount now, Unmount, Open in Finder, Test, Edit.
-- Credentials prompt when the helper needs a user name and password; saved in the macOS Keychain.
+- Credentials prompt when the helper needs a user name and password; saved in the app's own private file.
 - General: notifications, launch at login, retries before it stops (1–8, default 3).
 - Appearance: System (default), Light, Dark; a stored `default` reads as System.
 - Footer: Support this app, version + What's New pill, Check for Updates, update download when available.
@@ -55,7 +55,7 @@ A single Settings window opened from the menu-bar item. The person adds SMB shar
 
 1. Tell the truth about state: "Not mounted" is not "Unreachable", and neither reads as "All good".
 2. Stop trying when the app says it will stop; a manual Mount now is the restart.
-3. Keep secrets in the Keychain, never in files, logs or the interface.
+3. Keep secrets in the app's own private file, never in logs, settings or the interface.
 4. Configure once, then stay out of the way: one settings window, few controls, plain words.
 5. Never mount twice; reflect what the Mac already has.
 

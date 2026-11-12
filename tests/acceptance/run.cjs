@@ -388,7 +388,7 @@ async function noOverflow(page, id) {
       eq("Add", "connected pick fills encoded address", "smb://vengtheng@100.69.137.42/Public%20Space-Media%20-%204TB%20-%20Music", await connPage.locator('input[name="target"]').inputValue());
       eq("Add", "connected list hides after the pick", 0, await connPage.locator('[data-editor-action="add-connected"]').count());
       eq("Add", "connected pick fills user", "vengtheng", await connPage.locator('input[name="username"]').inputValue());
-      truthy("Add", "password field still offered after a connected pick", "password input present with Keychain hint", (await connPage.locator('input[name="password"]').getAttribute("placeholder").catch(() => "")).includes("Keychain"), null);
+      truthy("Add", "password field still offered after a connected pick", "password input present with a private-storage hint", (await connPage.locator('input[name="password"]').getAttribute("placeholder").catch(() => "")).includes("privately"), null);
       await shot(connPage, "add/add-connected-picked-light-820x640");
       await connPage.keyboard.press("Escape");
       await connPage.close();

@@ -12,7 +12,6 @@ let package = Package(
         .target(
             name: "StorageHelper",
             linkerSettings: [
-                .linkedFramework("Security"),
                 .linkedFramework("Network"),
                 .linkedFramework("CoreFoundation"),
             ]

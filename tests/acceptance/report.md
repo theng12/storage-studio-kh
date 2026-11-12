@@ -1,6 +1,6 @@
 # Storage Studio KH — page acceptance
 
-Run: 2026-11-12T16:17:55.942Z · app 0.1.6 · 96/96 checks passed
+Run: 2026-11-12T19:03:28.793Z · app 0.1.7 · 96/96 checks passed
 
 | Page | Check | Expected | Actual | Result |
 | --- | --- | --- | --- | --- |
@@ -9,7 +9,7 @@ Run: 2026-11-12T16:17:55.942Z · app 0.1.6 · 96/96 checks passed
 | Storage | real shares visible | Public Space-System pool in list | true | PASS |
 | Storage | mounted state visible | Mounted chip | true | PASS |
 | Storage | mounted path visible | real /Volumes path | true | PASS |
-| Storage | footer pill | Storage Studio KH v0.1.6 | true | PASS |
+| Storage | footer pill | Storage Studio KH v0.1.7 | true | PASS |
 | Audit | storage controls named |  | [] | PASS |
 | Audit | storage no overflow | no horizontal overflow | 0 | PASS |
 | Esc | closes the add dialog | no open dialog | true | PASS |
@@ -66,7 +66,7 @@ Run: 2026-11-12T16:17:55.942Z · app 0.1.6 · 96/96 checks passed
 | Add | connected pick fills encoded address | smb://vengtheng@100.69.137.42/Public%20Space-Media%20-%204TB%20-%20Music | "smb://vengtheng@100.69.137.42/Public%20Space-Media%20-%204TB%20-%20Music" | PASS |
 | Add | connected list hides after the pick | 0 | 0 | PASS |
 | Add | connected pick fills user | vengtheng | "vengtheng" | PASS |
-| Add | password field still offered after a connected pick | password input present with Keychain hint | true | PASS |
+| Add | password field still offered after a connected pick | password input present with a private-storage hint | true | PASS |
 | Add | disk Save blocked | disabled | true | PASS |
 | Add | disk reason | Choose a disk to reconnect. | true | PASS |
 | Add | connected disks offered | options include real volumes | true | PASS |

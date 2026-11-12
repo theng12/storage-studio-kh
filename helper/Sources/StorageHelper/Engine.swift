@@ -78,9 +78,9 @@ public final class Engine {
                 emit(Event.shares(host: "", shares: [], needsCredentials: false, error: "Enter a device address first.").json)
                 return
             }
-            let credentials: Keychain.Credentials?
+            let credentials: Secrets.Credentials?
             if let username = command.username, let password = command.password, !username.isEmpty, !password.isEmpty {
-                credentials = Keychain.Credentials(username: username, password: password)
+                credentials = Secrets.Credentials(username: username, password: password)
             } else {
                 credentials = nil
             }
@@ -93,24 +93,21 @@ public final class Engine {
             ).json)
         case "credentials":
             if let storage = storage(command.id) {
-                let credentials = Keychain.Credentials(
+                let credentials = Secrets.Credentials(
                     username: command.username ?? storage.username ?? "",
                     password: command.password ?? ""
                 )
                 let host = Reachability.smbHost(storage.target) ?? ""
-                let status = Keychain.save(host: host, username: credentials.username, password: credentials.password)
-                if status != errSecSuccess {
-                    emit(Event.log(level: "warn", message: "The Keychain refused the password for \(storage.name) (status \(status)); it was not saved.").json)
+                if !Secrets.save(host: host, username: credentials.username, password: credentials.password) {
+                    emit(Event.log(level: "warn", message: "Storage Studio KH couldn't save the password for \(storage.name); check the app's data folder.").json)
                 }
-                Keychain.forgetLegacy(id: storage.id)
                 mountNow(storage)
             }
         case "forget_credentials":
             if let id = command.id, let storage = storage(id) {
                 if let host = Reachability.smbHost(storage.target) {
-                    Keychain.forget(host: host, username: storage.username)
+                    Secrets.forget(host: host, username: storage.username)
                 }
-                Keychain.forgetLegacy(id: id)
                 announce()
             }
         case "quit":
@@ -218,11 +215,11 @@ public final class Engine {
                 return MountFailure(message: "Can't reach \(host) right now.", unreachable: true)
             }
             // Only this app's own item is ever read. A missing password goes straight to the
-            // in-window prompt; nothing consults Finder's Keychain item.
-            switch Keychain.load(host: host, username: storage.username) {
+            // in-window prompt; nothing consults another app's saved credential.
+            switch Secrets.load(host: host, username: storage.username) {
             case .found(let credentials):
                 return NetFS.mountSMB(storage: storage, credentials: credentials)
-            case .refused:
+            case .unreadable:
                 return MountFailure(
                     message: "Storage Studio KH couldn't read its saved password. Enter it again in Settings.",
                     needsCredentials: true
@@ -470,7 +467,7 @@ public final class Engine {
 
     private func hasCredentials(_ storage: Storage) -> Bool {
         guard let host = Reachability.smbHost(storage.target) else { return false }
-        return Keychain.has(host: host, username: storage.username)
+        return Secrets.has(host: host, username: storage.username)
     }
 
     private func storage(_ id: String?) -> Storage? {

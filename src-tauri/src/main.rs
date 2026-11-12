@@ -1,7 +1,7 @@
 //! Storage Studio KH — menu-bar shell.
 //!
 //! The Tauri window is only Settings. The macOS work (mount table, SMB mounting,
-//! Keychain, wake/network watching, bounded retries) lives in the bundled helper at
+//! private secret file, wake/network watching, bounded retries) lives in the bundled helper at
 //! `Contents/Helpers/Storage Studio KH Helper.app`, started as this app's child and
 //! stopped when the app quits. Nothing here or there copies, mirrors or syncs data.
 
@@ -1372,7 +1372,7 @@ fn main() {
                 return Ok(());
             }
 
-            // The helper needs the app's resources and the Keychain; start it once the UI exists.
+            // The helper needs the app's resources and its data folder; start it once the UI exists.
             if let Err(error) = start_helper(&handle) {
                 log(&error);
                 *handle.state::<AppState>().engine_error.lock().unwrap() = Some(error);

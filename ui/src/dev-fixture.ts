@@ -108,7 +108,7 @@ function buildSnapshot(hash: string): Snapshot {
         items: [
           "Keeps chosen SMB shares and attached disks connected after login and after wake.",
           "Retries three times, then says which storage needs attention.",
-          "Passwords stay in the macOS Keychain.",
+          "Passwords stay in Storage Studio KH's private file.",
         ],
       },
       {
@@ -253,7 +253,7 @@ export function createDevBackend(hash: string): {
 
       case "set_credentials": {
         if (params.get("fail-credentials") === "1") {
-          throw new Error("The Keychain didn't save the password.");
+          throw new Error("Storage Studio KH couldn't save the password.");
         }
         const storage = snapshot.storages.find((item) => item.id === args?.id);
         if (storage) {

@@ -29,7 +29,7 @@ bash tests/gate.sh                 # hidden launch, retries, second instance, qu
 
 - The helper lives only at `Contents/Helpers/Storage Studio KH Helper.app` and is this app's child.
   It must never outlive the app or leave a launchd job, plist or loose binary.
-- Passwords are Keychain-only. Never log them, never put them in `settings.json`, never pass them
+- Passwords live only in the app's private secrets file (0600, atomic writes). Never log them, never put them in `settings.json`, never pass them
   on a command line.
 - Check the mount table before mounting. A storage that is already mounted is never mounted twice.
 - Retries are bounded (5 s, 15 s, 60 s) and end in `needs_attention` with one notification.

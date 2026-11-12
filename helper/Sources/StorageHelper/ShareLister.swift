@@ -15,7 +15,7 @@ public enum ShareLister {
         }
     }
 
-    public static func list(host: String, credentials: Keychain.Credentials?) -> Result {
+    public static func list(host: String, credentials: Secrets.Credentials?) -> Result {
         let trimmed = host.trimmingCharacters(in: .whitespaces)
         guard !trimmed.isEmpty, !trimmed.contains("/"), !trimmed.contains(" ") else {
             return Result(needsCredentials: false, error: "Enter a device address like 192.168.0.217.")

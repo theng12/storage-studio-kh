@@ -8,7 +8,7 @@ mirrors or syncs anything.
 - **Bounded retries**: 5 s, 15 s, 60 s, then it stops and marks the storage *Needs attention*
   until you choose Mount now.
 - **Never mounts twice**: it reads the mount table first and reflects what is already mounted.
-- **Keychain only**: share passwords live in the login Keychain, one item per storage.
+- **Private file only**: share passwords live in the app's own data folder, one file readable only by you (0600).
 
 ## Build
 
@@ -26,7 +26,7 @@ is built from `helper/` and lives only inside the app.
 | --- | --- |
 | `src-tauri/` | Tauri 2 shell: tray, settings store, update check, helper supervisor |
 | `src-tauri/src/main.rs` | Rust core and commands |
-| `helper/` | Swift helper: mount table, NetFS SMB mounts, `diskutil`, Keychain, wake/network watching, bounded retries |
+| `helper/` | Swift helper: mount table, NetFS SMB mounts, `diskutil`, the private secret file, wake/network watching, bounded retries |
 | `ui/` | Settings window (plain TypeScript + Vite) |
 | `tests/` | Gate scripts and UI tests |
 | `docs/contract.md` | App ↔ UI contract |
@@ -37,22 +37,19 @@ Build here, then `packaging/release-push.sh storage-studio 0.1.0 "dist/Storage S
 It stages the DMG and changelog on 1301, publishes with the host's own key (the only feed
 writer), and reads the served feed back to prove the version it offers.
 
-## Verification status (0.1.1)
+## Verification status (0.1.7)
 
 Verified on this Mac: mount-table detection against the real attached volumes and the real NAS
-shares; unmount → remount of a NAS share through NetFS with the login Keychain supplying the
-credential, and through `open -g smb://…`; share listing (`smbutil view`) over a private terminal,
-including spaces and dashes, with IPC$ filtered and wrong credentials reported as needing a user
-name and password; the bounded retry ladder ending in one Needs attention; Keychain save/forget;
-launch/quit/force-quit leaving no helper or launchd job; a second launch handled plainly; DMG
-signature and install; launch at login.
+shares; unmount → remount of a NAS share through NetFS with the saved credential; share listing
+(`smbutil view`) over a private terminal, including spaces and dashes, with IPC$ filtered and wrong
+credentials reported as needing a user name and a password; the bounded retry ladder ending in one
+Needs attention; private-file save/forget; launch/quit/force-quit leaving no helper or launchd job;
+a second launch handled plainly; DMG signature and install; launch at login.
 
-Still the owner's hands-on step: add a share in the app's own dialog on a Mac whose Keychain has
-no credential yet, so the in-app password prompt itself is exercised; the mechanism behind it
-(private terminal for listing, Keychain for mounting) is verified.
+Still the owner's hands-on step: add a share in the app's own dialog on a Mac whose private file
+has no credential yet, so the in-app password prompt itself is exercised.
 
 ## Data
 
 `~/Library/Application Support/Storage Studio KH/` holds `settings.json` and `log.txt`.
-Share passwords are not in either file. Removing the app leaves the folder and the Keychain
-items so a reinstall keeps your storage list; remove them by hand if you want them gone.
+Share passwords live in `secrets.json` in that folder (0600). Removing the app leaves the folder so a reinstall keeps your storage list; delete it by hand if you want it gone.

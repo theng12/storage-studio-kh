@@ -32,7 +32,7 @@ enum NetFS {
     }
 
     /// Returns nil on success, or the person-facing reason it failed.
-    static func mountSMB(storage: Storage, credentials: Keychain.Credentials?) -> MountFailure? {
+    static func mountSMB(storage: Storage, credentials: Secrets.Credentials?) -> MountFailure? {
         guard let mountSync else {
             return MountFailure(message: "The system's network mounter isn't available on this Mac.")
         }

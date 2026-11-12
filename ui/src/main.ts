@@ -678,7 +678,7 @@ function renderEditor(): void {
         </label>
         <label class="field">
           <span class="field-label">Password (optional)</span>
-          <input type="password" name="password" value="${esc(d.password)}" placeholder="${isEdit ? "Stored in Storage Studio KH's Keychain; leave blank to keep the saved one" : "Stored in Storage Studio KH's Keychain"}" autocomplete="off"${
+          <input type="password" name="password" value="${esc(d.password)}" placeholder="${isEdit ? "Stored privately by Storage Studio KH; leave blank to keep the saved one" : "Stored privately by Storage Studio KH"}" autocomplete="off"${
             editor.busy ? " disabled" : ""
           } />
         </label>
@@ -1263,7 +1263,7 @@ function renderCredentials(): void {
   credentialsEl.innerHTML = `
     <div class="sheet-head">
       <h2 id="credentials-title">Sign in to ${esc(credentials.name)}</h2>
-      <p class="sheet-sub">Storage Studio KH needs a user name and password for this share. The password is saved in the macOS Keychain.</p>
+      <p class="sheet-sub">Storage Studio KH needs a user name and password for this share. The password is saved privately in the app's own data folder.</p>
     </div>
     <div class="sheet-body">
       ${credentials.error ? `<p class="form-error" role="alert">${esc(credentials.error)}</p>` : ""}
