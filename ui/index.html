@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Storage Studio KH</title>
+  </head>
+  <body>
+    <div class="app">
+      <aside class="sidebar" aria-label="Settings">
+        <nav class="nav" id="nav" aria-label="Settings sections"></nav>
+        <div class="foot" id="foot"></div>
+      </aside>
+      <main class="main" id="main" tabindex="-1"></main>
+    </div>
+
+    <div class="toasts" id="toasts" role="status" aria-live="polite"></div>
+
+    <dialog class="sheet" id="editor" aria-labelledby="editor-title"></dialog>
+    <dialog class="sheet" id="whatsnew" aria-labelledby="whatsnew-title"></dialog>
+    <dialog class="sheet" id="credentials" aria-labelledby="credentials-title"></dialog>
+
+    <script type="module" src="./src/main.ts"></script>
+  </body>
+</html>
