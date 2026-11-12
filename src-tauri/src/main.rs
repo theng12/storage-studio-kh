@@ -1104,6 +1104,10 @@ fn main() {
         println!("{:?}", login_item::set(false));
         std::process::exit(0);
     }
+    if arguments.iter().any(|a| a == "--check-updates") {
+        println!("{:?}", feed::check(APP_VERSION));
+        std::process::exit(0);
+    }
 
     // Tests and hidden verification runs use their own data folder.
     if let Ok(dir) = std::env::var("STORAGE_STUDIO_TEST_DATA_DIR") {

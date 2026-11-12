@@ -6,14 +6,17 @@ final class RetryPolicyTests: XCTestCase {
         XCTAssertEqual(RetryPolicy.delay(afterFailure: 1), 5)
         XCTAssertEqual(RetryPolicy.delay(afterFailure: 2), 15)
         XCTAssertEqual(RetryPolicy.delay(afterFailure: 3), 60)
-        XCTAssertNil(RetryPolicy.delay(afterFailure: 4))
+        // Extra retries keep the last step; the ladder never invents a shorter wait.
+        XCTAssertEqual(RetryPolicy.delay(afterFailure: 4), 60)
+        XCTAssertEqual(RetryPolicy.delay(afterFailure: 8), 60)
         XCTAssertNil(RetryPolicy.delay(afterFailure: 0))
     }
 
     func testRetryCountIsBounded() {
         XCTAssertEqual(RetryPolicy.retryCount(0), 1)
         XCTAssertEqual(RetryPolicy.retryCount(3), 3)
-        XCTAssertEqual(RetryPolicy.retryCount(99), 3)
+        XCTAssertEqual(RetryPolicy.retryCount(5), 5)
+        XCTAssertEqual(RetryPolicy.retryCount(99), 8)
     }
 
     func testWakeDetectionUsesWallAndMonotonicClocks() {

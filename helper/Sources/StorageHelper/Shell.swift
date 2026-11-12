@@ -21,20 +21,36 @@ public enum Shell {
         } catch {
             return Result(status: -1, output: Data(), error: error.localizedDescription)
         }
+        // Drain both pipes while the command runs; a full pipe would deadlock a large
+        // `diskutil list -plist` before the process ever exits.
+        let outBox = NSMutableData()
+        let errBox = NSMutableData()
+        let group = DispatchGroup()
+        group.enter()
+        DispatchQueue.global(qos: .utility).async {
+            outBox.append(output.fileHandleForReading.readDataToEndOfFile())
+            group.leave()
+        }
+        group.enter()
+        DispatchQueue.global(qos: .utility).async {
+            errBox.append(error.fileHandleForReading.readDataToEndOfFile())
+            group.leave()
+        }
         let deadline = Date().addingTimeInterval(timeout)
         while process.isRunning && Date() < deadline {
             usleep(50_000)
         }
-        if process.isRunning {
-            process.terminate()
-            return Result(status: -2, output: Data(), error: "The command took too long.")
-        }
+        let timedOut = process.isRunning
+        if timedOut { process.terminate() }
         process.waitUntilExit()
+        group.wait()
         return Result(
-            status: process.terminationStatus,
-            output: output.fileHandleForReading.readDataToEndOfFile(),
-            error: String(data: error.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8)?
-                .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            status: timedOut ? -2 : process.terminationStatus,
+            output: outBox as Data,
+            error: timedOut
+                ? "The command took too long."
+                : (String(data: errBox as Data, encoding: .utf8)?
+                    .trimmingCharacters(in: .whitespacesAndNewlines) ?? "")
         )
     }
 }

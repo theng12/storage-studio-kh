@@ -103,8 +103,8 @@ public final class Engine {
         var next: [String: StorageState] = [:]
         let table = MountTable.current()
         for storage in storages {
-            if let path = MountTable.mountedPath(for: storage, in: table) {
-                next[storage.id] = StorageState(id: storage.id, status: .mounted, detail: nil, mountedPath: path, hasCredentials: Keychain.has(id: storage.id))
+            if let entry = mountedEntry(storage, in: table) {
+                next[storage.id] = StorageState(id: storage.id, status: .mounted, detail: nil, mountedPath: entry.mountPoint, hasCredentials: Keychain.has(id: storage.id))
             } else if var existing = states[storage.id], existing.status != .notMounted {
                 // Keep Needs attention / Retrying while the owner edits another setting.
                 if existing.status == .mounted || existing.mountedPath != nil {
@@ -142,8 +142,8 @@ public final class Engine {
 
     private func begin(_ storage: Storage) {
         guard !inFlight.contains(storage.id) else { return }
-        if let path = MountTable.mountedPath(for: storage, in: MountTable.current()) {
-            markMounted(storage, path: path)
+        if let entry = mountedEntry(storage, in: MountTable.current()) {
+            markMounted(storage, path: entry.mountPoint)
             return
         }
         inFlight.insert(storage.id)
@@ -152,11 +152,23 @@ public final class Engine {
         inFlight.remove(storage.id)
         if let failure {
             failed(storage, failure)
-        } else if let path = MountTable.mountedPath(for: storage, in: MountTable.current()) {
-            markMounted(storage, path: path)
+        } else if let entry = mountedEntry(storage, in: MountTable.current()) {
+            markMounted(storage, path: entry.mountPoint)
         } else {
             failed(storage, MountFailure(message: "The connection didn't appear after mounting."))
         }
+    }
+
+    /// An attached disk counts as mounted only when the volume at that folder is the one
+    /// the owner chose, not merely another disk with the same name.
+    private func mountedEntry(_ storage: Storage, in table: [MountedVolume]) -> MountedVolume? {
+        guard let entry = MountTable.entry(for: storage, in: table) else { return nil }
+        if storage.kind == "volume", let uuid = storage.volumeUUID, !uuid.isEmpty {
+            if let actual = Volumes.volumeUUID(at: entry.mountPoint), actual.caseInsensitiveCompare(uuid) != .orderedSame {
+                return nil
+            }
+        }
+        return entry
     }
 
     private func performMount(_ storage: Storage) -> MountFailure? {
@@ -186,8 +198,12 @@ public final class Engine {
         scheduled[storage.id]?.cancel()
         scheduled[storage.id] = nil
         attempts[storage.id] = 0
-        guard let entry = MountTable.entry(for: storage, in: MountTable.current()) else {
-            set(storage, .notMounted)
+        guard let entry = mountedEntry(storage, in: MountTable.current()) else {
+            if let other = MountTable.entry(for: storage, in: MountTable.current()) {
+                set(storage, .notMounted, detail: "A different disk is mounted at \(other.mountPoint); nothing was disconnected.")
+            } else {
+                set(storage, .notMounted)
+            }
             return
         }
         var result = Shell.run("/sbin/umount", [entry.mountPoint], timeout: 30)
@@ -203,8 +219,8 @@ public final class Engine {
     }
 
     private func test(_ storage: Storage) {
-        if let path = MountTable.mountedPath(for: storage, in: MountTable.current()) {
-            set(storage, .mounted, detail: "Connected at \(path).", path: path)
+        if let entry = mountedEntry(storage, in: MountTable.current()) {
+            set(storage, .mounted, detail: "Connected at \(entry.mountPoint).", path: entry.mountPoint)
             return
         }
         switch storage.kind {
@@ -346,13 +362,16 @@ public final class Engine {
         let table = MountTable.current()
         var changed = false
         for storage in storages {
-            let path = MountTable.mountedPath(for: storage, in: table)
+            let entry = mountedEntry(storage, in: table)
             let current = states[storage.id]
-            if let path, current?.status != .mounted || current?.mountedPath != path {
+            if let entry, current?.status != .mounted || current?.mountedPath != entry.mountPoint {
                 // Mounted in Finder or by another app: reflect it, never mount twice.
-                states[storage.id] = StorageState(id: storage.id, status: .mounted, detail: nil, mountedPath: path, hasCredentials: Keychain.has(id: storage.id))
+                attempts[storage.id] = 0
+                scheduled[storage.id]?.cancel()
+                scheduled[storage.id] = nil
+                states[storage.id] = StorageState(id: storage.id, status: .mounted, detail: nil, mountedPath: entry.mountPoint, hasCredentials: Keychain.has(id: storage.id))
                 changed = true
-            } else if path == nil, current?.status == .mounted {
+            } else if entry == nil, current?.status == .mounted {
                 states[storage.id] = StorageState(id: storage.id, status: .notMounted, detail: "It disconnected.", mountedPath: nil, hasCredentials: Keychain.has(id: storage.id))
                 changed = true
             }
@@ -394,11 +413,13 @@ public final class Engine {
     }
 
     private func announce() {
-        let items = storages.map { storage in
-            states[storage.id] ?? StorageState(
+        let items = storages.map { storage -> StorageState in
+            var state = states[storage.id] ?? StorageState(
                 id: storage.id, status: .notMounted, detail: nil, mountedPath: nil,
-                hasCredentials: Keychain.has(id: storage.id)
+                hasCredentials: false
             )
+            state.hasCredentials = Keychain.has(id: storage.id)
+            return state
         }
         emit(Event.state(items).json)
     }

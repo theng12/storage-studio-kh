@@ -5,14 +5,16 @@ import Foundation
 public enum RetryPolicy {
     public static let ladder: [TimeInterval] = [5, 15, 60]
 
+    /// The ladder is 5, 15, 60; extra retries (up to the owner's chosen count) keep the
+    /// last step rather than inventing a shorter one.
     public static func delay(afterFailure attempt: Int) -> TimeInterval? {
-        guard attempt >= 1, attempt <= ladder.count else { return nil }
-        return ladder[attempt - 1]
+        guard attempt >= 1 else { return nil }
+        return ladder[min(attempt, ladder.count) - 1]
     }
 
-    /// How many automatic retries follow the first attempt.
+    /// How many automatic retries follow the first attempt. The settings screen offers 1–8.
     public static func retryCount(_ configured: Int) -> Int {
-        min(max(configured, 1), ladder.count)
+        min(max(configured, 1), 8)
     }
 }
 

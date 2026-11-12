@@ -30,8 +30,8 @@ DispatchQueue.global(qos: .userInitiated).async {
             emit(Event.log(level: "warn", message: "unreadable command: \(error.localizedDescription)").json)
         }
     }
-    // The app closed the channel: stop with it.
-    engine.stop()
+    // The app closed the channel: end at once. Tearing down would wait on a mount that
+    // may be blocked, and this process must never outlive its app.
     exit(0)
 }
 

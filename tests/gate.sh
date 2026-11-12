@@ -65,7 +65,9 @@ PID=$!
 for _ in $(seq 1 40); do [ -f "$LOG" ] && break; sleep 0.25; done
 sleep 2
 kill -0 "$PID" 2>/dev/null || { cat "$RUN/app.out"; fail "the app exited during launch"; }
-pgrep -P "$PID" >/dev/null || fail "the app did not start its helper"
+child="$(pgrep -P "$PID" | head -n1)"
+[ -n "$child" ] || fail "the app did not start its helper"
+ps -o command= -p "$child" | grep -F "Storage Studio KH Helper" >/dev/null || fail "the app's child is not the helper"
 pass "launch + helper child"
 
 # 2. Bounded retries stop and flag needs attention (delays shortened for the gate).

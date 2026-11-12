@@ -28,6 +28,17 @@ public enum Volumes {
             .first { ($0["VolumeUUID"] as? String)?.caseInsensitiveCompare(uuid) == .orderedSame }?["DeviceIdentifier"] as? String
     }
 
+    /// The identity of whatever is actually mounted at `path`, so two disks with the same
+    /// name are never confused for one another.
+    public static func volumeUUID(at path: String) -> String? {
+        let result = Shell.run("/usr/sbin/diskutil", ["info", "-plist", path], timeout: 10)
+        guard result.status == 0,
+              let plist = try? PropertyListSerialization.propertyList(from: result.output, format: nil),
+              let dictionary = plist as? [String: Any]
+        else { return nil }
+        return dictionary["VolumeUUID"] as? String
+    }
+
     public static func mount(device: String) -> MountFailure? {
         let result = Shell.run("/usr/sbin/diskutil", ["mount", device], timeout: 45)
         if result.status == 0 { return nil }
