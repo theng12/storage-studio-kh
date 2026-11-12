@@ -1,0 +1,9 @@
+{
+  "app": "Storage Studio KH",
+  "bundleID": "app.storagestudiokh.desktop",
+  "version": "0.1.2",
+  "artifact": "dist/Storage Studio KH-0.1.2.dmg",
+  "sha256": "d34beba2511f984c82a47824dfca4b4aee56bdf935a5c2746581fc4c9aca76b1",
+  "bytes": 4427825,
+  "builtAt": "2026-11-12T13:14:10+00:00"
+}
