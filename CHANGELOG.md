@@ -1,5 +1,32 @@
 # Changelog
 
+## 0.1.6 — 2026-11-12
+
+- Browse shows the device it is listing, each share and a Dismiss action; failures and an empty list read as warnings instead of quiet hints.
+- The Add storage dialog marks the field that needs attention, and every option including the reconnect switches stays reachable at 820×640.
+- The Save reason sits beside the button without crowding the action row.
+- The footer is one evenly spaced column: Support, the version pill with the update controls on one line, then the status line.
+- Escape closes any dialog; with Browse results open it dismisses those first, and a Remove confirmation returns to the edit form.
+- Settings opens from launch, the app menu and the tray, and rebuilds its window if it is missing.
+
+
+## 0.1.5 — 2026-11-12
+
+- Appearance offers System, Light and Dark only; a stored "Default" reads as System.
+
+## 0.1.4 — 2026-11-12
+
+- Launching the app shows its window; the menu-bar item is an addition, not a replacement.
+- Saved share passwords keep working after an app update, and the app never asks for your Mac login Keychain: it only reads items it created.
+- A missing password is asked for in the app's own window; a refused one is named plainly and only retried when you choose Mount now.
+- Appearance now offers Default alongside System, Light and Dark; Default follows the Mac.
+- The Add storage dialog explains a blocked save beside the button, Browse names the device and fills the share name, and choosing a connected share closes the list.
+- The NAS connection was verified live: mount, unmount and automatic reconnect.
+
+## 0.1.3 — 2026-11-12
+
+- Settings always opens: if the window is missing or was destroyed, it is rebuilt on demand instead of doing nothing.
+
 ## 0.1.2 — 2026-11-12
 - Choosing a share under "From a connected share" now closes the list, so the address and the name can never get out of step.
 - A storage row shows the address it actually reconnects, including in a failure reason.

@@ -141,10 +141,41 @@ async function noOverflow(page, id) {
       truthy("Storage", "real shares visible", "Public Space-System pool in list", rowsText.includes("Public Space-System pool"), null);
       truthy("Storage", "mounted state visible", "Mounted chip", rowsText.includes("Mounted"), null);
       truthy("Storage", "mounted path visible", "real /Volumes path", rowsText.includes("/Volumes/Public Space-System pool"), null);
-      truthy("Storage", "footer pill", "Storage Studio KH v0.1.2", (await page.locator('[data-fk="pill"]').innerText()).includes("v0.1.2"), null);
+      truthy("Storage", "footer pill", `Storage Studio KH v${live.version}`, (await page.locator('[data-fk="pill"]').innerText()).includes(`v${live.version}`), null);
       const evidence = await shot(page, "storage/list-light-820x640");
       await accessibleNameAudit(page, "storage controls named");
       await noOverflow(page, "storage no overflow");
+      // Esc closes the editor.
+      await page.locator('[data-action="add-storage"], [data-fk="add-storage"]').first().click();
+      await page.waitForTimeout(120);
+      await page.keyboard.press("Escape");
+      await page.waitForTimeout(120);
+      truthy("Esc", "closes the add dialog", "no open dialog", (await page.locator("dialog[open]").count()) === 0, null);
+      // Esc dismisses Browse results first, keeping the editor open.
+      await page.locator('[data-action="add-storage"], [data-fk="add-storage"]').first().click();
+      await page.locator('input[name="name"]').fill("Esc test");
+      await page.locator('input[name="target"]').fill("smb://192.168.0.217");
+      await page.locator('[data-editor-action="browse"]').click();
+      await page.waitForTimeout(100);
+      await emit(page, "shares", { host: "192.168.0.217", shares: ["One"], needsCredentials: false, error: null });
+      await page.keyboard.press("Escape");
+      await page.waitForTimeout(100);
+      truthy("Esc", "dismisses Browse results", "chooser gone, dialog open", (await page.locator(".share-picker").count()) === 0 && (await page.locator("dialog[open]").count()) === 1, null);
+      await page.keyboard.press("Escape");
+      await page.waitForTimeout(100);
+      truthy("Esc", "closes the editor after dismissing results", "dialog closed", (await page.locator("dialog[open]").count()) === 0, null);
+      // Esc returns from a Remove confirmation to the editor.
+      const escRow = await open(browser, live);
+      await escRow.locator('[data-action="edit"]').first().click();
+      await escRow.waitForTimeout(120);
+      await escRow.locator('[data-editor-action="remove"]').click();
+      await escRow.waitForTimeout(100);
+      await escRow.keyboard.press("Escape");
+      await escRow.waitForTimeout(100);
+      truthy("Esc", "Remove confirmation returns to the editor", "editor still open without confirm", (await escRow.locator("#editor-title").innerText()).includes("Edit storage"), null);
+      await escRow.keyboard.press("Escape");
+      await escRow.close();
+
       // Row actions invoke their commands.
       await page.locator('[data-action="unmount"]').first().click().catch(() => {});
       await page.waitForTimeout(150);
@@ -172,10 +203,48 @@ async function noOverflow(page, id) {
       await shot(narrow, "storage/list-light-700x520");
       await narrow.close();
 
-      // Dark theme.
-      const dark = await open(browser, live, { theme: "dark" });
-      await shot(dark, "storage/list-dark-820x640");
+      // Footer alignment evidence at 1440 and 375, light and dark.
+      for (const [fw, fh] of [[1440, 900], [375, 812]]) {
+        for (const tone of ["light", "dark"]) {
+          const footSnap = variant((snapshot) => { snapshot.appearance = tone; });
+          const footPage = await open(browser, footSnap, { width: fw, height: fh });
+          await footPage.waitForSelector('html[data-theme="' + tone + '"]', { timeout: 3000 });
+          const box = await footPage.evaluate(() => {
+            const left = (selector) => {
+              const el = document.querySelector(selector);
+              return el ? Math.round(el.getBoundingClientRect().left + parseFloat(getComputedStyle(el).paddingLeft)) : null;
+            };
+            const support = document.querySelector(".foot-support");
+            const pill = document.querySelector('[data-fk="pill"]');
+            const check = document.querySelector('[data-fk="check"]');
+            return {
+              supportLeft: support ? Math.round(support.getBoundingClientRect().left + parseFloat(getComputedStyle(support).paddingLeft)) : null,
+              rowLeft: left(".foot-updates"),
+              lineLeft: left(".update-line"),
+              pillCenter: pill ? Math.round(pill.getBoundingClientRect().top + pill.getBoundingClientRect().height / 2) : null,
+              checkCenter: check ? Math.round(check.getBoundingClientRect().top + check.getBoundingClientRect().height / 2) : null,
+            };
+          });
+          truthy("Footer", `aligned at ${fw} ${tone}`, "support, row and status share one left edge", box.supportLeft === box.rowLeft && box.rowLeft === box.lineLeft, JSON.stringify(box));
+          truthy("Footer", `pill and update icon centred at ${fw} ${tone}`, "same centre line", box.pillCenter === box.checkCenter, JSON.stringify(box));
+          await shot(footPage, `footer/footer-${tone}-${fw}x${fh}`);
+          await footPage.close();
+        }
+      }
+
+      // Dark theme: the app follows snapshot.appearance, not the URL hash.
+      const darkSnap = variant((snapshot) => { snapshot.appearance = "dark"; });
+      const dark = await open(browser, darkSnap);
+      await dark.waitForSelector('html[data-theme="dark"]', { timeout: 3000 });
+      const darkEvidence = await shot(dark, "storage/list-dark-820x640");
+      const darkBg = await dark.evaluate(() => getComputedStyle(document.body).backgroundColor);
+      const crypto = require("node:crypto");
+      const lightBytes = fs.readFileSync(path.join(SHOTS, "storage/list-light-820x640.png"));
+      const darkBytes = fs.readFileSync(path.join(SHOTS, "storage/list-dark-820x640.png"));
+      const different = crypto.createHash("md5").update(lightBytes).digest("hex") !== crypto.createHash("md5").update(darkBytes).digest("hex");
+      truthy("Storage", "dark theme applied", "dark background and a different image", !darkBg.includes("241, 240, 236") && different, darkEvidence);
       await dark.close();
+
       await page.close();
     }
 
@@ -183,30 +252,32 @@ async function noOverflow(page, id) {
     {
       const attention = variant((snapshot) => {
         snapshot.storages[1].status = "needs_attention";
-        snapshot.storages[1].detail = "The share couldn't be mounted (code 13). Address tried: smb://vengtheng@100.69.137.42/Public%20Space-Media%20-%206TB%20-%20TV%20Show";
+        snapshot.storages[1].detail = "The device refused the user name or password. Address tried: smb://vengtheng@100.69.137.42/Public Space-Media - 6TB - Movies";
         snapshot.storages[1].mountedPath = null;
         snapshot.storages[2].status = "unreachable";
-        snapshot.storages[2].detail = "Can't reach 100.69.137.42 right now. Address tried: smb://vengtheng@100.69.137.42/Public%20Space-System%20pool";
+        snapshot.storages[2].detail = "Can't reach 100.69.137.42 right now. Address tried: smb://vengtheng@100.69.137.42/Public Space-System pool";
         snapshot.storages[2].mountedPath = null;
       });
+      const attentionVariant = clone(attention);
       const page = await open(browser, attention);
       const text = await page.locator("main, .content").first().innerText();
       truthy("Attention", "chip", "Needs attention", text.includes("Needs attention"), null);
       truthy("Attention", "address in reason", "Address tried: smb://", text.includes("Address tried: smb://"), null);
+      truthy("Attention", "reason is readable (decoded)", "no %20 in the reason", !text.includes("%20"), null);
       const evidence = await shot(page, "attention/attention-light-820x640");
       await page.locator('[data-action="mount"]').first().click().catch(() => {});
       await page.waitForTimeout(150);
       truthy("Attention", "Mount now invokes", "mount_storage", (await commands(page)).includes("mount_storage"), evidence);
 
-      // Test result toast comes from a changed detail.
+      // Test result toast follows the storage's changed detail.
       await page.locator('[data-action="test"]').first().click().catch(() => {});
-      const before = clone(attention);
-      before.storages[1].detail = "The share couldn't be mounted (code 13). Address tried: smb://vengtheng@100.69.137.42/Public%20Space-Media%20-%206TB%20-%20TV%20Show";
-      const after = clone(before);
-      after.storages[1].detail = "100.69.137.42 is reachable and ready to mount.";
-      await emit(page, "snapshot", after);
-      const toastText = await page.locator(".toast, [role=status]").allInnerTexts().catch(() => []);
-      truthy("Attention", "test result toasted", "toast mentions reachable", toastText.join(" ").includes("reachable"), evidence);
+      await page.waitForTimeout(700);
+      const toastText = await page.locator(".toast").allInnerTexts().catch(() => []);
+      truthy("Attention", "test result toasted", "a Test: toast", toastText.some((text) => text.startsWith("Test:")), evidence);
+      const narrowAttention = await open(browser, attentionVariant, { width: 700, height: 520 });
+      await shot(narrowAttention, "attention/attention-light-700x520");
+      await noOverflow(narrowAttention, "attention no overflow at 700x520");
+      await narrowAttention.close();
       await page.close();
 
       // Engine down on every view.
@@ -233,17 +304,23 @@ async function noOverflow(page, id) {
       const dialogText = await page.locator("dialog[open]").innerText();
       truthy("Add", "label says host + share", "Share address (host + share)", dialogText.includes("Share address (host + share)"), null);
       const save = page.locator('[data-editor-action="save"]');
-      truthy("Add", "Save disabled before address", "disabled", await save.isDisabled(), null);
-      const reason = await page.locator("#save-reason").innerText();
-      truthy("Add", "reason visible next to Save", "Add the share name…", reason.includes("Add the share name"), null);
+      truthy("Add", "Save disabled with an empty name", "disabled", await save.isDisabled(), null);
+      truthy("Add", "name reason beside Save", "Give this storage a name.", (await page.locator("#save-reason").innerText()).includes("Give this storage a name."), null);
+      truthy("Add", "name field marked invalid", "aria-invalid", (await page.locator('input[name="name"]').getAttribute("aria-invalid")) === "true", null);
       truthy("Add", "reason linked to Save", "aria-describedby", (await save.getAttribute("aria-describedby")) === "save-reason", null);
+      await page.locator('input[name="name"]').fill("Studio NAS");
+      await page.waitForTimeout(80);
+      truthy("Add", "empty address asks for the device", "Enter the device address first", (await page.locator("#save-reason").innerText()).includes("Enter the device address first"), null);
+      truthy("Add", "reason is a live region", "role=status", (await page.locator("#save-reason").getAttribute("role")) === "status", null);
       const evidence = await shot(page, "add/add-validation-light-820x640");
 
       // Host-only address keeps Save blocked with the reason.
       await page.locator('input[name="target"]').fill("smb://192.168.0.217");
       await page.waitForTimeout(120);
+      await shot(page, "add/add-host-only-light-820x640");
       truthy("Add", "host-only keeps Save off", "disabled", await save.isDisabled(), evidence);
       truthy("Add", "host-only reason", "Add the share name", (await page.locator("#save-reason").innerText()).includes("Add the share name"), evidence);
+      truthy("Add", "address marked invalid", "aria-invalid", (await page.locator('input[name="target"]').getAttribute("aria-invalid")) === "true", null);
 
       // Browse: real shares with spaces, pick one, encoded address.
       await page.locator('[data-editor-action="browse"]').click();
@@ -260,6 +337,8 @@ async function noOverflow(page, id) {
       });
       const chooser = await page.locator('[data-editor-action="pick-share"]').allInnerTexts();
       eq("Add", "chooser shows real names", ["Public Space-Media - 4TB - Music", "Public Space-System pool"], chooser);
+      truthy("Add", "chooser names the host", "Shares on 192.168.0.217", (await page.locator(".share-picker-head").innerText()).includes("Shares on 192.168.0.217"), null);
+      eq("Add", "chooser offers both shares plus Dismiss", 3, await page.locator(".share-picker button").count());
       await shot(page, "add/add-browse-chooser-light-820x640");
       await page.locator('[data-editor-action="pick-share"]').first().click();
       await page.waitForTimeout(150);
@@ -267,11 +346,30 @@ async function noOverflow(page, id) {
       truthy("Add", "readable share line", "Share: Public Space-Media - 4TB - Music", (await page.locator("dialog[open]").innerText()).includes("Share: Public Space-Media - 4TB - Music"), null);
       truthy("Add", "Save enabled for a full address", "enabled", !(await save.isDisabled()), null);
 
-      // Credential request for a device with no saved password.
+      // Credential request, error and empty results each read as a warning/error, not a hint.
       await page.locator('[data-editor-action="browse"]').click();
       await page.waitForTimeout(100);
       await emit(page, "shares", { host: "192.168.0.217", shares: [], needsCredentials: true, error: null });
       truthy("Add", "credential message", "needs a user name and password", (await page.locator("dialog[open]").innerText()).includes("needs a user name and password"), null);
+      truthy("Add", "credential note is a warning", "field-note-warn", (await page.locator(".field-note-warn").count()) === 1, null);
+      await shot(page, "add/add-browse-credentials-light-820x640");
+      await page.locator('[data-editor-action="browse"]').click();
+      await page.waitForTimeout(100);
+      await emit(page, "shares", { host: "192.168.0.217", shares: [], needsCredentials: false, error: "The device didn't answer." });
+      truthy("Add", "browse error is an error note", "field-note-error", (await page.locator(".field-note-error").innerText()).includes("didn't answer"), null);
+      await shot(page, "add/add-browse-error-light-820x640");
+      await page.locator('[data-editor-action="browse"]').click();
+      await page.waitForTimeout(100);
+      await emit(page, "shares", { host: "192.168.0.217", shares: [], needsCredentials: false, error: null });
+      truthy("Add", "empty share list explained", "didn't offer any shares", (await page.locator(".field-note-warn").innerText()).includes("didn't offer any shares"), null);
+      await shot(page, "add/add-browse-empty-light-820x640");
+
+      // Browse with no host.
+      await page.locator('[data-editor-action="dismiss-shares"]').click().catch(() => {});
+      await page.locator('input[name="target"]').fill("");
+      await page.locator('[data-editor-action="browse"]').click();
+      await page.waitForTimeout(100);
+      truthy("Add", "browse without a host explains", "Enter the device address first", (await page.locator(".field-note-warn").innerText()).includes("Enter the device address first"), null);
 
       // From a connected share: one click fills the form and hides the list.
       await page.keyboard.press("Escape");
@@ -290,11 +388,14 @@ async function noOverflow(page, id) {
       eq("Add", "connected pick fills encoded address", "smb://vengtheng@100.69.137.42/Public%20Space-Media%20-%204TB%20-%20Music", await connPage.locator('input[name="target"]').inputValue());
       eq("Add", "connected list hides after the pick", 0, await connPage.locator('[data-editor-action="add-connected"]').count());
       eq("Add", "connected pick fills user", "vengtheng", await connPage.locator('input[name="username"]').inputValue());
+      truthy("Add", "password field still offered after a connected pick", "password input present with Keychain hint", (await connPage.locator('input[name="password"]').getAttribute("placeholder").catch(() => "")).includes("Keychain"), null);
+      await shot(connPage, "add/add-connected-picked-light-820x640");
       await connPage.keyboard.press("Escape");
       await connPage.close();
 
       // Attached disk flow.
       await page.locator('[data-fk="add-storage"], [data-action="add-storage"]').first().click();
+      await page.locator('input[name="name"]').fill("Backup disk");
       await page.locator('input[name="kind"][value="volume"]').check();
       await page.waitForTimeout(120);
       truthy("Add", "disk Save blocked", "disabled", await save.isDisabled(), null);
@@ -308,6 +409,15 @@ async function noOverflow(page, id) {
       truthy("Add", "disk Save enabled", "enabled", !(await save.isDisabled()), null);
       await page.keyboard.press("Escape");
       await page.close();
+
+      // Dark dialog evidence.
+      const darkAdd = variant((snapshot) => { snapshot.appearance = "dark"; });
+      const darkPage = await open(browser, darkAdd);
+      await darkPage.waitForSelector('html[data-theme="dark"]', { timeout: 3000 });
+      await darkPage.locator('[data-fk="add-storage"], [data-action="add-storage"]').first().click();
+      await darkPage.waitForTimeout(150);
+      await shot(darkPage, "add/add-validation-dark-820x640");
+      await darkPage.close();
     }
 
     /* ------------------------------------------------------------ General */
@@ -368,8 +478,17 @@ async function noOverflow(page, id) {
       const whatsnew = await page.locator("dialog[open]").innerText();
       truthy("Updates", "What's New opens", "title", whatsnew.includes("What's New"), null);
       truthy("Updates", "current version marked", "Current version", whatsnew.includes("Current version"), null);
+      const previewSnap = variant((snapshot) => { snapshot.update = { state: "available", version: "9.9.9", reason: null }; });
+      const previewPage = await open(browser, previewSnap);
+      await previewPage.locator('[data-fk="pill"]').click();
+      await previewPage.waitForTimeout(150);
+      truthy("Updates", "pending update explained in What's New", "notes appear after install", (await previewPage.locator("dialog[open]").innerText()).includes("notes appear here after it is installed"), null);
+      await shot(previewPage, "updates/whats-new-pending-update-light-820x640");
+      await previewPage.close();
       await shot(page, "updates/whats-new-light-820x640");
       await page.keyboard.press("Escape");
+      await page.waitForTimeout(120);
+      truthy("Esc", "closes What's New", "no open dialog", (await page.locator("dialog[open]").count()) === 0, null);
 
       await page.locator('[data-fk="check"]').click();
       await page.waitForTimeout(120);
@@ -425,6 +544,11 @@ async function noOverflow(page, id) {
       await emit(page, "needs-credentials", { id: "s1794488987703", name: "Public Space-Media - 4TB - Music" });
       const dialog = await page.locator("dialog[open]").innerText().catch(() => "");
       truthy("Dialog", "credentials prompt opens", "user name and password fields", dialog.toLowerCase().includes("password"), null);
+      const focusInside = await page.evaluate(() => {
+        const name = document.activeElement?.getAttribute("name") ?? "";
+        return name === "credential-password" || name === "credential-username";
+      });
+      truthy("Dialog", "focus starts inside the prompt", "a credentials field", focusInside, null);
       await page.locator('input[name="credential-username"]').fill("vengtheng");
       await page.locator('input[name="credential-password"]').fill("not-a-real-password");
       await shot(page, "dialog/credentials-light-820x640");
@@ -434,6 +558,7 @@ async function noOverflow(page, id) {
       eq("Dialog", "save invokes set_credentials", "set_credentials", last && last.command);
       truthy("Dialog", "password never rendered in plain text after save", "input type=password", (await page.locator('input[name="credential-password"]').getAttribute("type").catch(() => "password")) === "password", null);
       await page.keyboard.press("Escape");
+      truthy("Dialog", "Esc closes only the prompt", "dialog closed", (await page.locator("dialog[open]").count()) === 0, null);
 
       await emit(page, "second-instance", null);
       const toast = await page.locator(".toast, [role=status]").allInnerTexts().catch(() => []);

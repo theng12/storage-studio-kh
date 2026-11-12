@@ -107,7 +107,7 @@ fn load_settings() -> Settings {
     }
     match serde_json::from_str::<Settings>(&text) {
         Ok(mut settings) => {
-            // "default" was an older name for the system choice; keep it reading as System.
+            // "default" was the older name for the system choice; keep it reading as System.
             if settings.appearance != "light" && settings.appearance != "dark" {
                 settings.appearance = "system".into();
             }
@@ -640,6 +640,17 @@ fn show_settings(app: &AppHandle) {
     if let Some(window) = app.get_webview_window("settings") {
         let _ = window.show();
         let _ = window.unminimize();
+        let _ = window.set_focus();
+        return;
+    }
+    // The configured window can be gone (destroyed, or failed to create at launch). Build it on
+    // demand so Settings always opens instead of doing nothing.
+    if let Ok(window) = tauri::WebviewWindowBuilder::new(app, "settings", tauri::WebviewUrl::App("index.html".into()))
+        .title(APP_NAME)
+        .inner_size(820.0, 640.0)
+        .min_inner_size(700.0, 520.0)
+        .build()
+    {
         let _ = window.set_focus();
     }
 }
@@ -1367,8 +1378,9 @@ fn main() {
                 *handle.state::<AppState>().engine_error.lock().unwrap() = Some(error);
             }
 
-            // A first run opens Settings once so the owner can add storage.
-            if setup_settings.storages.is_empty() && !is_test_mode() {
+            // Opening the app always shows its window — the app is useless as an invisible
+            // menu-bar item, and "nothing happened" was the owner's report.
+            if !is_test_mode() && !dump_snapshot {
                 show_settings(&handle);
             }
 

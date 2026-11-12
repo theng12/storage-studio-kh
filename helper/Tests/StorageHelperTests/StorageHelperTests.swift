@@ -112,10 +112,6 @@ final class SMBMountsTests: XCTestCase {
                        "smb://vengtheng@100.69.137.42/Public%20Space-Media%20-%206TB%20-%20TV%20Show")
     }
 
-    func testUserIsReadFromTheAddressWhenTyped() {
-        XCTAssertEqual(SMBMounts.user(fromURL: "smb://theng@nas.local/photos"), "theng")
-        XCTAssertNil(SMBMounts.user(fromURL: "smb://nas.local/photos"))
-    }
 }
 
 final class ProtocolTests: XCTestCase {

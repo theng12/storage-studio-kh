@@ -97,21 +97,20 @@ public final class Engine {
                     username: command.username ?? storage.username ?? "",
                     password: command.password ?? ""
                 )
-                let status = Keychain.save(id: storage.id, credentials: credentials)
+                let host = Reachability.smbHost(storage.target) ?? ""
+                let status = Keychain.save(host: host, username: credentials.username, password: credentials.password)
                 if status != errSecSuccess {
                     emit(Event.log(level: "warn", message: "The Keychain refused the password for \(storage.name) (status \(status)); it was not saved.").json)
                 }
-                if let host = Reachability.smbHost(storage.target) {
-                    Keychain.saveInternet(host: host, account: credentials.username, password: credentials.password)
-                }
+                Keychain.forgetLegacy(id: storage.id)
                 mountNow(storage)
             }
         case "forget_credentials":
             if let id = command.id, let storage = storage(id) {
-                Keychain.delete(id: id)
                 if let host = Reachability.smbHost(storage.target) {
-                    Keychain.deleteInternet(host: host, account: storage.username ?? "")
+                    Keychain.forget(host: host, username: storage.username)
                 }
+                Keychain.forgetLegacy(id: id)
                 announce()
             }
         case "quit":
@@ -136,7 +135,7 @@ public final class Engine {
         let table = MountTable.current()
         for storage in storages {
             if let entry = mountedEntry(storage, in: table) {
-                next[storage.id] = StorageState(id: storage.id, status: .mounted, detail: nil, mountedPath: entry.mountPoint, hasCredentials: Keychain.has(id: storage.id))
+                next[storage.id] = StorageState(id: storage.id, status: .mounted, detail: nil, mountedPath: entry.mountPoint, hasCredentials: hasCredentials(storage))
             } else if var existing = states[storage.id], existing.status != .notMounted {
                 // Keep Needs attention / Retrying while the owner edits another setting.
                 if existing.status == .mounted || existing.mountedPath != nil {
@@ -146,7 +145,7 @@ public final class Engine {
                 }
                 next[storage.id] = existing
             } else {
-                next[storage.id] = StorageState(id: storage.id, status: .notMounted, detail: nil, mountedPath: nil, hasCredentials: Keychain.has(id: storage.id))
+                next[storage.id] = StorageState(id: storage.id, status: .notMounted, detail: nil, mountedPath: nil, hasCredentials: hasCredentials(storage))
             }
         }
         states = next
@@ -218,14 +217,26 @@ public final class Engine {
             guard Reachability.tcp(host: host, port: 445) else {
                 return MountFailure(message: "Can't reach \(host) right now.", unreachable: true)
             }
-            let credentials = Keychain.load(id: storage.id)
-            let user = credentials?.username ?? storage.username ?? SMBMounts.user(fromURL: storage.target)
-            // Finder's own path: no password is passed anywhere, the system Keychain supplies it.
-            if let user, !user.isEmpty, Keychain.hasInternet(host: host, account: user),
-               SMBMounts.openMount(storage, user: user, poll: { MountTable.current() }) {
-                return nil
+            // Only this app's own item is ever read. A missing password goes straight to the
+            // in-window prompt; nothing consults Finder's Keychain item.
+            switch Keychain.load(host: host, username: storage.username) {
+            case .found(let credentials):
+                return NetFS.mountSMB(storage: storage, credentials: credentials)
+            case .refused:
+                return MountFailure(
+                    message: "Storage Studio KH couldn't read its saved password. Enter it again in Settings.",
+                    needsCredentials: true
+                )
+            case .missing:
+                let user = (storage.username ?? "").trimmingCharacters(in: .whitespaces)
+                if user.isEmpty {
+                    return NetFS.mountSMB(storage: storage, credentials: nil) // guest share
+                }
+                return MountFailure(
+                    message: "The device needs a user name and password. Enter them in Settings — Storage Studio KH will remember them.",
+                    needsCredentials: true
+                )
             }
-            return NetFS.mountSMB(storage: storage, credentials: credentials)
         case "volume":
             guard let uuid = storage.volumeUUID, !uuid.isEmpty else {
                 return MountFailure(message: "This disk has no saved identity; choose it again in Settings.")
@@ -308,7 +319,8 @@ public final class Engine {
     /// The row must say which address was tried, not just that something failed.
     private func failureText(_ storage: Storage, _ failure: MountFailure) -> String {
         if storage.kind == "smb" {
-            return "\(failure.message) Address tried: \(storage.target)"
+            let readable = storage.target.removingPercentEncoding ?? storage.target
+            return "\(failure.message) Address tried: \(readable)"
         }
         return failure.message
     }
@@ -318,7 +330,14 @@ public final class Engine {
         let attempt = (attempts[storage.id] ?? 0) + 1
         attempts[storage.id] = attempt
         if failure.needsCredentials {
+            // Retrying without a password cannot help; ask once and stop.
+            attempts[storage.id] = 0
+            scheduled[storage.id]?.cancel()
+            scheduled[storage.id] = nil
+            let reason = failureText(storage, failure)
+            set(storage, .needsAttention, detail: reason)
             emit(Event.needsCredentials(id: storage.id, name: storage.name).json)
+            return
         }
         let reason = failureText(storage, failure)
         if attempt <= retries, let wait = retryDelay(attempt) {
@@ -428,10 +447,10 @@ public final class Engine {
                 attempts[storage.id] = 0
                 scheduled[storage.id]?.cancel()
                 scheduled[storage.id] = nil
-                states[storage.id] = StorageState(id: storage.id, status: .mounted, detail: nil, mountedPath: entry.mountPoint, hasCredentials: Keychain.has(id: storage.id))
+                states[storage.id] = StorageState(id: storage.id, status: .mounted, detail: nil, mountedPath: entry.mountPoint, hasCredentials: hasCredentials(storage))
                 changed = true
             } else if entry == nil, current?.status == .mounted {
-                states[storage.id] = StorageState(id: storage.id, status: .notMounted, detail: "It disconnected.", mountedPath: nil, hasCredentials: Keychain.has(id: storage.id))
+                states[storage.id] = StorageState(id: storage.id, status: .notMounted, detail: "It disconnected.", mountedPath: nil, hasCredentials: hasCredentials(storage))
                 changed = true
             }
         }
@@ -448,6 +467,11 @@ public final class Engine {
     }
 
     // MARK: plumbing
+
+    private func hasCredentials(_ storage: Storage) -> Bool {
+        guard let host = Reachability.smbHost(storage.target) else { return false }
+        return Keychain.has(host: host, username: storage.username)
+    }
 
     private func storage(_ id: String?) -> Storage? {
         guard let id else { return nil }
@@ -466,7 +490,7 @@ public final class Engine {
             status: status,
             detail: detail,
             mountedPath: path,
-            hasCredentials: Keychain.has(id: storage.id)
+            hasCredentials: hasCredentials(storage)
         )
         announce()
     }
@@ -477,7 +501,7 @@ public final class Engine {
                 id: storage.id, status: .notMounted, detail: nil, mountedPath: nil,
                 hasCredentials: false
             )
-            state.hasCredentials = Keychain.has(id: storage.id)
+            state.hasCredentials = hasCredentials(storage)
             return state
         }
         emit(Event.state(items).json)

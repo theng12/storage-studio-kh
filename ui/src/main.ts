@@ -8,6 +8,7 @@ import {
   saveBlockReason,
   esc,
   orderWhatsNew,
+  retrySentence,
   statusLabel,
   statusTone,
   testResultChanged,
@@ -48,6 +49,7 @@ interface Draft {
 interface EditorState {
   shareChoices: string[] | null;
   shareNote: string | null;
+  shareNoteTone: "hint" | "warn" | "error";
   browseBusy: boolean;
   browseHost: string | null;
   draft: Draft;
@@ -104,6 +106,7 @@ let view: View = "storage";
 let editor: EditorState | null = null;
 let credentials: CredentialsState | null = null;
 let checkingUpdates = false;
+let afterSharesRendered = false;
 let refreshingStorage = false;
 let secondInstanceShown = false;
 let pendingTest: PendingTest | null = null;
@@ -123,11 +126,12 @@ function errText(error: unknown): string {
 }
 
 function appearanceChoice(mode: string): ThemeChoice {
-  return mode === "light" || mode === "dark" ? mode : "system";
+  return mode === "light" || mode === "dark" ? mode : "system"; // a stored "default" reads as System
 }
 
 function effectiveTheme(choice: ThemeChoice): "light" | "dark" {
   if (choice === "light" || choice === "dark") return choice;
+  // System and the app's designed look both follow the Mac.
   return darkQuery.matches ? "dark" : "light";
 }
 
@@ -318,7 +322,6 @@ function renderEngineBanner(s: Snapshot): string {
       <div>
         <p class="banner-title">The background helper isn't running</p>
         <p class="banner-text">${esc(reason)}</p>
-        <p class="banner-text">Reopening Storage Studio KH restarts it.</p>
       </div>
     </div>`;
 }
@@ -328,7 +331,7 @@ function renderEmpty(): string {
     <div class="empty">
       <div class="empty-icon">${icons.drive}</div>
       <p class="empty-title">No storage yet</p>
-      <p class="empty-text">Add a share or disk and Storage Studio KH will reconnect it after login, after wake, and when the network changes.</p>
+      <p class="empty-text">Add your first share or disk to keep it connected automatically.</p>
       <button type="button" class="btn btn-primary" data-action="add-storage">${icons.plus}<span>Add storage</span></button>
     </div>`;
 }
@@ -397,7 +400,9 @@ function renderGeneral(): string {
   const general = s.general;
   const generalBusy = Boolean(busy.general);
   const loginNote = s.launchAtLoginError
-    ? `<p class="inline-note" role="status">macOS couldn't change the login item: ${esc(s.launchAtLoginError)}</p>`
+    ? `<p class="inline-note inline-note-warn" role="status">${esc(s.launchAtLoginError)} Launch at login is currently ${
+        s.launchAtLoginEnabled ? "on" : "off"
+      }.</p>`
     : general.launchAtLogin !== s.launchAtLoginEnabled
       ? `<p class="inline-note inline-note-warn" role="status">The login item didn't change. Launch at login is currently ${
           s.launchAtLoginEnabled ? "on" : "off"
@@ -432,7 +437,7 @@ function renderGeneral(): string {
         </div>
         <label class="switch">
           <input type="checkbox" data-general="launchAtLogin" data-fk="general-launch" aria-labelledby="login-title" ${
-            general.launchAtLogin ? "checked" : ""
+            (s.launchAtLoginError ? s.launchAtLoginEnabled : general.launchAtLogin) ? "checked" : ""
           }${generalBusy ? " disabled" : ""} />
           <span class="track"></span>
         </label>
@@ -440,14 +445,20 @@ function renderGeneral(): string {
       <div class="setting-row">
         <div class="setting-copy">
           <span class="setting-title" id="retries-title">Retries before it stops</span>
-          <p class="setting-hint">Choose from 1 to 8. The default is 3.</p>
+          <p class="setting-hint" id="retries-hint">Choose from 1 to 8. The default is 3.</p>
         </div>
-        <input class="number-input" type="number" min="1" max="8" step="1" value="${general.retries}" data-general="retries" data-fk="general-retries" aria-labelledby="retries-title"${
+        <input class="number-input" type="number" min="1" max="8" step="1" value="${general.retries}" data-general="retries" data-fk="general-retries" aria-labelledby="retries-title" aria-describedby="retries-hint"${
           generalBusy ? " disabled" : ""
         } />
       </div>
     </section>
-    <p class="note">It retries after 5 s, 15 s and 60 s, then stops and marks the storage <strong>Needs attention</strong> until you choose Mount now.</p>`;
+    <p class="note">${esc(retrySentence(general.retries))}</p>`;
+}
+
+function appearanceNote(choice: ThemeChoice): string {
+  if (choice === "light") return "Storage Studio KH always uses the light look.";
+  if (choice === "dark") return "Storage Studio KH always uses the dark look.";
+  return "System follows your Mac's light or dark appearance.";
 }
 
 function renderAppearance(): string {
@@ -481,8 +492,8 @@ function renderAppearance(): string {
           )
           .join("")}
       </div>
-      <p class="note">System follows your Mac's light or dark appearance.</p>
-    </section>`;
+    </section>
+    <p class="note">${esc(appearanceNote(choice))}</p>`;
 }
 
 function renderSupport(): string {
@@ -490,11 +501,11 @@ function renderSupport(): string {
     <header class="page-head">
       <div>
         <h1>Support</h1>
-        <p class="lede">How you can support Storage Studio KH.</p>
+        <p class="lede">Help keep Storage Studio KH going.</p>
       </div>
     </header>
     <section class="support-copy">
-      <p>Storage Studio KH is free, with everything unlocked. A one-time donation is optional — it is never required to keep using the app.</p>
+      <p>Storage Studio KH is free, with everything unlocked. A one-time donation is optional.</p>
       <button type="button" class="btn btn-primary" data-action="open-support">Open donation page</button>
     </section>`;
 }
@@ -536,6 +547,7 @@ function openEditor(storage?: StorageView): void {
     connectedChosen: false,
     shareChoices: null,
     shareNote: null,
+    shareNoteTone: "hint",
     browseBusy: false,
     browseHost: null,
   };
@@ -558,7 +570,8 @@ function shareLine(d: Draft): string {
 function browsePanel(): string {
   if (!editor) return "";
   if (editor.shareChoices) {
-    return `<div class="share-picker" role="group" aria-label="Shares on this device">
+    return `<div class="share-picker" role="status" aria-live="polite" aria-label="Shares on ${esc(editor.browseHost ?? "this device")}">
+      <p class="share-picker-head">Shares on ${esc(editor.browseHost ?? "this device")}</p>
       ${editor.shareChoices
         .map(
           (share) =>
@@ -567,9 +580,12 @@ function browsePanel(): string {
             )}" data-fk="share-${esc(share)}">${esc(share)}</button>`,
         )
         .join("")}
+      <button type="button" class="share-choice share-choice-dismiss" data-editor-action="dismiss-shares">Dismiss</button>
     </div>`;
   }
-  return editor.shareNote ? `<span class="field-hint" role="status">${esc(editor.shareNote)}</span>` : "";
+  return editor.shareNote
+    ? `<p class="field-note field-note-${editor.shareNoteTone}" role="status">${esc(editor.shareNote)}</p>`
+    : "";
 }
 
 function renderEditor(): void {
@@ -607,7 +623,7 @@ function renderEditor(): void {
   const isEdit = Boolean(d.id);
   const volumes = snapshot?.volumes ?? [];
   const savedVolumeMissing = d.kind === "volume" && d.volumeUUID && !volumes.some((volume) => volume.uuid === d.volumeUUID);
-  const blockReason = saveBlockReason(d);
+  const blockReason = saveBlockReason(d, volumes.length > 0);
   const connectedShares =
     d.kind === "smb" && !editor.connectedChosen
       ? (snapshot?.mountedShares ?? []).filter(
@@ -641,20 +657,19 @@ function renderEditor(): void {
   const identityFields =
     d.kind === "smb"
       ? `
-        <label class="field">
-          <span class="field-label">Share address (host + share)</span>
+        <div class="field">
+          <label class="field-label" for="share-target">Share address (host + share)</label>
           <div class="browse-row">
-            <input type="text" name="target" value="${esc(d.target)}" placeholder="smb://nas.local/studio" spellcheck="false" autocomplete="off"${
+            <input id="share-target" type="text" name="target" value="${esc(d.target)}" placeholder="smb://studio.local/photos" spellcheck="false" autocomplete="off"${
               editor.busy ? " disabled" : ""
             } />
             <button type="button" class="btn" data-editor-action="browse" data-fk="editor-browse"${
               editor.busy || editor.browseBusy ? " disabled" : ""
             }>${editor.browseBusy ? "Looking…" : "Browse…"}</button>
           </div>
-          <span class="field-hint">A share address starts with smb:// and includes the share name.</span>
-          ${shareLine(d)}
-          ${browsePanel()}
-        </label>
+        </div>
+        ${shareLine(d)}
+        ${browsePanel()}
         <label class="field">
           <span class="field-label">User name (optional)</span>
           <input type="text" name="username" value="${esc(d.username)}" autocomplete="off"${
@@ -663,7 +678,7 @@ function renderEditor(): void {
         </label>
         <label class="field">
           <span class="field-label">Password (optional)</span>
-          <input type="password" name="password" value="${esc(d.password)}" placeholder="Saved in the Keychain; leave blank to keep the saved one" autocomplete="off"${
+          <input type="password" name="password" value="${esc(d.password)}" placeholder="${isEdit ? "Stored in Storage Studio KH's Keychain; leave blank to keep the saved one" : "Stored in Storage Studio KH's Keychain"}" autocomplete="off"${
             editor.busy ? " disabled" : ""
           } />
         </label>
@@ -695,7 +710,7 @@ function renderEditor(): void {
           </select>
           <span class="field-hint">${
             volumes.length
-              ? "These disks are connected now. Choose the one to reconnect."
+              ? "These disks are connected now."
               : "Connect the disk first, then reopen this window."
           }</span>
         </label>
@@ -751,7 +766,7 @@ function renderEditor(): void {
       <span class="spacer"></span>
       ${
         blockReason
-          ? `<span class="save-reason" id="save-reason">${esc(blockReason)}</span>`
+          ? `<span class="save-reason" id="save-reason" role="status" aria-live="polite">${esc(blockReason)}</span>`
           : ""
       }
       <button type="button" class="btn" data-editor-action="cancel" data-fk="editor-cancel"${editor.busy === "save" ? " disabled" : ""}>Cancel</button>
@@ -767,9 +782,14 @@ function renderEditor(): void {
       }</button>
     </div>`;
 
+  updateEditorBlockState();
   if (focusName) {
     const selector = focusValue ? `input[name="${focusName}"][value="${focusValue}"]` : `[name="${focusName}"]`;
     editorEl.querySelector<HTMLElement>(selector)?.focus();
+  }
+  if (afterSharesRendered) {
+    afterSharesRendered = false;
+    editorEl.querySelector<HTMLElement>('[data-editor-action="pick-share"]')?.focus();
   }
 }
 
@@ -809,6 +829,7 @@ function syncEditorField(target: HTMLInputElement | HTMLSelectElement): void {
       if (volume) {
         draft.mountPoint = volume.path;
         draft.target = volume.device;
+        if (!draft.name.trim()) draft.name = volume.name;
         renderEditor();
       }
       break;
@@ -820,13 +841,54 @@ function syncEditorField(target: HTMLInputElement | HTMLSelectElement): void {
       draft.reconnectAfterWake = (target as HTMLInputElement).checked;
       break;
   }
+  if (editor.error) editor.error = null;
+  updateEditorBlockState();
+}
+
+/// Keeps the reason beside Save and the Save button in step with what is typed.
+function updateEditorBlockState(): void {
+  if (!editor) return;
+  const blockReason = saveBlockReason(editor.draft, (snapshot?.volumes ?? []).length > 0);
+  const save = editorEl.querySelector<HTMLButtonElement>('[data-editor-action="save"]');
+  if (save) {
+    save.disabled = Boolean(editor.busy || blockReason);
+    if (blockReason) save.setAttribute("aria-describedby", "save-reason");
+    else save.removeAttribute("aria-describedby");
+  }
+  const markInvalid = (name: string): void => {
+    for (const field of editorEl.querySelectorAll<HTMLElement>("[aria-invalid]")) field.removeAttribute("aria-invalid");
+    const target = editorEl.querySelector<HTMLElement>(`[name="${name}"]`);
+    target?.setAttribute("aria-invalid", "true");
+  };
+  if (blockReason) {
+    if (blockReason.startsWith("Give this storage a name")) markInvalid("name");
+    else if (blockReason.startsWith("Enter the device address") || blockReason.startsWith("Add the share name")) markInvalid("target");
+    else if (blockReason.startsWith("Choose a disk") || blockReason.startsWith("No disks")) markInvalid("volumeUUID");
+  }
+  let reason = editorEl.querySelector<HTMLElement>("#save-reason");
+  if (!blockReason) {
+    reason?.remove();
+    return;
+  }
+  if (!reason) {
+    reason = document.createElement("span");
+    reason.id = "save-reason";
+    reason.className = "save-reason";
+    reason.setAttribute("role", "status");
+    reason.setAttribute("aria-live", "polite");
+    const spacer = editorEl.querySelector(".sheet-actions .spacer");
+    if (spacer?.parentElement) spacer.parentElement.insertBefore(reason, spacer.nextSibling);
+    else editorEl.querySelector(".sheet-actions")?.prepend(reason);
+  }
+  reason.textContent = blockReason;
 }
 
 async function browseShares(): Promise<void> {
   if (!editor || editor.busy || editor.browseBusy) return;
   const host = parseShareHost(editor.draft.target);
   if (!host) {
-    editor.error = "Enter the device address first, like smb://192.168.0.217.";
+    editor.shareNote = "Enter the device address first, like smb://studio.local/photos.";
+    editor.shareNoteTone = "warn";
     renderEditor();
     editorEl.querySelector<HTMLElement>('[name="target"]')?.focus();
     return;
@@ -847,6 +909,7 @@ async function browseShares(): Promise<void> {
     if (!editor) return;
     editor.browseBusy = false;
     editor.shareNote = error instanceof Error ? error.message : String(error);
+  editor.shareNoteTone = "error";
     renderEditor();
   }
 }
@@ -855,19 +918,23 @@ function applyShares(payload: { host: string; shares: string[]; needsCredentials
   if (!editor || !editor.browseBusy) return;
   editor.browseBusy = false;
   if (payload.needsCredentials) {
-    editor.shareNote = "That device needs a user name and password. Enter them above, then choose Browse again.";
+    editor.shareNote = "That device needs a user name and password. Enter them below, then choose Browse again.";
+    editor.shareNoteTone = "warn";
     editor.error = null;
     renderEditor();
     editorEl.querySelector<HTMLElement>('[name="username"]')?.focus();
     return;
   }
   if (payload.error) {
-    editor.shareNote = payload.error;
+    editor.shareNote = `${payload.error} Choose Browse to try again.`;
+    editor.shareNoteTone = "error";
     renderEditor();
     return;
   }
+  afterSharesRendered = true;
   if (!payload.shares.length) {
-    editor.shareNote = "That device didn't offer any shares.";
+    editor.shareNote = "That device didn't offer any shares. You can type the share address instead.";
+  editor.shareNoteTone = "warn";
     renderEditor();
     return;
   }
@@ -881,6 +948,7 @@ function pickShare(share: string): void {
   const host = editor.browseHost ?? parseShareHost(editor.draft.target);
   if (!host) return;
   editor.draft.target = `smb://${host}/${encodeURIComponent(share)}`;
+  if (!editor.draft.name.trim()) editor.draft.name = share;
   editor.shareChoices = null;
   editor.shareNote = null;
   editor.error = null;
@@ -1142,12 +1210,16 @@ function renderWhatsNew(): void {
         )
         .join("")
     : '<p class="sheet-sub">No release notes yet.</p>';
+  const pendingUpdate =
+    s.update.state === "available" && s.update.version && !entries.some((entry) => entry.version === s.update.version)
+      ? `<p class="note">Version ${esc(s.update.version)} is available. Its notes appear here after it is installed.</p>`
+      : "";
   whatsnewEl.innerHTML = `
     <div class="sheet-head">
       <h2 id="whatsnew-title">What's New</h2>
       <p class="sheet-sub">${esc(s.appName)} ${esc(s.version)}</p>
     </div>
-    <div class="sheet-body">${releases}</div>
+    <div class="sheet-body">${pendingUpdate}${releases}</div>
     <div class="sheet-actions">
       <span class="spacer"></span>
       <button type="button" class="btn btn-primary" data-whatsnew-action="close">Close</button>
@@ -1391,6 +1463,13 @@ function wireEvents(): void {
       case "pick-share":
         pickShare(button.dataset.share ?? "");
         break;
+      case "dismiss-shares":
+        if (editor) {
+          editor.shareChoices = null;
+          editor.shareNote = null;
+          renderEditor();
+        }
+        break;
       case "add-connected": {
         const candidate = (snapshot?.mountedShares ?? []).find(
           (item) => item.url === button.dataset.connectedUrl,
@@ -1407,7 +1486,6 @@ function wireEvents(): void {
           // The choice is made; hide the list so a second click cannot swap the address
           // under the name that was already filled in.
           editor.connectedChosen = true;
-          editor.shareNote = `Share: ${candidate.name}`;
           renderEditor();
           editorEl.querySelector<HTMLInputElement>('input[name="target"]')?.focus();
         }
@@ -1453,6 +1531,12 @@ function wireEvents(): void {
     dialog.addEventListener("cancel", (event) => {
       event.preventDefault();
       if (dialog === editorEl) {
+        if (editor?.shareChoices) {
+          editor.shareChoices = null;
+          editor.shareNote = null;
+          renderEditor();
+          return;
+        }
         if (editor?.confirmRemove) {
           editor.confirmRemove = false;
           editor.error = null;

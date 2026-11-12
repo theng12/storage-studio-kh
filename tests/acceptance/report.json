@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-11-12T15:29:34.773Z",
-  "appVersion": "0.1.2",
+  "generatedAt": "2026-11-12T16:17:55.942Z",
+  "appVersion": "0.1.6",
   "checks": [
     {
       "page": "Storage",
@@ -45,7 +45,7 @@
     {
       "page": "Storage",
       "id": "footer pill",
-      "expected": "Storage Studio KH v0.1.2",
+      "expected": "Storage Studio KH v0.1.6",
       "actual": "true",
       "pass": true,
       "evidence": null
@@ -63,6 +63,38 @@
       "id": "storage no overflow",
       "expected": "no horizontal overflow",
       "actual": "0",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Esc",
+      "id": "closes the add dialog",
+      "expected": "no open dialog",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Esc",
+      "id": "dismisses Browse results",
+      "expected": "chooser gone, dialog open",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Esc",
+      "id": "closes the editor after dismissing results",
+      "expected": "dialog closed",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Esc",
+      "id": "Remove confirmation returns to the editor",
+      "expected": "editor still open without confirm",
+      "actual": "true",
       "pass": true,
       "evidence": null
     },
@@ -107,6 +139,78 @@
       "evidence": null
     },
     {
+      "page": "Footer",
+      "id": "aligned at 1440 light",
+      "expected": "support, row and status share one left edge",
+      "actual": "true",
+      "pass": true,
+      "evidence": "{\"supportLeft\":14,\"rowLeft\":14,\"lineLeft\":14,\"pillCenter\":856,\"checkCenter\":856}"
+    },
+    {
+      "page": "Footer",
+      "id": "pill and update icon centred at 1440 light",
+      "expected": "same centre line",
+      "actual": "true",
+      "pass": true,
+      "evidence": "{\"supportLeft\":14,\"rowLeft\":14,\"lineLeft\":14,\"pillCenter\":856,\"checkCenter\":856}"
+    },
+    {
+      "page": "Footer",
+      "id": "aligned at 1440 dark",
+      "expected": "support, row and status share one left edge",
+      "actual": "true",
+      "pass": true,
+      "evidence": "{\"supportLeft\":14,\"rowLeft\":14,\"lineLeft\":14,\"pillCenter\":856,\"checkCenter\":856}"
+    },
+    {
+      "page": "Footer",
+      "id": "pill and update icon centred at 1440 dark",
+      "expected": "same centre line",
+      "actual": "true",
+      "pass": true,
+      "evidence": "{\"supportLeft\":14,\"rowLeft\":14,\"lineLeft\":14,\"pillCenter\":856,\"checkCenter\":856}"
+    },
+    {
+      "page": "Footer",
+      "id": "aligned at 375 light",
+      "expected": "support, row and status share one left edge",
+      "actual": "true",
+      "pass": true,
+      "evidence": "{\"supportLeft\":14,\"rowLeft\":14,\"lineLeft\":14,\"pillCenter\":768,\"checkCenter\":768}"
+    },
+    {
+      "page": "Footer",
+      "id": "pill and update icon centred at 375 light",
+      "expected": "same centre line",
+      "actual": "true",
+      "pass": true,
+      "evidence": "{\"supportLeft\":14,\"rowLeft\":14,\"lineLeft\":14,\"pillCenter\":768,\"checkCenter\":768}"
+    },
+    {
+      "page": "Footer",
+      "id": "aligned at 375 dark",
+      "expected": "support, row and status share one left edge",
+      "actual": "true",
+      "pass": true,
+      "evidence": "{\"supportLeft\":14,\"rowLeft\":14,\"lineLeft\":14,\"pillCenter\":768,\"checkCenter\":768}"
+    },
+    {
+      "page": "Footer",
+      "id": "pill and update icon centred at 375 dark",
+      "expected": "same centre line",
+      "actual": "true",
+      "pass": true,
+      "evidence": "{\"supportLeft\":14,\"rowLeft\":14,\"lineLeft\":14,\"pillCenter\":768,\"checkCenter\":768}"
+    },
+    {
+      "page": "Storage",
+      "id": "dark theme applied",
+      "expected": "dark background and a different image",
+      "actual": "true",
+      "pass": true,
+      "evidence": "tests/acceptance/screenshots/storage/list-dark-820x640.png"
+    },
+    {
       "page": "Attention",
       "id": "chip",
       "expected": "Needs attention",
@@ -124,6 +228,14 @@
     },
     {
       "page": "Attention",
+      "id": "reason is readable (decoded)",
+      "expected": "no %20 in the reason",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Attention",
       "id": "Mount now invokes",
       "expected": "mount_storage",
       "actual": "true",
@@ -133,10 +245,18 @@
     {
       "page": "Attention",
       "id": "test result toasted",
-      "expected": "toast mentions reachable",
+      "expected": "a Test: toast",
       "actual": "true",
       "pass": true,
       "evidence": "tests/acceptance/screenshots/attention/attention-light-820x640.png"
+    },
+    {
+      "page": "Audit",
+      "id": "attention no overflow at 700x520",
+      "expected": "no horizontal overflow",
+      "actual": "0",
+      "pass": true,
+      "evidence": null
     },
     {
       "page": "Engine",
@@ -172,7 +292,7 @@
     },
     {
       "page": "Add",
-      "id": "Save disabled before address",
+      "id": "Save disabled with an empty name",
       "expected": "disabled",
       "actual": "true",
       "pass": true,
@@ -180,8 +300,16 @@
     },
     {
       "page": "Add",
-      "id": "reason visible next to Save",
-      "expected": "Add the share name…",
+      "id": "name reason beside Save",
+      "expected": "Give this storage a name.",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Add",
+      "id": "name field marked invalid",
+      "expected": "aria-invalid",
       "actual": "true",
       "pass": true,
       "evidence": null
@@ -190,6 +318,22 @@
       "page": "Add",
       "id": "reason linked to Save",
       "expected": "aria-describedby",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Add",
+      "id": "empty address asks for the device",
+      "expected": "Enter the device address first",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Add",
+      "id": "reason is a live region",
+      "expected": "role=status",
       "actual": "true",
       "pass": true,
       "evidence": null
@@ -209,6 +353,14 @@
       "actual": "true",
       "pass": true,
       "evidence": "tests/acceptance/screenshots/add/add-validation-light-820x640.png"
+    },
+    {
+      "page": "Add",
+      "id": "address marked invalid",
+      "expected": "aria-invalid",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
     },
     {
       "page": "Add",
@@ -235,6 +387,22 @@
       ],
       "actual": "[\"Public Space-Media - 4TB - Music\",\"Public Space-System pool\"]",
       "pass": "[\"Public Space-Media - 4TB - Music\",\"Public Space-System pool\"]",
+      "evidence": true
+    },
+    {
+      "page": "Add",
+      "id": "chooser names the host",
+      "expected": "Shares on 192.168.0.217",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Add",
+      "id": "chooser offers both shares plus Dismiss",
+      "expected": 3,
+      "actual": "3",
+      "pass": "3",
       "evidence": true
     },
     {
@@ -271,6 +439,38 @@
     },
     {
       "page": "Add",
+      "id": "credential note is a warning",
+      "expected": "field-note-warn",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Add",
+      "id": "browse error is an error note",
+      "expected": "field-note-error",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Add",
+      "id": "empty share list explained",
+      "expected": "didn't offer any shares",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Add",
+      "id": "browse without a host explains",
+      "expected": "Enter the device address first",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Add",
       "id": "connected shares offered",
       "expected": "at least one row",
       "actual": "true",
@@ -300,6 +500,14 @@
       "actual": "\"vengtheng\"",
       "pass": "\"vengtheng\"",
       "evidence": true
+    },
+    {
+      "page": "Add",
+      "id": "password field still offered after a connected pick",
+      "expected": "password input present with Keychain hint",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
     },
     {
       "page": "Add",
@@ -431,6 +639,22 @@
     },
     {
       "page": "Updates",
+      "id": "pending update explained in What's New",
+      "expected": "notes appear after install",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Esc",
+      "id": "closes What's New",
+      "expected": "no open dialog",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Updates",
       "id": "check icon invokes",
       "expected": "check_updates",
       "actual": "\"check_updates\"",
@@ -503,6 +727,14 @@
     },
     {
       "page": "Dialog",
+      "id": "focus starts inside the prompt",
+      "expected": "a credentials field",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Dialog",
       "id": "save invokes set_credentials",
       "expected": "set_credentials",
       "actual": "\"set_credentials\"",
@@ -513,6 +745,14 @@
       "page": "Dialog",
       "id": "password never rendered in plain text after save",
       "expected": "input type=password",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Dialog",
+      "id": "Esc closes only the prompt",
+      "expected": "dialog closed",
       "actual": "true",
       "pass": true,
       "evidence": null
@@ -537,17 +777,29 @@
   "screenshots": [
     "tests/acceptance/screenshots/storage/list-light-820x640.png",
     "tests/acceptance/screenshots/storage/list-light-700x520.png",
+    "tests/acceptance/screenshots/footer/footer-light-1440x900.png",
+    "tests/acceptance/screenshots/footer/footer-dark-1440x900.png",
+    "tests/acceptance/screenshots/footer/footer-light-375x812.png",
+    "tests/acceptance/screenshots/footer/footer-dark-375x812.png",
     "tests/acceptance/screenshots/storage/list-dark-820x640.png",
     "tests/acceptance/screenshots/attention/attention-light-820x640.png",
+    "tests/acceptance/screenshots/attention/attention-light-700x520.png",
     "tests/acceptance/screenshots/engine/engine-down-appearance-light-820x640.png",
     "tests/acceptance/screenshots/add/add-validation-light-820x640.png",
+    "tests/acceptance/screenshots/add/add-host-only-light-820x640.png",
     "tests/acceptance/screenshots/add/add-browse-chooser-light-820x640.png",
+    "tests/acceptance/screenshots/add/add-browse-credentials-light-820x640.png",
+    "tests/acceptance/screenshots/add/add-browse-error-light-820x640.png",
+    "tests/acceptance/screenshots/add/add-browse-empty-light-820x640.png",
     "tests/acceptance/screenshots/add/add-connected-light-820x640.png",
+    "tests/acceptance/screenshots/add/add-connected-picked-light-820x640.png",
     "tests/acceptance/screenshots/add/add-disk-light-820x640.png",
+    "tests/acceptance/screenshots/add/add-validation-dark-820x640.png",
     "tests/acceptance/screenshots/general/general-light-820x640.png",
     "tests/acceptance/screenshots/general/general-dark-820x640.png",
     "tests/acceptance/screenshots/general/general-login-error-light-820x640.png",
     "tests/acceptance/screenshots/appearance/appearance-dark-820x640.png",
+    "tests/acceptance/screenshots/updates/whats-new-pending-update-light-820x640.png",
     "tests/acceptance/screenshots/updates/whats-new-light-820x640.png",
     "tests/acceptance/screenshots/updates/update-available-light-820x640.png",
     "tests/acceptance/screenshots/updates/update-failed-light-820x640.png",
@@ -556,8 +808,8 @@
     "tests/acceptance/screenshots/dialog/credentials-light-820x640.png"
   ],
   "summary": {
-    "total": 66,
-    "passed": 66,
+    "total": 96,
+    "passed": 96,
     "failed": 0
   }
 }

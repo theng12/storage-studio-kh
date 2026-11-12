@@ -45,34 +45,5 @@ public enum SMBMounts {
         return found
     }
 
-    public static func user(fromURL url: String) -> String? {
-        let rest = url.dropFirst(url.lowercased().hasPrefix("smb://") ? "smb://".count : 0)
-        guard let at = rest.firstIndex(of: "@") else { return nil }
-        let user = String(rest[..<at])
-        return user.isEmpty ? nil : user
-    }
 
-    /// The path the app uses for reconnect: `open -g smb://…` asks Finder, which reads the
-    /// login Keychain. `-g` keeps Finder behind the current app.
-    public static func openMount(_ storage: Storage, user: String?, poll: () -> [MountedVolume], timeout: TimeInterval = 8) -> Bool {
-        var target = storage.target
-        if let user, !user.isEmpty, !target.dropFirst("smb://".count).contains("@") {
-            target = "smb://" + user + "@" + target.dropFirst("smb://".count)
-        }
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/usr/bin/open")
-        process.arguments = ["-g", target]
-        do {
-            try process.run()
-        } catch {
-            return false
-        }
-        process.waitUntilExit()
-        let deadline = Date().addingTimeInterval(timeout)
-        while Date() < deadline {
-            if MountTable.entry(for: storage, in: poll()) != nil { return true }
-            usleep(300_000)
-        }
-        return false
-    }
 }

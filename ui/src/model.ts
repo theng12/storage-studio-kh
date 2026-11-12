@@ -85,16 +85,29 @@ export function shareNameFromTarget(target: string): string | null {
   }
 }
 
-export function saveBlockReason(draft: DraftValidation): string | null {
+export function saveBlockReason(draft: DraftValidation, hasVolumes = true): string | null {
+  // The same rule that Save would fail on, so the reason can sit beside the button.
+  if (!draft.name.trim()) return "Give this storage a name.";
   if (draft.kind === "smb") {
     const target = draft.target.trim();
+    if (!target) return "Enter the device address first, like smb://studio.local/photos.";
     if (!/^smb:\/\/[^\s/]+\/\S+$/i.test(target)) return "Add the share name to the address, like smb://nas.local/studio.";
     return null;
   }
   if (draft.kind === "volume") {
-    return draft.volumeUUID && draft.volumeUUID.trim() ? null : "Choose a disk to reconnect.";
+    if (draft.volumeUUID && draft.volumeUUID.trim()) return null;
+    return hasVolumes ? "Choose a disk to reconnect." : "No disks are connected right now.";
   }
   return "Choose SMB share or attached disk.";
+}
+
+export function retrySentence(retries: number): string {
+  const n = Math.min(Math.max(Math.round(retries) || 1, 1), 8);
+  const tail = "then stops and marks the storage Needs attention until you choose Mount now.";
+  if (n === 1) return `After a failure it tries once more, 5 s later, ${tail}`;
+  if (n === 2) return `After a failure it tries again after 5 s and 15 s, ${tail}`;
+  if (n === 3) return `After a failure it tries again after 5 s, 15 s and 60 s, ${tail}`;
+  return `After a failure it makes up to ${n} more attempts, waiting 5 s, 15 s, then 60 s for each later try, ${tail}`;
 }
 
 export function updateWording(update: UpdateState): string {
@@ -105,8 +118,12 @@ export function updateWording(update: UpdateState): string {
       return "Up to date";
     case "available":
       return update.version ? `Version ${update.version} is available` : "An update is available";
-    case "failed":
-      return update.reason ? `Update check failed: ${update.reason}` : "Update check failed.";
+    case "failed": {
+      const reason = update.reason?.trim();
+      if (!reason) return "Couldn't check for updates.";
+      // The shell's reasons are already full sentences; do not stitch two claims together.
+      return /^(Could|The |This )/i.test(reason) ? reason : `Couldn't check for updates — ${reason}`;
+    }
     case "idle":
     case "not-checked":
       return "Not checked yet";

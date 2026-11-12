@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs";
 
 import {
   parseShareHost,
+  retrySentence,
   shareNameFromTarget,
   saveBlockReason,
   compareVersions,
@@ -58,8 +59,8 @@ test("update wording stays honest in every state", () => {
   assert.equal(updateWording({ state: "up-to-date", version: null, reason: null }), "Up to date");
   assert.equal(updateWording({ state: "available", version: "0.1.1", reason: null }), "Version 0.1.1 is available");
   assert.equal(updateWording({ state: "available", version: null, reason: null }), "An update is available");
-  assert.equal(updateWording({ state: "failed", version: null, reason: "No network" }), "Update check failed: No network");
-  assert.equal(updateWording({ state: "failed", version: null, reason: null }), "Update check failed.");
+  assert.equal(updateWording({ state: "failed", version: null, reason: "Could not reach the Update Studio: offline" }), "Could not reach the Update Studio: offline");
+  assert.equal(updateWording({ state: "failed", version: null, reason: null }), "Couldn't check for updates.");
   assert.equal(updateWording({ state: "not-checked", version: null, reason: null }), "Not checked yet");
   assert.equal(updateWording({ state: "idle", version: null, reason: null }), "Not checked yet");
   assert.equal(updateWording({ state: "mystery", version: null, reason: null }), "Not checked yet");
@@ -162,10 +163,37 @@ test("offers shares that are already connected and skips ones already added", ()
   assert.match(mainSource, /\(snapshot\?\.storages \?\? \[\]\)\.some\(\(storage\) => storage\.target === candidate\.url\)/);
   assert.match(mainSource, /draft\.target = candidate\.url/);
   assert.match(mainSource, /draft\.username = candidate\.user \?\? ""/);
-  assert.match(mainSource, /editor\.shareNote = `Share: \$\{candidate\.name\}`/);
 });
 
 test("picking a connected share hides the list so the address cannot be swapped later", () => {
   assert.match(mainSource, /editor\.connectedChosen = true/);
   assert.match(mainSource, /d\.kind === "smb" && !editor\.connectedChosen/);
+});
+
+test("Save explains a missing name and a disconnected disk beside the button", () => {
+  assert.equal(saveBlockReason({ name: "", kind: "smb", target: "smb://nas/Share", volumeUUID: null, mountPoint: "" }), "Give this storage a name.");
+  assert.equal(saveBlockReason({ name: "Disk", kind: "volume", target: "", volumeUUID: null, mountPoint: "" }, false), "No disks are connected right now.");
+  assert.equal(saveBlockReason({ name: "Disk", kind: "volume", target: "", volumeUUID: null, mountPoint: "" }, true), "Choose a disk to reconnect.");
+});
+
+test("retry sentence follows the chosen number", () => {
+  assert.match(retrySentence(1), /tries once more, 5 s later/);
+  assert.match(retrySentence(2), /after 5 s and 15 s/);
+  assert.match(retrySentence(3), /after 5 s, 15 s and 60 s/);
+  assert.match(retrySentence(5), /up to 5 more attempts/);
+  assert.match(retrySentence(5), /60 s for each later try/);
+});
+
+test("Settings opens from launch, the app menu and the tray, rebuilding if missing", () => {
+  const rust = readFileSync(new URL("../src-tauri/src/main.rs", import.meta.url), "utf8");
+  assert.match(rust, /show_settings\(&handle\)/);
+  assert.match(rust, /WebviewWindowBuilder::new\(app, "settings"/);
+  assert.match(rust, /"settings" => show_settings\(app\)/);
+  assert.match(rust, /"app-settings"[\s\S]{0,160}show_settings\(app\)/);
+});
+
+test("footer keeps Support, pill + updates and the status line on one grid", () => {
+  const css = readFileSync(new URL("../ui/src/styles.css", import.meta.url), "utf8");
+  assert.match(css, /\.foot-updates \{[^}]*gap: var\(--s-s\)[^}]*padding: 0 var\(--s-s\)/s);
+  assert.match(css, /\.update-line \{[^}]*padding: 0 var\(--s-s\)/s);
 });
