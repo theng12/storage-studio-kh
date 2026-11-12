@@ -18,6 +18,7 @@ public enum Event {
     case recovered(id: String, name: String)
     case needsCredentials(id: String, name: String)
     case shares(host: String, shares: [String], needsCredentials: Bool, error: String?)
+    case smbMounts([ShareCandidate])
     case log(level: String, message: String)
 
     public var json: Data {
@@ -46,6 +47,12 @@ public enum Event {
             object = ["type": "recovered", "id": id, "name": name]
         case .needsCredentials(let id, let name):
             object = ["type": "needs_credentials", "id": id, "name": name]
+        case .smbMounts(let items):
+            object["type"] = "smb_mounts"
+            object["items"] = items.map {
+                ["name": $0.name, "url": $0.url, "user": $0.user as Any,
+                 "host": $0.host, "mountPoint": $0.mountPoint]
+            }
         case .shares(let host, let shares, let needsCredentials, let error):
             object = [
                 "type": "shares",

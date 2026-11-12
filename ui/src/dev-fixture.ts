@@ -255,6 +255,13 @@ export function createDevBackend(hash: string): {
         return snapshot;
       }
 
+      case "list_shares": {
+        const address = String((args as Record<string, unknown>).address ?? "");
+        const host = address.replace(/^smb:\/\//i, "").split("/")[0] || "192.168.0.217";
+        const shares = ["Public Space-Media - 4TB - Music", "Public Space-System pool", "Studio Projects"];
+        setTimeout(() => emit("shares", { host, shares, needsCredentials: false, error: null }), 250);
+        return null;
+      }
       case "check_updates": {
         snapshot.update = { state: "checking", version: null, reason: null };
         emit("snapshot", snapshot);

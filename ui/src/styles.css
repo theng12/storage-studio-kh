@@ -1247,3 +1247,11 @@ dialog.sheet::backdrop {
     transition-duration: 0.01ms !important;
   }
 }
+
+.browse-row { display: flex; gap: var(--s-s); align-items: center; }
+.browse-row input { flex: 1 1 auto; min-width: 0; }
+.quiet-line { color: var(--text-muted); font-size: var(--t-caption); }
+.save-reason { color: var(--danger-text); font-size: var(--t-caption); max-width: 22ch; }
+.share-picker { display: flex; flex-direction: column; align-items: stretch; gap: 2px; border: 1px solid var(--line); border-radius: var(--r-control); padding: var(--s-xs); background: var(--raised); max-height: 160px; overflow: auto; }
+.share-choice { text-align: left; border: 0; background: none; color: var(--text); padding: var(--s-xs) var(--s-s); border-radius: var(--r-control); font: inherit; cursor: pointer; }
+.share-choice:hover, .share-choice:focus-visible { background: var(--hover); }

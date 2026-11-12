@@ -3,6 +3,9 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 import {
+  parseShareHost,
+  shareNameFromTarget,
+  saveBlockReason,
   compareVersions,
   esc,
   orderWhatsNew,
@@ -126,4 +129,29 @@ test("the command wiring in main.ts is present and unique", () => {
 test("the second-instance note is shown once", () => {
   assert.match(mainSource, /function showSecondInstance[\s\S]{0,220}if \(secondInstanceShown\) return/);
   assert.match(mainSource, /Storage Studio KH is already running\. This window is the running copy\./);
+});
+
+test("share addresses parse hosts and decode readable names", () => {
+  assert.equal(parseShareHost("smb://192.168.0.217"), "192.168.0.217");
+  assert.equal(parseShareHost("smb://192.168.0.217/Share"), "192.168.0.217");
+  assert.equal(parseShareHost("192.168.0.217"), "192.168.0.217");
+  assert.equal(parseShareHost("smb://"), null);
+  assert.equal(shareNameFromTarget("smb://nas/Public%20Space-Media%20-%204TB"), "Public Space-Media - 4TB");
+});
+
+test("Save has a visible blocked reason for host-only and missing disk", () => {
+  assert.equal(saveBlockReason({ name: "NAS", kind: "smb", target: "smb://192.168.0.217", volumeUUID: null, mountPoint: "" }), "Add the share name to the address, like smb://nas.local/studio.");
+  assert.equal(saveBlockReason({ name: "Disk", kind: "volume", target: "", volumeUUID: null, mountPoint: "" }), "Choose a disk to reconnect.");
+  assert.equal(saveBlockReason({ name: "NAS", kind: "smb", target: "smb://nas/Share", volumeUUID: null, mountPoint: "" }), null);
+});
+
+test("Browse sends the host and credentials and shows a chooser", () => {
+  assert.match(mainSource, /backend\.invoke<null>\("list_shares", \{[\s\S]{0,180}address:[\s\S]{0,120}username:[\s\S]{0,80}password:/);
+  assert.match(mainSource, /encodeURIComponent\(share\)/);
+  assert.match(mainSource, /data-editor-action="browse"/);
+  assert.match(mainSource, /editor\.shareChoices = payload\.shares/);
+  const modelSource = readFileSync(new URL("../ui/src/model.ts", import.meta.url), "utf8");
+  assert.match(modelSource, /function parseShareHost/);
+  assert.match(mainSource, /listen\("shares", applyShares\)/);
+  assert.match(mainSource, /id="save-reason"/);
 });

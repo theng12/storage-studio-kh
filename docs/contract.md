@@ -37,6 +37,15 @@ interface StorageView extends Storage {
 
 interface VolumeCandidate { name: string; path: string; uuid: string; device: string; }
 
+/** A share Finder already has mounted, offered as one click. */
+interface ShareCandidate {
+  name: string;        // readable, e.g. "Public Space-Media - 6TB - TV Show"
+  url: string;         // smb://user@host/Share%20Name (percent-encoded)
+  user: string | null;
+  host: string;
+  mountPoint: string;  // where it is mounted now
+}
+
 interface General { notifications: boolean; launchAtLogin: boolean; retries: number; }
 
 interface UpdateState {
@@ -54,6 +63,7 @@ interface Snapshot {
   general: General;
   storages: StorageView[];
   volumes: VolumeCandidate[];
+  mountedShares: ShareCandidate[];
   update: UpdateState;
   whatsNew: WhatsNewEntry[];
   launchAtLoginEnabled: boolean;
@@ -93,6 +103,7 @@ Errors come back as a rejected promise with a plain sentence; show it, never swa
 - `second-instance` — another copy was launched; show the plain note.
 - `needs-credentials` — `{ id, name }`; ask for a user name and password for that storage.
 - `show-whats-new` — open the What's New view (from the menu-bar dropdown).
+- `smb_mounts` is not a separate event; candidates arrive inside every `snapshot` as `mountedShares`.
 - `shares` — `{ host: string; shares: string[]; needsCredentials: boolean; error: string | null }`.
   `address` may be `smb://host` or `smb://host/share`; the host is what gets listed. Share names
   come back readable (spaces and dashes intact); the app stores them percent-encoded in `target`.

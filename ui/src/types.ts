@@ -80,3 +80,10 @@ export interface StorageInput {
   username?: string;
   password?: string;
 }
+
+export interface SharesPayload {
+  host: string;
+  shares: string[];
+  needsCredentials: boolean;
+  error: string | null;
+}

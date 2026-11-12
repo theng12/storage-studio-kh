@@ -3,6 +3,9 @@ import { invoke as tauriInvoke } from "@tauri-apps/api/core";
 import { listen as tauriListen } from "@tauri-apps/api/event";
 import { icons } from "./icons";
 import {
+  parseShareHost,
+  shareNameFromTarget,
+  saveBlockReason,
   esc,
   orderWhatsNew,
   statusLabel,
@@ -43,10 +46,14 @@ interface Draft {
 }
 
 interface EditorState {
+  shareChoices: string[] | null;
+  shareNote: string | null;
+  browseBusy: boolean;
+  browseHost: string | null;
   draft: Draft;
   originalName: string | null;
   error: string | null;
-  busy: "save" | "test" | null;
+  busy: "save" | "test" | "browse" | null;
   confirmRemove: boolean;
 }
 
@@ -519,7 +526,17 @@ function openEditor(storage?: StorageView): void {
         reconnectAtLogin: true,
         reconnectAfterWake: true,
       };
-  editor = { draft, originalName: storage?.name ?? null, error: null, busy: null, confirmRemove: false };
+  editor = {
+    draft,
+    originalName: storage?.name ?? null,
+    error: null,
+    busy: null,
+    confirmRemove: false,
+    shareChoices: null,
+    shareNote: null,
+    browseBusy: false,
+    browseHost: null,
+  };
   renderEditor();
   if (!editorEl.open) editorEl.showModal();
   const first = editorEl.querySelector<HTMLElement>('[name="name"]');
@@ -529,6 +546,28 @@ function openEditor(storage?: StorageView): void {
 function closeEditor(): void {
   editor = null;
   if (editorEl.open) editorEl.close();
+}
+
+function shareLine(d: Draft): string {
+  const name = d.kind === "smb" ? shareNameFromTarget(d.target) : null;
+  return name ? `<span class="quiet-line" id="share-name">Share: ${esc(name)}</span>` : "";
+}
+
+function browsePanel(): string {
+  if (!editor) return "";
+  if (editor.shareChoices) {
+    return `<div class="share-picker" role="group" aria-label="Shares on this device">
+      ${editor.shareChoices
+        .map(
+          (share) =>
+            `<button type="button" class="share-choice" data-editor-action="pick-share" data-share="${esc(
+              share,
+            )}" data-fk="share-${esc(share)}">${esc(share)}</button>`,
+        )
+        .join("")}
+    </div>`;
+  }
+  return editor.shareNote ? `<span class="field-hint" role="status">${esc(editor.shareNote)}</span>` : "";
 }
 
 function renderEditor(): void {
@@ -566,15 +605,23 @@ function renderEditor(): void {
   const isEdit = Boolean(d.id);
   const volumes = snapshot?.volumes ?? [];
   const savedVolumeMissing = d.kind === "volume" && d.volumeUUID && !volumes.some((volume) => volume.uuid === d.volumeUUID);
+  const blockReason = saveBlockReason(d);
   const identityFields =
     d.kind === "smb"
       ? `
         <label class="field">
-          <span class="field-label">Share address</span>
-          <input type="text" name="target" value="${esc(d.target)}" placeholder="smb://nas.local/studio" spellcheck="false" autocomplete="off"${
-            editor.busy ? " disabled" : ""
-          } />
+          <span class="field-label">Share address (host + share)</span>
+          <div class="browse-row">
+            <input type="text" name="target" value="${esc(d.target)}" placeholder="smb://nas.local/studio" spellcheck="false" autocomplete="off"${
+              editor.busy ? " disabled" : ""
+            } />
+            <button type="button" class="btn" data-editor-action="browse" data-fk="editor-browse"${
+              editor.busy || editor.browseBusy ? " disabled" : ""
+            }>${editor.browseBusy ? "Looking…" : "Browse…"}</button>
+          </div>
           <span class="field-hint">A share address starts with smb:// and includes the share name.</span>
+          ${shareLine(d)}
+          ${browsePanel()}
         </label>
         <label class="field">
           <span class="field-label">User name (optional)</span>
@@ -592,7 +639,7 @@ function renderEditor(): void {
           <span class="field-label">Mount point (optional)</span>
           <input type="text" name="mountPoint" value="${esc(d.mountPoint)}" placeholder="/Volumes/studio" spellcheck="false" autocomplete="off"${
             editor.busy ? " disabled" : ""
-          } />
+          }${d.kind === "smb" ? "" : " readonly"} />
           <span class="field-hint">Leave blank and macOS chooses a folder in /Volumes.</span>
         </label>`
       : `
@@ -617,7 +664,7 @@ function renderEditor(): void {
           <span class="field-hint">${
             volumes.length
               ? "These disks are connected now. Choose the one to reconnect."
-              : "No disks are connected. Connect the disk, then open this form again."
+              : "Connect the disk first, then reopen this window."
           }</span>
         </label>
         ${
@@ -669,13 +716,20 @@ function renderEditor(): void {
           : ""
       }
       <span class="spacer"></span>
+      ${
+        blockReason
+          ? `<span class="save-reason" id="save-reason">${esc(blockReason)}</span>`
+          : ""
+      }
       <button type="button" class="btn" data-editor-action="cancel" data-fk="editor-cancel"${editor.busy === "save" ? " disabled" : ""}>Cancel</button>
       <button type="button" class="btn" data-editor-action="test" data-fk="editor-test"${
         !isEdit || editor.busy ? " disabled" : ""
       } title="${isEdit ? "Test the saved storage settings." : "Save the storage before testing it."}">${
         editor.busy === "test" ? "Testing…" : "Test"
       }</button>
-      <button type="button" class="btn btn-primary" data-editor-action="save" data-fk="editor-save"${editor.busy ? " disabled" : ""}>${
+      <button type="button" class="btn btn-primary" data-editor-action="save" data-fk="editor-save"${
+        editor.busy || blockReason ? " disabled" : ""
+      }${blockReason ? ' aria-describedby="save-reason"' : ""}>${
         editor.busy === "save" ? "Saving…" : "Save"
       }</button>
     </div>`;
@@ -733,6 +787,72 @@ function syncEditorField(target: HTMLInputElement | HTMLSelectElement): void {
       draft.reconnectAfterWake = (target as HTMLInputElement).checked;
       break;
   }
+}
+
+async function browseShares(): Promise<void> {
+  if (!editor || editor.busy || editor.browseBusy) return;
+  const host = parseShareHost(editor.draft.target);
+  if (!host) {
+    editor.error = "Enter the device address first, like smb://192.168.0.217.";
+    renderEditor();
+    editorEl.querySelector<HTMLElement>('[name="target"]')?.focus();
+    return;
+  }
+  editor.browseBusy = true;
+  editor.shareChoices = null;
+  editor.shareNote = null;
+  editor.browseHost = host;
+  editor.error = null;
+  renderEditor();
+  try {
+    await backend.invoke<null>("list_shares", {
+      address: editor.draft.target.trim(),
+      username: editor.draft.username,
+      password: editor.draft.password,
+    });
+  } catch (error) {
+    if (!editor) return;
+    editor.browseBusy = false;
+    editor.shareNote = error instanceof Error ? error.message : String(error);
+    renderEditor();
+  }
+}
+
+function applyShares(payload: { host: string; shares: string[]; needsCredentials: boolean; error: string | null }): void {
+  if (!editor || !editor.browseBusy) return;
+  editor.browseBusy = false;
+  if (payload.needsCredentials) {
+    editor.shareNote = "That device needs a user name and password. Enter them above, then choose Browse again.";
+    editor.error = null;
+    renderEditor();
+    editorEl.querySelector<HTMLElement>('[name="username"]')?.focus();
+    return;
+  }
+  if (payload.error) {
+    editor.shareNote = payload.error;
+    renderEditor();
+    return;
+  }
+  if (!payload.shares.length) {
+    editor.shareNote = "That device didn't offer any shares.";
+    renderEditor();
+    return;
+  }
+  editor.shareChoices = payload.shares;
+  editor.shareNote = null;
+  renderEditor();
+}
+
+function pickShare(share: string): void {
+  if (!editor || !share) return;
+  const host = editor.browseHost ?? parseShareHost(editor.draft.target);
+  if (!host) return;
+  editor.draft.target = `smb://${host}/${encodeURIComponent(share)}`;
+  editor.shareChoices = null;
+  editor.shareNote = null;
+  editor.error = null;
+  renderEditor();
+  editorEl.querySelector<HTMLElement>('[name="target"]')?.focus();
 }
 
 async function saveEditor(): Promise<void> {
@@ -1232,6 +1352,12 @@ function wireEvents(): void {
       case "save":
         void saveEditor();
         break;
+      case "browse":
+        void browseShares();
+        break;
+      case "pick-share":
+        pickShare(button.dataset.share ?? "");
+        break;
     }
   });
 
@@ -1292,6 +1418,7 @@ async function attachListeners(): Promise<void> {
   const cleanups: (() => void)[] = [];
   try {
     cleanups.push(await backend.listen<Snapshot>("snapshot", applySnapshot));
+    cleanups.push(await backend.listen("shares", applyShares));
     cleanups.push(
       await backend.listen<{ id: string; name: string }>("needs-credentials", (payload) => {
         openCredentials(payload.id, payload.name);

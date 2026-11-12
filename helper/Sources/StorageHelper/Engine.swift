@@ -25,6 +25,7 @@ public final class Engine {
     private var lastMountScan = Date.distantPast
     private var lastVolumeScan = Date.distantPast
     private var volumeSnapshot: [VolumeCandidate] = []
+    private var shareSnapshot: [ShareCandidate] = []
     private var wakeWork: DispatchWorkItem?
     private var networkWork: DispatchWorkItem?
     private var networkSignature: String?
@@ -100,11 +101,17 @@ public final class Engine {
                 if status != errSecSuccess {
                     emit(Event.log(level: "warn", message: "The Keychain refused the password for \(storage.name) (status \(status)); it was not saved.").json)
                 }
+                if let host = Reachability.smbHost(storage.target) {
+                    Keychain.saveInternet(host: host, account: credentials.username, password: credentials.password)
+                }
                 mountNow(storage)
             }
         case "forget_credentials":
-            if let id = command.id {
+            if let id = command.id, let storage = storage(id) {
                 Keychain.delete(id: id)
+                if let host = Reachability.smbHost(storage.target) {
+                    Keychain.deleteInternet(host: host, account: storage.username ?? "")
+                }
                 announce()
             }
         case "quit":
@@ -211,7 +218,14 @@ public final class Engine {
             guard Reachability.tcp(host: host, port: 445) else {
                 return MountFailure(message: "Can't reach \(host) right now.", unreachable: true)
             }
-            return NetFS.mountSMB(storage: storage, credentials: Keychain.load(id: storage.id))
+            let credentials = Keychain.load(id: storage.id)
+            let user = credentials?.username ?? storage.username ?? SMBMounts.user(fromURL: storage.target)
+            // Finder's own path: no password is passed anywhere, the system Keychain supplies it.
+            if let user, !user.isEmpty, Keychain.hasInternet(host: host, account: user),
+               SMBMounts.openMount(storage, user: user, poll: { MountTable.current() }) {
+                return nil
+            }
+            return NetFS.mountSMB(storage: storage, credentials: credentials)
         case "volume":
             guard let uuid = storage.volumeUUID, !uuid.isEmpty else {
                 return MountFailure(message: "This disk has no saved identity; choose it again in Settings.")
@@ -391,6 +405,11 @@ public final class Engine {
 
     private func refreshMountStates() {
         let table = MountTable.current()
+        let candidates = SMBMounts.candidates(from: table)
+        if candidates != shareSnapshot {
+            shareSnapshot = candidates
+            emit(Event.smbMounts(candidates).json)
+        }
         var changed = false
         for storage in storages {
             let entry = mountedEntry(storage, in: table)

@@ -52,4 +52,41 @@ public enum Keychain {
     public static func delete(id: String) {
         SecItemDelete(query(id: id) as CFDictionary)
     }
+
+    // Finder, `open smb://…` and NetFS all use this system item, so the password the
+    // owner enters once works everywhere and never has to be typed again.
+
+    private static func internetQuery(host: String, account: String) -> [String: Any] {
+        [
+            kSecClass as String: kSecClassInternetPassword,
+            kSecAttrServer as String: host,
+            kSecAttrAccount as String: account,
+            kSecAttrProtocol as String: "smb ",  // kSecProtocolTypeSMB's four-character value
+        ]
+    }
+
+    @discardableResult
+    public static func saveInternet(host: String, account: String, password: String) -> OSStatus {
+        guard !host.isEmpty, !account.isEmpty else { return errSecParam }
+        SecItemDelete(internetQuery(host: host, account: account) as CFDictionary)
+        var item = internetQuery(host: host, account: account)
+        item[kSecValueData as String] = Data(password.utf8)
+        item[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlock
+        return SecItemAdd(item as CFDictionary, nil)
+    }
+
+    public static func deleteInternet(host: String, account: String) {
+        guard !host.isEmpty, !account.isEmpty else { return }
+        SecItemDelete(internetQuery(host: host, account: account) as CFDictionary)
+    }
+
+    /// Checks that a usable system credential exists without reading it.
+    public static func hasInternet(host: String, account: String) -> Bool {
+        guard !host.isEmpty, !account.isEmpty else { return false }
+        var item = internetQuery(host: host, account: account)
+        item[kSecReturnAttributes as String] = true
+        item[kSecMatchLimit as String] = kSecMatchLimitOne
+        var result: CFTypeRef?
+        return SecItemCopyMatching(item as CFDictionary, &result) == errSecSuccess
+    }
 }

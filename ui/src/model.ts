@@ -66,6 +66,37 @@ export function validateStorageDraft(draft: DraftValidation): string | null {
   return "Choose SMB share or attached disk.";
 }
 
+export function parseShareHost(address: string): string | null {
+  let rest = address.trim().replace(/^smb:\/\//i, "").replace(/^\/\//, "");
+  rest = rest.split("/")[0]?.split("?")[0] ?? "";
+  if (!rest || /\s/.test(rest)) return null;
+  return rest;
+}
+
+export function shareNameFromTarget(target: string): string | null {
+  const match = /^smb:\/\/[^/]+\/(.+)$/i.exec(target.trim());
+  if (!match) return null;
+  const raw = match[1].split("?")[0] ?? "";
+  if (!raw) return null;
+  try {
+    return decodeURIComponent(raw);
+  } catch {
+    return raw;
+  }
+}
+
+export function saveBlockReason(draft: DraftValidation): string | null {
+  if (draft.kind === "smb") {
+    const target = draft.target.trim();
+    if (!/^smb:\/\/[^\s/]+\/\S+$/i.test(target)) return "Add the share name to the address, like smb://nas.local/studio.";
+    return null;
+  }
+  if (draft.kind === "volume") {
+    return draft.volumeUUID && draft.volumeUUID.trim() ? null : "Choose a disk to reconnect.";
+  }
+  return "Choose SMB share or attached disk.";
+}
+
 export function updateWording(update: UpdateState): string {
   switch (update.state) {
     case "checking":

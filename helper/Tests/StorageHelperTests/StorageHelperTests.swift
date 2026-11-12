@@ -96,6 +96,28 @@ final class ShareListerTests: XCTestCase {
     }
 }
 
+final class SMBMountsTests: XCTestCase {
+    func testMountedSharesBecomeAddableCandidates() {
+        let table = [
+            MountedVolume(source: "//vengtheng@100.69.137.42/Public%20Space-Media%20-%206TB%20-%20TV%20Show",
+                          mountPoint: "/Volumes/Public Space-Media - 6TB - TV Show", fsType: "smbfs"),
+            MountedVolume(source: "/dev/disk3s5", mountPoint: "/System/Volumes/Data", fsType: "apfs"),
+        ]
+        let candidates = SMBMounts.candidates(from: table)
+        XCTAssertEqual(candidates.count, 1)
+        XCTAssertEqual(candidates[0].name, "Public Space-Media - 6TB - TV Show")
+        XCTAssertEqual(candidates[0].host, "100.69.137.42")
+        XCTAssertEqual(candidates[0].user, "vengtheng")
+        XCTAssertEqual(candidates[0].url,
+                       "smb://vengtheng@100.69.137.42/Public%20Space-Media%20-%206TB%20-%20TV%20Show")
+    }
+
+    func testUserIsReadFromTheAddressWhenTyped() {
+        XCTAssertEqual(SMBMounts.user(fromURL: "smb://theng@nas.local/photos"), "theng")
+        XCTAssertNil(SMBMounts.user(fromURL: "smb://nas.local/photos"))
+    }
+}
+
 final class ProtocolTests: XCTestCase {
     func testConfigureCommandDecodesCamelCaseStorage() throws {
         let line = """

@@ -157,6 +157,17 @@ struct VolumeCandidate {
     device: String,
 }
 
+/// A share Finder already has mounted, offered as a one-click addition.
+#[derive(Serialize, Deserialize, Clone, Debug)]
+#[serde(rename_all = "camelCase")]
+struct ShareCandidate {
+    name: String,
+    url: String,
+    user: Option<String>,
+    host: String,
+    mount_point: String,
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 #[serde(rename_all = "camelCase")]
 struct UpdateState {
@@ -188,6 +199,7 @@ struct Snapshot {
     general: General,
     storages: Vec<StorageView>,
     volumes: Vec<VolumeCandidate>,
+    mounted_shares: Vec<ShareCandidate>,
     update: UpdateState,
     whats_new: Vec<WhatsNewEntry>,
     launch_at_login_enabled: bool,
@@ -220,6 +232,7 @@ struct AppState {
     helper: Mutex<Option<Helper>>,
     statuses: Mutex<HashMap<String, StorageState>>,
     volumes: Mutex<Vec<VolumeCandidate>>,
+    smb_mounts: Mutex<Vec<ShareCandidate>>,
     update: Mutex<UpdateState>,
     login_error: Mutex<Option<String>>,
     engine_error: Mutex<Option<String>>,
@@ -233,6 +246,7 @@ impl AppState {
             helper: Mutex::new(None),
             statuses: Mutex::new(HashMap::new()),
             volumes: Mutex::new(Vec::new()),
+            smb_mounts: Mutex::new(Vec::new()),
             update: Mutex::new(UpdateState::default()),
             login_error: Mutex::new(None),
             engine_error: Mutex::new(None),
@@ -280,6 +294,7 @@ fn snapshot(app: &AppHandle) -> Snapshot {
         .collect();
     let engine_error = state.engine_error.lock().unwrap().clone();
     let volumes = state.volumes.lock().unwrap().clone();
+    let mounted_shares = state.smb_mounts.lock().unwrap().clone();
     let update = state.update.lock().unwrap().clone();
     let second_instance = *state.second_instance.lock().unwrap();
     let launch_at_login_error = state.login_error.lock().unwrap().clone();
@@ -291,6 +306,7 @@ fn snapshot(app: &AppHandle) -> Snapshot {
         general: settings.general.clone(),
         storages,
         volumes,
+        mounted_shares,
         update,
         whats_new: whats_new(),
         launch_at_login_enabled: login_item::is_enabled(),
@@ -457,6 +473,8 @@ enum HelperEvent {
     Log { level: String, message: String },
     #[serde(rename = "shares")]
     Shares { host: String, shares: Vec<String>, needs_credentials: bool, error: Option<String> },
+    #[serde(rename = "smb_mounts")]
+    SmbMounts { items: Vec<ShareCandidate> },
 }
 
 #[derive(Deserialize)]
@@ -526,6 +544,10 @@ fn handle_helper_line(app: &AppHandle, line: &str) {
                     "error": error,
                 }),
             );
+        }
+        HelperEvent::SmbMounts { items } => {
+            *state.smb_mounts.lock().unwrap() = items;
+            emit_snapshot(app);
         }
         HelperEvent::Log { level, message } => log(&format!("helper [{level}]: {message}")),
     }
