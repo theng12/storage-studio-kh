@@ -155,3 +155,12 @@ test("Browse sends the host and credentials and shows a chooser", () => {
   assert.match(mainSource, /listen\("shares", applyShares\)/);
   assert.match(mainSource, /id="save-reason"/);
 });
+
+test("offers shares that are already connected and skips ones already added", () => {
+  assert.match(mainSource, /data-editor-action="add-connected"/);
+  assert.match(mainSource, /candidate\.url !== d\.target/);
+  assert.match(mainSource, /\(snapshot\?\.storages \?\? \[\]\)\.some\(\(storage\) => storage\.target === candidate\.url\)/);
+  assert.match(mainSource, /draft\.target = candidate\.url/);
+  assert.match(mainSource, /draft\.username = candidate\.user \?\? ""/);
+  assert.match(mainSource, /editor\.shareNote = `Share: \$\{candidate\.name\}`/);
+});

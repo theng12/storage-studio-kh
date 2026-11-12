@@ -27,6 +27,14 @@ export interface StorageView extends Storage {
   hasCredentials: boolean;
 }
 
+export interface ShareCandidate {
+  name: string;
+  url: string;
+  user: string | null;
+  host: string;
+  mountPoint: string;
+}
+
 export interface VolumeCandidate {
   name: string;
   path: string;
@@ -59,6 +67,7 @@ export interface Snapshot {
   general: General;
   storages: StorageView[];
   volumes: VolumeCandidate[];
+  mountedShares: ShareCandidate[];
   update: UpdateState;
   whatsNew: WhatsNewEntry[];
   launchAtLoginEnabled: boolean;

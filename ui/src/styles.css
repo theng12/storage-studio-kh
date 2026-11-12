@@ -1251,7 +1251,17 @@ dialog.sheet::backdrop {
 .browse-row { display: flex; gap: var(--s-s); align-items: center; }
 .browse-row input { flex: 1 1 auto; min-width: 0; }
 .quiet-line { color: var(--text-muted); font-size: var(--t-caption); }
-.save-reason { color: var(--danger-text); font-size: var(--t-caption); max-width: 22ch; }
+.save-reason { color: var(--bad); font-size: var(--t-caption); max-width: 22ch; }
 .share-picker { display: flex; flex-direction: column; align-items: stretch; gap: 2px; border: 1px solid var(--line); border-radius: var(--r-control); padding: var(--s-xs); background: var(--raised); max-height: 160px; overflow: auto; }
 .share-choice { text-align: left; border: 0; background: none; color: var(--text); padding: var(--s-xs) var(--s-s); border-radius: var(--r-control); font: inherit; cursor: pointer; }
 .share-choice:hover, .share-choice:focus-visible { background: var(--hover); }
+
+.connected-group { gap: var(--s-tight); }
+.connected-list { display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: var(--r-control); background: var(--raised); overflow: hidden; }
+.connected-row { display: flex; align-items: center; gap: var(--s-m); width: 100%; text-align: left; border: 0; border-top: 1px solid var(--line); background: none; padding: var(--s-s) var(--s-m); font: inherit; color: var(--text); cursor: pointer; }
+.connected-row:first-child { border-top: 0; }
+.connected-row:hover, .connected-row:focus-visible { background: var(--hover); }
+.connected-copy { display: flex; flex-direction: column; min-width: 0; }
+.connected-name { font-size: var(--t-row); font-weight: 600; }
+.connected-path { font-size: var(--t-caption); color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.connected-add { margin-left: auto; color: var(--accent); font-size: var(--t-secondary); font-weight: 600; }

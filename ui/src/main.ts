@@ -606,6 +606,36 @@ function renderEditor(): void {
   const volumes = snapshot?.volumes ?? [];
   const savedVolumeMissing = d.kind === "volume" && d.volumeUUID && !volumes.some((volume) => volume.uuid === d.volumeUUID);
   const blockReason = saveBlockReason(d);
+  const connectedShares =
+    d.kind === "smb"
+      ? (snapshot?.mountedShares ?? []).filter(
+          (candidate) =>
+            candidate.url !== d.target &&
+            !(snapshot?.storages ?? []).some((storage) => storage.target === candidate.url),
+        )
+      : [];
+  const connectedGroup = connectedShares.length
+    ? `
+      <div class="field connected-group">
+        <span class="field-label">From a connected share</span>
+        <div class="connected-list">
+          ${connectedShares
+            .map(
+              (candidate) => `
+            <button type="button" class="connected-row" data-editor-action="add-connected" data-connected-url="${esc(
+              candidate.url,
+            )}" data-fk="connected-${esc(candidate.url)}">
+              <span class="connected-copy">
+                <span class="connected-name">${esc(candidate.name)}</span>
+                <span class="connected-path">${esc(candidate.mountPoint)}</span>
+              </span>
+              <span class="connected-add">Add</span>
+            </button>`,
+            )
+            .join("")}
+        </div>
+      </div>`
+    : "";
   const identityFields =
     d.kind === "smb"
       ? `
@@ -699,6 +729,7 @@ function renderEditor(): void {
           </label>
         </div>
       </fieldset>
+      ${connectedGroup}
       ${identityFields}
       <div class="check-stack">
         <label class="check-row"><input type="checkbox" name="login" ${d.reconnectAtLogin ? "checked" : ""}${
@@ -1358,6 +1389,25 @@ function wireEvents(): void {
       case "pick-share":
         pickShare(button.dataset.share ?? "");
         break;
+      case "add-connected": {
+        const candidate = (snapshot?.mountedShares ?? []).find(
+          (item) => item.url === button.dataset.connectedUrl,
+        );
+        if (candidate && editor) {
+          const draft = editor.draft;
+          if (!draft.name.trim()) draft.name = candidate.name;
+          draft.kind = "smb";
+          draft.target = candidate.url;
+          draft.username = candidate.user ?? "";
+          draft.mountPoint = "";
+          editor.error = null;
+          editor.shareChoices = null;
+          editor.shareNote = `Share: ${candidate.name}`;
+          renderEditor();
+          editorEl.querySelector<HTMLInputElement>('input[name="target"]')?.focus();
+        }
+        break;
+      }
     }
   });
 

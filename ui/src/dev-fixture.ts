@@ -76,13 +76,29 @@ function buildSnapshot(hash: string): Snapshot {
   ];
   return {
     appName: "Storage Studio KH",
-    version: "0.1.0",
+    version: "0.1.1",
     appearance: theme === "dark" || theme === "light" ? theme : "system",
     general: { notifications: true, launchAtLogin: true, retries: 3 },
     storages,
     volumes: [
       { name: "Editing SSD", path: "/Volumes/Editing SSD", uuid: "5C2A-9F1E", device: "disk4s1" },
       { name: "Backup Disk", path: "/Volumes/Backup Disk", uuid: "8B14-2D77", device: "disk5s1" },
+    ],
+    mountedShares: params.get("empty") === "1" ? [] : [
+      {
+        name: "Public Space-Media - 4TB - Music",
+        url: "smb://studio@nas.local/Public%20Space-Media%20-%204TB%20-%20Music",
+        user: "studio",
+        host: "nas.local",
+        mountPoint: "/Volumes/Public Space-Media - 4TB - Music",
+      },
+      {
+        name: "Studio NAS",
+        url: "smb://nas.local/studio",
+        user: null,
+        host: "nas.local",
+        mountPoint: "/Volumes/studio",
+      },
     ],
     update: { state: "available", version: "0.1.1", reason: null },
     whatsNew: [
