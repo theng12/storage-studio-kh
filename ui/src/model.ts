@@ -21,11 +21,26 @@ export const STATUS_TONES: Record<StorageStatus, StatusTone> = {
 };
 
 export function statusLabel(status: string): string {
-  return STATUS_LABELS[status as StorageStatus] ?? "Not mounted";
+  return STATUS_LABELS[status as StorageStatus] ?? "Status unavailable";
 }
 
 export function statusTone(status: string): StatusTone {
   return STATUS_TONES[status as StorageStatus] ?? "off";
+}
+
+export function esc(value: unknown): string {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+export function testResultChanged(
+  before: { detail: string | null; status: string },
+  after: { detail: string | null; status: string },
+): boolean {
+  return before.detail !== after.detail || before.status !== after.status;
 }
 
 export interface DraftValidation {
@@ -63,6 +78,8 @@ export function updateWording(update: UpdateState): string {
       return update.reason ? `Update check failed: ${update.reason}` : "Update check failed.";
     case "idle":
     case "not-checked":
+      return "Not checked yet";
+    default:
       return "Not checked yet";
   }
 }

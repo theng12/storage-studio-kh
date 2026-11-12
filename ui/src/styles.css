@@ -181,7 +181,7 @@ button {
   flex: 0 0 220px;
   display: flex;
   flex-direction: column;
-  padding: var(--s-l) var(--s-s) var(--s-s);
+  padding: var(--s-l) var(--s-tight) var(--s-s);
   background: var(--sidebar);
   border-right: 1px solid var(--line);
 }
@@ -256,8 +256,7 @@ button {
 }
 
 .pill {
-  flex: 1 1 auto;
-  min-width: 0;
+  flex: 0 0 auto;
   height: 26px;
   padding: 0 var(--s-tight);
   border: 1px solid var(--line-strong);
@@ -268,8 +267,6 @@ button {
   font-weight: 600;
   letter-spacing: -0.01em;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .pill:hover {

@@ -3,9 +3,11 @@ import { invoke as tauriInvoke } from "@tauri-apps/api/core";
 import { listen as tauriListen } from "@tauri-apps/api/event";
 import { icons } from "./icons";
 import {
+  esc,
   orderWhatsNew,
   statusLabel,
   statusTone,
+  testResultChanged,
   updateIsAvailable,
   updateWording,
   validateStorageDraft,
@@ -42,9 +44,17 @@ interface Draft {
 
 interface EditorState {
   draft: Draft;
+  originalName: string | null;
   error: string | null;
   busy: "save" | "test" | null;
   confirmRemove: boolean;
+}
+
+interface PendingTest {
+  id: string;
+  detail: string | null;
+  status: string;
+  timer: number;
 }
 
 interface CredentialsState {
@@ -88,19 +98,15 @@ let credentials: CredentialsState | null = null;
 let checkingUpdates = false;
 let refreshingStorage = false;
 let secondInstanceShown = false;
-let pendingTest: string | null = null;
+let pendingTest: PendingTest | null = null;
+let booting = false;
+let devPrepared = false;
+let eventsWired = false;
+let listenersReady = false;
 const rowBusy: Record<string, string> = {};
 const busy: Record<string, boolean> = {};
 const toasts: ToastItem[] = [];
 let toastSeq = 0;
-
-function esc(value: unknown): string {
-  return String(value ?? "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-}
 
 function errText(error: unknown): string {
   if (typeof error === "string" && error.trim()) return error.trim();
@@ -158,7 +164,7 @@ function renderToasts(): void {
         <span class="toast-text">${esc(item.message)}</span>
         ${
           item.error
-            ? `<button type="button" class="toast-close" data-toast="${item.id}" aria-label="Dismiss">${icons.close}</button>`
+            ? `<button type="button" class="toast-close" data-toast="${item.id}" title="Dismiss" aria-label="Dismiss">${icons.close}</button>`
             : ""
         }
       </div>`,
@@ -171,14 +177,42 @@ function renderToasts(): void {
 function render(): void {
   if (!snapshot) return;
   const focused = document.activeElement instanceof HTMLElement ? document.activeElement.dataset.fk : undefined;
+  const modalOpen = Boolean(document.querySelector("dialog[open]"));
   applyTheme();
   renderNav();
   renderFoot();
   renderMain();
-  if (focused) {
+  if (focused && !modalOpen) {
     const next = document.querySelector<HTMLElement>(`[data-fk="${focused.replace(/["\\]/g, "")}"]`);
     next?.focus({ preventScroll: true });
   }
+}
+
+function focusTopDialog(): void {
+  const dialogs = Array.from(document.querySelectorAll<HTMLDialogElement>("dialog[open]"));
+  const top = dialogs[dialogs.length - 1];
+  if (!top) return;
+  const target = top.querySelector<HTMLElement>("[data-autofocus]") ?? top.querySelector<HTMLElement>("input, select, button");
+  target?.focus();
+}
+
+function renderBootError(error: unknown): void {
+  snapshot = null;
+  renderNav();
+  footEl.innerHTML = "";
+  mainEl.innerHTML = `
+    <header class="page-head">
+      <div>
+        <h1>Storage Studio KH</h1>
+        <p class="lede">The settings window couldn't read the app's current state.</p>
+      </div>
+    </header>
+    <div class="empty" role="alert">
+      <div class="empty-icon">${icons.warning}</div>
+      <p class="empty-title">Storage Studio KH couldn't start</p>
+      <p class="empty-text">${esc(errText(error))}</p>
+      <button type="button" class="btn btn-primary" data-action="retry-boot" data-fk="retry-boot">Retry</button>
+    </div>`;
 }
 
 function renderNav(): void {
@@ -211,7 +245,7 @@ function renderFoot(): void {
     <div class="foot-updates">
       <button type="button" class="pill" data-action="whats-new" data-fk="pill" title="What's New" aria-label="What's New, ${esc(
         snapshot.appName,
-      )} ${esc(snapshot.version)}">${esc(snapshot.appName)} ${esc(snapshot.version)}</button>
+      )} v${esc(snapshot.version)}">${esc(snapshot.appName)} v${esc(snapshot.version)}</button>
       <button type="button" class="icon-btn${checkBusy ? " is-spinning" : ""}" data-action="check-updates" data-fk="check" title="${
         checkBusy ? "Checking for Updates…" : "Check for Updates"
       }" aria-label="${checkBusy ? "Checking for Updates" : "Check for Updates"}"${
@@ -245,6 +279,10 @@ function renderMain(): void {
   mainEl.innerHTML = renderStorage();
 }
 
+function renderEngineBannerIfNeeded(): string {
+  return snapshot && !snapshot.engineRunning ? renderEngineBanner(snapshot) : "";
+}
+
 function renderStorage(): string {
   if (!snapshot) return "";
   const s = snapshot;
@@ -260,7 +298,7 @@ function renderStorage(): string {
           : ""
       }
     </header>
-    ${s.engineRunning ? "" : renderEngineBanner(s)}
+    ${renderEngineBannerIfNeeded()}
     ${s.storages.length ? `<ul class="storage-list">${s.storages.map(renderStorageRow).join("")}</ul>` : renderEmpty()}`;
 }
 
@@ -297,21 +335,21 @@ function renderStorageRow(storage: StorageView): string {
 
   const mountLabel = mounted
     ? ""
-    : `<button type="button" class="row-btn row-btn-accent" data-action="mount" data-id="${esc(storage.id)}"${
+    : `<button type="button" class="row-btn row-btn-accent" data-action="mount" data-id="${esc(storage.id)}" data-fk="row-${esc(storage.id)}-mount"${
         disabled || !engine || storage.status === "mounting" ? " disabled" : ""
       }${helperTitle}>${busyAction === "mount" ? "Mounting…" : "Mount now"}</button>`;
   const unmountLabel = mounted
-    ? `<button type="button" class="row-btn" data-action="unmount" data-id="${esc(storage.id)}"${disabled || !engine ? " disabled" : ""}${helperTitle}>${
+    ? `<button type="button" class="row-btn" data-action="unmount" data-id="${esc(storage.id)}" data-fk="row-${esc(storage.id)}-unmount"${disabled || !engine ? " disabled" : ""}${helperTitle}>${
         busyAction === "unmount" ? "Unmounting…" : "Unmount"
       }</button>`
     : "";
-  const finderLabel = `<button type="button" class="row-btn" data-action="reveal" data-id="${esc(storage.id)}"${
+  const finderLabel = `<button type="button" class="row-btn" data-action="reveal" data-id="${esc(storage.id)}" data-fk="row-${esc(storage.id)}-reveal"${
     storage.mountedPath ? "" : ' disabled title="Mount the storage to open it in Finder."'
   }>Open in Finder</button>`;
-  const testLabel = `<button type="button" class="row-btn" data-action="test" data-id="${esc(storage.id)}"${disabled || !engine ? " disabled" : ""}${helperTitle}>${
+  const testLabel = `<button type="button" class="row-btn" data-action="test" data-id="${esc(storage.id)}" data-fk="row-${esc(storage.id)}-test"${disabled || !engine ? " disabled" : ""}${helperTitle}>${
     busyAction === "test" ? "Testing…" : "Test"
   }</button>`;
-  const editLabel = `<button type="button" class="row-btn" data-action="edit" data-id="${esc(storage.id)}">Edit</button>`;
+  const editLabel = `<button type="button" class="row-btn" data-action="edit" data-id="${esc(storage.id)}" data-fk="row-${esc(storage.id)}-edit">Edit</button>`;
 
   const facts = [
     storage.reconnectAtLogin ? "Reconnects at login" : "No reconnect at login",
@@ -364,6 +402,7 @@ function renderGeneral(): string {
         <p class="lede">How Storage Studio KH behaves on this Mac.</p>
       </div>
     </header>
+    ${renderEngineBannerIfNeeded()}
     <section class="group" aria-label="General settings">
       <div class="setting-row">
         <div class="setting-copy">
@@ -419,6 +458,7 @@ function renderAppearance(): string {
         <p class="lede">Choose how Storage Studio KH looks.</p>
       </div>
     </header>
+    ${renderEngineBannerIfNeeded()}
     <section class="group appearance-block" aria-label="Appearance">
       <div class="segmented" role="radiogroup" aria-label="Appearance">
         ${options
@@ -479,7 +519,7 @@ function openEditor(storage?: StorageView): void {
         reconnectAtLogin: true,
         reconnectAfterWake: true,
       };
-  editor = { draft, error: null, busy: null, confirmRemove: false };
+  editor = { draft, originalName: storage?.name ?? null, error: null, busy: null, confirmRemove: false };
   renderEditor();
   if (!editorEl.open) editorEl.showModal();
   const first = editorEl.querySelector<HTMLElement>('[name="name"]');
@@ -500,7 +540,7 @@ function renderEditor(): void {
   const focusValue = focused?.type === "radio" ? focused.value : "";
 
   if (editor.confirmRemove) {
-    const name = editor.draft.name.trim() || "this storage";
+    const name = editor.originalName ?? "this storage";
     editorEl.innerHTML = `
       <div class="sheet-head">
         <h2 id="editor-title">Remove ${esc(name)}?</h2>
@@ -511,11 +551,11 @@ function renderEditor(): void {
         <p class="confirm-text">This only removes the storage from Storage Studio KH. Nothing is deleted from the share or disk.</p>
       </div>
       <div class="sheet-actions">
-        <button type="button" class="btn btn-danger" data-editor-action="confirm-remove"${
+        <button type="button" class="btn btn-danger" data-editor-action="confirm-remove" data-fk="editor-confirm-remove"${
           editor.busy ? " disabled" : ""
         }>Remove ${esc(name)}</button>
         <span class="spacer"></span>
-        <button type="button" class="btn btn-primary" data-editor-action="keep">Keep</button>
+        <button type="button" class="btn btn-primary" data-editor-action="keep" data-fk="editor-keep">Keep</button>
       </div>`;
     const keep = editorEl.querySelector<HTMLElement>('[data-editor-action="keep"]');
     keep?.focus();
@@ -595,7 +635,7 @@ function renderEditor(): void {
       ${editor.error ? `<p class="form-error" role="alert">${esc(editor.error)}</p>` : ""}
       <label class="field">
         <span class="field-label">Name</span>
-        <input type="text" name="name" value="${esc(d.name)}" placeholder="Studio NAS" autocomplete="off"${
+        <input type="text" name="name" value="${esc(d.name)}" placeholder="Studio NAS" autocomplete="off" data-autofocus data-fk="editor-name"${
           editor.busy ? " disabled" : ""
         } />
       </label>
@@ -625,17 +665,17 @@ function renderEditor(): void {
     <div class="sheet-actions">
       ${
         isEdit
-          ? `<button type="button" class="btn btn-quiet-danger" data-editor-action="remove"${editor.busy ? " disabled" : ""}>Remove</button>`
+          ? `<button type="button" class="btn btn-quiet-danger" data-editor-action="remove" data-fk="editor-remove"${editor.busy ? " disabled" : ""}>Remove</button>`
           : ""
       }
       <span class="spacer"></span>
-      <button type="button" class="btn" data-editor-action="cancel"${editor.busy === "save" ? " disabled" : ""}>Cancel</button>
-      <button type="button" class="btn" data-editor-action="test"${
+      <button type="button" class="btn" data-editor-action="cancel" data-fk="editor-cancel"${editor.busy === "save" ? " disabled" : ""}>Cancel</button>
+      <button type="button" class="btn" data-editor-action="test" data-fk="editor-test"${
         !isEdit || editor.busy ? " disabled" : ""
       } title="${isEdit ? "Test the saved storage settings." : "Save the storage before testing it."}">${
         editor.busy === "test" ? "Testing…" : "Test"
       }</button>
-      <button type="button" class="btn btn-primary" data-editor-action="save"${editor.busy ? " disabled" : ""}>${
+      <button type="button" class="btn btn-primary" data-editor-action="save" data-fk="editor-save"${editor.busy ? " disabled" : ""}>${
         editor.busy === "save" ? "Saving…" : "Save"
       }</button>
     </div>`;
@@ -718,7 +758,7 @@ async function saveEditor(): Promise<void> {
   };
   if (d.id) input.id = d.id;
   if (d.kind === "smb") {
-    if (d.username.trim()) input.username = d.username.trim();
+    input.username = d.username.trim();
     if (d.password) input.password = d.password;
   }
   try {
@@ -734,6 +774,20 @@ async function saveEditor(): Promise<void> {
   }
 }
 
+function beginTest(id: string): void {
+  const storage = snapshot?.storages.find((item) => item.id === id);
+  if (pendingTest) window.clearTimeout(pendingTest.timer);
+  pendingTest = { id, detail: storage?.detail ?? null, status: storage?.status ?? "", timer: 0 };
+  pendingTest.timer = window.setTimeout(() => {
+    pendingTest = null;
+  }, 12000);
+}
+
+function clearPendingTest(): void {
+  if (pendingTest) window.clearTimeout(pendingTest.timer);
+  pendingTest = null;
+}
+
 async function testEditor(): Promise<void> {
   if (!editor || editor.busy) return;
   const id = editor.draft.id;
@@ -744,12 +798,12 @@ async function testEditor(): Promise<void> {
   }
   editor.busy = "test";
   editor.error = null;
-  pendingTest = id;
+  beginTest(id);
   renderEditor();
   try {
     await backend.invoke("test_storage", { id });
   } catch (error) {
-    pendingTest = null;
+    clearPendingTest();
     if (editor) {
       editor.busy = null;
       editor.error = errText(error);
@@ -788,7 +842,7 @@ async function runRowAction(id: string, action: string): Promise<void> {
   const command = ROW_COMMANDS[action];
   if (!command) return;
   rowBusy[id] = action;
-  if (action === "test") pendingTest = id;
+  if (action === "test") beginTest(id);
   render();
   try {
     await backend.invoke(command, { id });
@@ -800,7 +854,7 @@ async function runRowAction(id: string, action: string): Promise<void> {
     }, 15000);
   } catch (error) {
     delete rowBusy[id];
-    if (action === "test") pendingTest = null;
+    if (action === "test") clearPendingTest();
     toast(errText(error), { error: true });
     render();
   }
@@ -962,11 +1016,21 @@ function openCredentials(id: string, name: string): void {
   };
   renderCredentials();
   if (!credentialsEl.open) credentialsEl.showModal();
+  const target = credentialsEl.querySelector<HTMLElement>(
+    credentials.username ? '[name="credential-password"]' : '[name="credential-username"]',
+  );
+  target?.focus();
 }
 
 function closeCredentials(): void {
   credentials = null;
   if (credentialsEl.open) credentialsEl.close();
+  focusTopDialog();
+}
+
+function closeWhatsNew(): void {
+  if (whatsnewEl.open) whatsnewEl.close();
+  focusTopDialog();
 }
 
 function renderCredentials(): void {
@@ -980,11 +1044,11 @@ function renderCredentials(): void {
       ${credentials.error ? `<p class="form-error" role="alert">${esc(credentials.error)}</p>` : ""}
       <label class="field">
         <span class="field-label">User name</span>
-        <input type="text" name="credential-username" value="${esc(credentials.username)}" autocomplete="username" autofocus />
+        <input type="text" name="credential-username" value="${esc(credentials.username)}" autocomplete="username" data-autofocus data-fk="credentials-username"${credentials.username ? "" : " autofocus"} />
       </label>
       <label class="field">
         <span class="field-label">Password</span>
-        <input type="password" name="credential-password" value="${esc(credentials.password)}" autocomplete="current-password" />
+        <input type="password" name="credential-password" value="${esc(credentials.password)}" autocomplete="current-password" data-fk="credentials-password"${credentials.username ? " autofocus" : ""} />
       </label>
     </div>
     <div class="sheet-actions">
@@ -1005,7 +1069,7 @@ async function saveCredentials(): Promise<void> {
   if (!password) {
     credentials.error = "Enter the password for this share.";
     renderCredentials();
-    passwordInput?.focus();
+    credentialsEl.querySelector<HTMLInputElement>('[name="credential-password"]')?.focus();
     return;
   }
   credentials.username = username;
@@ -1020,6 +1084,7 @@ async function saveCredentials(): Promise<void> {
       credentials.busy = false;
       credentials.error = errText(error);
       renderCredentials();
+      credentialsEl.querySelector<HTMLInputElement>('[name="credential-password"]')?.focus();
     }
   }
 }
@@ -1036,10 +1101,14 @@ function applySnapshot(next: Snapshot): void {
   snapshot = next;
   for (const id of Object.keys(rowBusy)) delete rowBusy[id];
   if (pendingTest) {
-    const storage = next.storages.find((item) => item.id === pendingTest);
-    if (storage?.detail) {
-      toast(`Test: ${storage.detail}`);
-      pendingTest = null;
+    const storage = next.storages.find((item) => item.id === pendingTest?.id);
+    if (
+      storage &&
+      pendingTest &&
+      testResultChanged({ detail: pendingTest.detail, status: pendingTest.status }, storage)
+    ) {
+      toast(`Test: ${storage.detail ?? statusLabel(storage.status)}`);
+      clearPendingTest();
     }
   }
   if (editor?.busy === "test") {
@@ -1090,6 +1159,7 @@ function wireEvents(): void {
       else if (action === "download-update") void openUpdater();
       else if (action === "add-storage") openEditor();
       else if (action === "open-support") void openSupport();
+      else if (action === "retry-boot") void boot();
       else if (action === "mount" || action === "unmount" || action === "test") void runRowAction(id, action);
       else if (action === "reveal") void revealStorage(id);
       else if (action === "edit") {
@@ -1167,7 +1237,7 @@ function wireEvents(): void {
 
   whatsnewEl.addEventListener("click", (event) => {
     const button = (event.target as HTMLElement).closest<HTMLElement>("[data-whatsnew-action]");
-    if (button?.dataset.whatsnewAction === "close") whatsnewEl.close();
+    if (button?.dataset.whatsnewAction === "close") closeWhatsNew();
   });
 
   credentialsEl.addEventListener("click", (event) => {
@@ -1196,7 +1266,7 @@ function wireEvents(): void {
       if (event.target !== dialog) return;
       if (dialog === editorEl && editor?.confirmRemove) return;
       if (dialog === editorEl) closeEditor();
-      else if (dialog === whatsnewEl) dialog.close();
+      else if (dialog === whatsnewEl) closeWhatsNew();
       else closeCredentials();
     });
     dialog.addEventListener("cancel", (event) => {
@@ -1210,7 +1280,7 @@ function wireEvents(): void {
           closeEditor();
         }
       } else if (dialog === whatsnewEl) {
-        dialog.close();
+        closeWhatsNew();
       } else {
         closeCredentials();
       }
@@ -1219,31 +1289,58 @@ function wireEvents(): void {
 }
 
 async function attachListeners(): Promise<void> {
-  await backend.listen<Snapshot>("snapshot", applySnapshot);
-  await backend.listen<{ id: string; name: string }>("needs-credentials", (payload) => {
-    openCredentials(payload.id, payload.name);
-  });
-  await backend.listen("second-instance", () => {
-    showSecondInstance();
-  });
-  await backend.listen("show-whats-new", () => {
-    openWhatsNew();
-  });
+  const cleanups: (() => void)[] = [];
+  try {
+    cleanups.push(await backend.listen<Snapshot>("snapshot", applySnapshot));
+    cleanups.push(
+      await backend.listen<{ id: string; name: string }>("needs-credentials", (payload) => {
+        openCredentials(payload.id, payload.name);
+      }),
+    );
+    cleanups.push(
+      await backend.listen("second-instance", () => {
+        showSecondInstance();
+      }),
+    );
+    cleanups.push(
+      await backend.listen("show-whats-new", () => {
+        openWhatsNew();
+      }),
+    );
+  } catch (error) {
+    for (const cleanup of cleanups) cleanup();
+    throw error;
+  }
 }
 
 async function boot(): Promise<void> {
-  if (isDev) {
-    const dev = await import("./dev-fixture");
-    const session = dev.createDevBackend(window.location.hash);
-    backend = session.backend;
-    renderToasts();
+  if (booting) return;
+  booting = true;
+  try {
+    if (import.meta.env.DEV && !isTauri && !devPrepared) {
+      const dev = await import("./dev-fixture");
+      const session = dev.createDevBackend(window.location.hash);
+      backend = session.backend;
+      devPrepared = true;
+      renderToasts();
+    }
+    if (!eventsWired) {
+      wireEvents();
+      eventsWired = true;
+    }
+    if (!listenersReady) {
+      await attachListeners();
+      listenersReady = true;
+    }
+    snapshot = await backend.invoke<Snapshot>("get_snapshot");
+    if (snapshot.secondInstance) showSecondInstance();
+    render();
+    applyDevLocation();
+  } catch (error) {
+    renderBootError(error);
+  } finally {
+    booting = false;
   }
-  wireEvents();
-  await attachListeners();
-  snapshot = await backend.invoke<Snapshot>("get_snapshot");
-  if (snapshot.secondInstance) showSecondInstance();
-  render();
-  applyDevLocation();
 }
 
 void boot();

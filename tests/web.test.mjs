@@ -1,15 +1,20 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 
 import {
   compareVersions,
+  esc,
   orderWhatsNew,
   statusLabel,
   statusTone,
+  testResultChanged,
   updateIsAvailable,
   updateWording,
   validateStorageDraft,
 } from "../ui/src/model.ts";
+
+const mainSource = readFileSync(new URL("../ui/src/main.ts", import.meta.url), "utf8");
 
 test("status labels use the shared KH names", () => {
   assert.equal(statusLabel("mounted"), "Mounted");
@@ -18,7 +23,8 @@ test("status labels use the shared KH names", () => {
   assert.equal(statusLabel("needs_attention"), "Needs attention");
   assert.equal(statusLabel("unreachable"), "Unreachable");
   assert.equal(statusLabel("not_mounted"), "Not mounted");
-  assert.equal(statusLabel("something-else"), "Not mounted");
+  assert.equal(statusLabel("something-else"), "Status unavailable");
+  assert.equal(statusLabel(""), "Status unavailable");
 });
 
 test("status tones never read a failure as fine", () => {
@@ -28,6 +34,7 @@ test("status tones never read a failure as fine", () => {
   assert.equal(statusTone("needs_attention"), "warn");
   assert.equal(statusTone("unreachable"), "bad");
   assert.equal(statusTone("not_mounted"), "off");
+  assert.equal(statusTone("something-else"), "off");
 });
 
 test("SMB validation names the required shape", () => {
@@ -52,6 +59,8 @@ test("update wording stays honest in every state", () => {
   assert.equal(updateWording({ state: "failed", version: null, reason: null }), "Update check failed.");
   assert.equal(updateWording({ state: "not-checked", version: null, reason: null }), "Not checked yet");
   assert.equal(updateWording({ state: "idle", version: null, reason: null }), "Not checked yet");
+  assert.equal(updateWording({ state: "mystery", version: null, reason: null }), "Not checked yet");
+  assert.notEqual(updateWording({ state: "mystery", version: null, reason: null }), undefined);
   assert.equal(updateIsAvailable({ state: "available", version: "0.1.1", reason: null }), true);
   assert.equal(updateIsAvailable({ state: "up-to-date", version: null, reason: null }), false);
 });
@@ -84,4 +93,37 @@ test("What's New ties fall back to the newer date, then input order", () => {
     ordered.map((entry) => entry.items[0]),
     ["new", "old", "undated"],
   );
+});
+
+
+test("esc escapes markup in user-supplied text", () => {
+  assert.equal(esc('<img src="x" onerror="y"> & more'), "&lt;img src=&quot;x&quot; onerror=&quot;y&quot;&gt; &amp; more");
+  assert.equal(esc(null), "");
+  assert.equal(esc(0), "0");
+});
+
+test("a test result is only consumed when the storage changed", () => {
+  assert.equal(testResultChanged({ detail: "old", status: "needs_attention" }, { detail: "old", status: "needs_attention" }), false);
+  assert.equal(testResultChanged({ detail: "old", status: "needs_attention" }, { detail: "nas.local is reachable.", status: "needs_attention" }), true);
+  assert.equal(testResultChanged({ detail: null, status: "not_mounted" }, { detail: null, status: "mounted" }), true);
+});
+
+test("the command wiring in main.ts is present and unique", () => {
+  assert.match(mainSource, /event\.metaKey[\s\S]{0,160}refreshStorage/);
+  assert.match(mainSource, /async function refreshStorage[\s\S]{0,320}"refresh_storage"/);
+  assert.match(mainSource, /async function checkUpdates[\s\S]{0,400}"check_updates"/);
+  assert.match(mainSource, /async function openUpdater[\s\S]{0,200}"open_updater"/);
+  assert.match(mainSource, /data-action="check-updates"/);
+  assert.match(mainSource, /action === "check-updates"\) void checkUpdates\(\)/);
+  assert.match(mainSource, /data-action="download-update"/);
+  assert.match(mainSource, /action === "download-update"\) void openUpdater\(\)/);
+  assert.match(mainSource, /data-fk="row-\$\{esc\(storage\.id\)\}-mount"/);
+  assert.match(mainSource, /data-fk="row-\$\{esc\(storage\.id\)\}-test"/);
+  assert.match(mainSource, /title="Dismiss" aria-label="Dismiss"/);
+  assert.match(mainSource, /data-action="retry-boot"/);
+});
+
+test("the second-instance note is shown once", () => {
+  assert.match(mainSource, /function showSecondInstance[\s\S]{0,220}if \(secondInstanceShown\) return/);
+  assert.match(mainSource, /Storage Studio KH is already running\. This window is the running copy\./);
 });

@@ -123,6 +123,8 @@ export function createDevBackend(hash: string): {
   };
 } {
   const snapshot = buildSnapshot(hash);
+  const params = new URLSearchParams(hash.replace(/^#/, ""));
+  let bootFailures = 0;
 
   function mountStorage(storage: StorageView): void {
     storage.status = "mounting";
@@ -140,6 +142,10 @@ export function createDevBackend(hash: string): {
     window.dispatchEvent(new CustomEvent("dev-command", { detail: command }));
     switch (command) {
       case "get_snapshot":
+        if (params.get("fail-boot") === "1" && bootFailures < 1) {
+          bootFailures += 1;
+          throw new Error("The app couldn't read its settings.");
+        }
         return snapshot;
 
       case "save_storage": {
@@ -219,6 +225,9 @@ export function createDevBackend(hash: string): {
         return null;
 
       case "set_credentials": {
+        if (params.get("fail-credentials") === "1") {
+          throw new Error("The Keychain didn't save the password.");
+        }
         const storage = snapshot.storages.find((item) => item.id === args?.id);
         if (storage) {
           storage.username = String(args?.username ?? "") || null;
