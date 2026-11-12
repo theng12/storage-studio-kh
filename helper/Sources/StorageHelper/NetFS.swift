@@ -74,11 +74,17 @@ enum NetFS {
         if code == 0 { return nil }
 
         let needsCredentials = code == 1 || code == 13 || code == 80 || code == -6003
-        return MountFailure(
-            message: needsCredentials
-                ? "The device needs a user name and password."
-                : "The share couldn't be mounted (code \(code)).",
-            needsCredentials: needsCredentials
-        )
+        let message: String
+        if needsCredentials {
+            message = "The device refused the user name or password."
+        } else {
+            switch code {
+            case 2: message = "The share wasn't found on that device."
+            case 60: message = "The device didn't answer."
+            case 64, 65: message = "The device is not reachable."
+            default: message = "The share couldn't be mounted (code \(code))."
+            }
+        }
+        return MountFailure(message: message, needsCredentials: needsCredentials)
     }
 }

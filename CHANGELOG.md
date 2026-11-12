@@ -6,3 +6,4 @@
 - If a storage can't be reached, it retries after 5, 15 and 60 seconds, then stops and says which one needs attention — a manual mount starts again.
 - Passwords are kept in the macOS Keychain, never in the app's files.
 - Settings cover what reconnects, notifications, launch at login, and appearance.
+- Not yet checked: the first live connection to your NAS. This build was tested with attached disks and with failing connections — every failed attempt says why and stops at Needs attention.
