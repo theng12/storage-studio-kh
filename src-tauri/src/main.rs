@@ -35,7 +35,7 @@ struct Storage {
     target: String,
     #[serde(default)]
     mount_point: String,
-    #[serde(default)]
+    #[serde(default, rename = "volumeUUID")]
     volume_uuid: Option<String>,
     #[serde(default)]
     reconnect_at_login: bool,
@@ -525,7 +525,15 @@ fn notify(app: &AppHandle, title: String, body: String) {
     if !app.state::<AppState>().settings.lock().unwrap().general.notifications {
         return;
     }
-    use tauri_plugin_notification::NotificationExt;
+    use tauri_plugin_notification::{NotificationExt, PermissionState};
+    // Ask only when there is something worth saying; a refused prompt stays quiet.
+    if let Ok(state) = app.notification().permission_state() {
+        if state != PermissionState::Granted
+            && !matches!(app.notification().request_permission(), Ok(PermissionState::Granted))
+        {
+            return;
+        }
+    }
     if let Err(error) = app.notification().builder().title(title).body(body).show() {
         log(&format!("Could not show a notification: {error}"));
     }
@@ -625,7 +633,7 @@ struct StorageInput {
     target: String,
     #[serde(default)]
     mount_point: String,
-    #[serde(default)]
+    #[serde(default, rename = "volumeUUID")]
     volume_uuid: Option<String>,
     #[serde(default)]
     reconnect_at_login: bool,
@@ -985,6 +993,65 @@ fn unix_millis() -> u128 {
 #[cfg(test)]
 mod tests {
     use super::feed::{is_newer, parse_version};
+    use super::{validate_input, StorageInput};
+
+    fn input(kind: &str, target: &str, mount_point: &str) -> StorageInput {
+        StorageInput {
+            id: None,
+            name: "Test".into(),
+            kind: kind.into(),
+            target: target.into(),
+            mount_point: mount_point.into(),
+            volume_uuid: None,
+            reconnect_at_login: false,
+            reconnect_after_wake: false,
+            username: None,
+            password: None,
+            remove_credentials: false,
+        }
+    }
+
+    #[test]
+    fn smb_address_must_name_a_share() {
+        assert!(validate_input(&input("smb", "smb://nas.local/photos", "")).is_ok());
+        assert!(validate_input(&input("smb", "smb://nas.local", "")).is_err());
+        assert!(validate_input(&input("smb", "nas.local/photos", "")).is_err());
+        assert!(validate_input(&input("smb", "https://nas.local/photos", "")).is_err());
+    }
+
+    #[test]
+    fn attached_disk_needs_a_mount_point() {
+        assert!(validate_input(&input("volume", "/dev/disk4s1", "/Volumes/Archive")).is_ok());
+        assert!(validate_input(&input("volume", "/dev/disk4s1", "")).is_err());
+        assert!(validate_input(&input("nfs", "nfs://x/y", "")).is_err());
+    }
+
+    #[test]
+    fn storage_json_matches_the_helper_and_ui_contract() {
+        let storage = super::Storage {
+            id: "s1".into(),
+            name: "NAS".into(),
+            kind: "smb".into(),
+            target: "smb://nas.local/photos".into(),
+            mount_point: "".into(),
+            volume_uuid: Some("UUID-1".into()),
+            reconnect_at_login: true,
+            reconnect_after_wake: true,
+            username: None,
+        };
+        let json = serde_json::to_value(&storage).unwrap();
+        assert!(json.get("volumeUUID").is_some(), "{json}");
+        assert!(json.get("volumeUuid").is_none(), "{json}");
+        assert!(json.get("mountPoint").is_some());
+        assert!(json.get("reconnectAtLogin").is_some());
+    }
+
+    #[test]
+    fn a_name_is_required() {
+        let mut empty = input("smb", "smb://nas.local/photos", "");
+        empty.name = "   ".into();
+        assert!(validate_input(&empty).is_err());
+    }
 
     #[test]
     fn versions_compare_numerically() {
@@ -1023,6 +1090,21 @@ fn shutdown_helper(app: &AppHandle) {
 }
 
 fn main() {
+    // Hidden verification hooks for the release gate; they never open a window.
+    let arguments: Vec<String> = std::env::args().collect();
+    if arguments.iter().any(|a| a == "--login-item-status") {
+        println!("{}", login_item::status());
+        std::process::exit(0);
+    }
+    if arguments.iter().any(|a| a == "--login-item-on") {
+        println!("{:?}", login_item::set(true));
+        std::process::exit(0);
+    }
+    if arguments.iter().any(|a| a == "--login-item-off") {
+        println!("{:?}", login_item::set(false));
+        std::process::exit(0);
+    }
+
     // Tests and hidden verification runs use their own data folder.
     if let Ok(dir) = std::env::var("STORAGE_STUDIO_TEST_DATA_DIR") {
         std::env::set_var("HOME", dir); // data_dir() and the helper both follow HOME

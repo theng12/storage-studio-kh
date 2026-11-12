@@ -105,6 +105,14 @@ public final class Engine {
         for storage in storages {
             if let path = MountTable.mountedPath(for: storage, in: table) {
                 next[storage.id] = StorageState(id: storage.id, status: .mounted, detail: nil, mountedPath: path, hasCredentials: Keychain.has(id: storage.id))
+            } else if var existing = states[storage.id], existing.status != .notMounted {
+                // Keep Needs attention / Retrying while the owner edits another setting.
+                if existing.status == .mounted || existing.mountedPath != nil {
+                    existing.status = .notMounted
+                    existing.detail = "It disconnected."
+                    existing.mountedPath = nil
+                }
+                next[storage.id] = existing
             } else {
                 next[storage.id] = StorageState(id: storage.id, status: .notMounted, detail: nil, mountedPath: nil, hasCredentials: Keychain.has(id: storage.id))
             }
@@ -292,8 +300,7 @@ public final class Engine {
                 self.networkSignature = signature
                 guard previous != nil, previous != signature, path.status == .satisfied else { return }
                 self.networkWork?.cancel()
-                let work = DispatchWorkItem { [weak self] in
-                    guard let self else { return }
+                let work = DispatchWorkItem {
                     for storage in self.storages where storage.reconnectAfterWake {
                         if self.states[storage.id]?.status != .mounted && self.states[storage.id]?.status != .needsAttention {
                             self.begin(storage)
