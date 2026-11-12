@@ -1008,7 +1008,7 @@ h3 {
 
 dialog.sheet {
   width: min(480px, calc(100vw - 48px));
-  max-height: calc(100vh - 48px);
+  max-height: calc(100vh - 32px);
   margin: auto;
   padding: 0;
   border: 0;
@@ -1019,11 +1019,17 @@ dialog.sheet {
   overflow: hidden;
 }
 
+dialog.sheet[open] {
+  display: flex;
+  flex-direction: column;
+}
+
 dialog.sheet::backdrop {
   background: var(--backdrop);
 }
 
 .sheet-head {
+  flex: 0 0 auto;
   padding: var(--s-xl) var(--s-xl) 0;
 }
 
@@ -1034,20 +1040,23 @@ dialog.sheet::backdrop {
 }
 
 .sheet-body {
-  max-height: calc(100vh - 200px);
-  padding: var(--s-xl);
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: var(--s-l) var(--s-xl);
   overflow: auto;
   display: flex;
   flex-direction: column;
-  gap: var(--s-l);
+  gap: var(--s-s);
 }
 
 .sheet-actions {
+  flex: 0 0 auto;
   display: flex;
   align-items: center;
   gap: var(--s-s);
   padding: var(--s-m) var(--s-xl);
   border-top: 1px solid var(--line);
+  background: var(--raised);
 }
 
 .sheet-actions .spacer {
@@ -1122,12 +1131,13 @@ dialog.sheet::backdrop {
 
 .check-stack {
   display: flex;
-  flex-direction: column;
-  gap: var(--s-s);
+  flex-wrap: wrap;
+  gap: var(--s-s) var(--s-l);
 }
 
 .check-row {
   display: flex;
+  flex: 0 0 auto;
   align-items: center;
   gap: var(--s-s);
   color: var(--text);
