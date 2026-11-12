@@ -73,7 +73,7 @@ enum NetFS {
         let code = mountSync(cleanURL as CFURL, mountPath, user, password, options, nil, nil)
         if code == 0 { return nil }
 
-        let needsCredentials = code == 13 || code == 80 || code == -6003
+        let needsCredentials = code == 1 || code == 13 || code == 80 || code == -6003
         return MountFailure(
             message: needsCredentials
                 ? "The device needs a user name and password."

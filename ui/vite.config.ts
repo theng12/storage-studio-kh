@@ -1,7 +1,8 @@
+import { fileURLToPath } from "node:url";
 import { defineConfig } from "vite";
 
 export default defineConfig({
-  root: __dirname,
+  root: fileURLToPath(new URL(".", import.meta.url)),
   base: "./",
   server: { port: 1420, strictPort: true },
   build: {
