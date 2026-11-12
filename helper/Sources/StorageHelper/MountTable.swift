@@ -43,6 +43,9 @@ public enum MountTable {
             text = String(text[text.index(after: at)...])
         }
         while text.hasSuffix("/") { text.removeLast() }
+        // A share name with a space can appear percent-encoded in one place and plain in
+        // the other; both name the same share.
+        text = text.removingPercentEncoding ?? text
         guard !text.isEmpty else { return nil }
         return text.lowercased()
     }

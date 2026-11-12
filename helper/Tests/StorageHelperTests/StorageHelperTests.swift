@@ -33,6 +33,7 @@ final class MountTableTests: XCTestCase {
         XCTAssertEqual(MountTable.canonicalSMB("smb://nas.local/photos"), "nas.local/photos")
         XCTAssertEqual(MountTable.canonicalSMB("//theng@nas.local/photos/"), "nas.local/photos")
         XCTAssertEqual(MountTable.canonicalSMB("//NAS.local/Photos"), "nas.local/photos")
+        XCTAssertEqual(MountTable.canonicalSMB("//theng@nas.local/My%20Share"), "nas.local/my share")
         XCTAssertNil(MountTable.canonicalSMB("/dev/disk1s1"))
     }
 
