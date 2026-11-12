@@ -702,8 +702,12 @@ fn save_storage(app: AppHandle, state: State<'_, AppState>, input: StorageInput)
         let _ = send_to_helper(&state, &helper_config(&settings));
     }
 
-    if input.password.as_deref().map(|p| !p.is_empty()).unwrap_or(false) || input.remove_credentials {
-        let message = if input.remove_credentials {
+    let username_now = storage.username.clone().unwrap_or_default();
+    let clears_credentials = input.remove_credentials
+        // A saved password with no user name can never be used; do not keep it.
+        || (storage.kind == "smb" && username_now.trim().is_empty() && input.password.as_deref().unwrap_or("").is_empty());
+    if clears_credentials || input.password.as_deref().map(|p| !p.is_empty()).unwrap_or(false) {
+        let message = if clears_credentials {
             serde_json::json!({ "type": "forget_credentials", "id": id })
         } else {
             serde_json::json!({
