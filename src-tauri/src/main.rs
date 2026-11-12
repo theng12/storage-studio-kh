@@ -757,6 +757,11 @@ fn test_storage(state: State<'_, AppState>, id: String) -> Result<(), String> {
 }
 
 #[tauri::command]
+fn refresh_storage(state: State<'_, AppState>) -> Result<(), String> {
+    send_to_helper(&state, &serde_json::json!({ "type": "refresh" }))
+}
+
+#[tauri::command]
 fn reveal_storage(state: State<'_, AppState>, id: String) -> Result<(), String> {
     let path = {
         let statuses = state.statuses.lock().unwrap();
@@ -1157,6 +1162,7 @@ fn main() {
             mount_all,
             unmount_storage,
             test_storage,
+            refresh_storage,
             reveal_storage,
             set_credentials,
             set_appearance,

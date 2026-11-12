@@ -75,6 +75,7 @@ interface Snapshot {
 | `mount_all` | — | `null` |
 | `unmount_storage` | `{ id }` | `null` |
 | `test_storage` | `{ id }` | `null` — the result arrives as a new snapshot (`detail`) |
+| `refresh_storage` | — | `null` — re-reads the mount table and connected disks (⌘R) |
 | `reveal_storage` | `{ id }` | `null` |
 | `set_credentials` | `{ id, username, password }` | `null` |
 | `set_appearance` | `{ mode: "system" \| "light" \| "dark" }` | `Snapshot` |

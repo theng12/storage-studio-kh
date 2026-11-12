@@ -69,6 +69,9 @@ public final class Engine {
             if let storage = storage(command.id) { unmount(storage) }
         case "test":
             if let storage = storage(command.id) { test(storage) }
+        case "refresh":
+            refreshMountStates()
+            refreshVolumes(force: true)
         case "credentials":
             if let storage = storage(command.id) {
                 let credentials = Keychain.Credentials(
