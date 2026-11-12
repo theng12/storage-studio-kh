@@ -164,3 +164,8 @@ test("offers shares that are already connected and skips ones already added", ()
   assert.match(mainSource, /draft\.username = candidate\.user \?\? ""/);
   assert.match(mainSource, /editor\.shareNote = `Share: \$\{candidate\.name\}`/);
 });
+
+test("picking a connected share hides the list so the address cannot be swapped later", () => {
+  assert.match(mainSource, /editor\.connectedChosen = true/);
+  assert.match(mainSource, /d\.kind === "smb" && !editor\.connectedChosen/);
+});

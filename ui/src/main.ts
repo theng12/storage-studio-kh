@@ -55,6 +55,7 @@ interface EditorState {
   error: string | null;
   busy: "save" | "test" | "browse" | null;
   confirmRemove: boolean;
+  connectedChosen: boolean;
 }
 
 interface PendingTest {
@@ -532,6 +533,7 @@ function openEditor(storage?: StorageView): void {
     error: null,
     busy: null,
     confirmRemove: false,
+    connectedChosen: false,
     shareChoices: null,
     shareNote: null,
     browseBusy: false,
@@ -607,7 +609,7 @@ function renderEditor(): void {
   const savedVolumeMissing = d.kind === "volume" && d.volumeUUID && !volumes.some((volume) => volume.uuid === d.volumeUUID);
   const blockReason = saveBlockReason(d);
   const connectedShares =
-    d.kind === "smb"
+    d.kind === "smb" && !editor.connectedChosen
       ? (snapshot?.mountedShares ?? []).filter(
           (candidate) =>
             candidate.url !== d.target &&
@@ -1402,6 +1404,9 @@ function wireEvents(): void {
           draft.mountPoint = "";
           editor.error = null;
           editor.shareChoices = null;
+          // The choice is made; hide the list so a second click cannot swap the address
+          // under the name that was already filled in.
+          editor.connectedChosen = true;
           editor.shareNote = `Share: ${candidate.name}`;
           renderEditor();
           editorEl.querySelector<HTMLInputElement>('input[name="target"]')?.focus();

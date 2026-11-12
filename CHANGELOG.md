@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.2 — 2026-11-12
+- Choosing a share under "From a connected share" now closes the list, so the address and the name can never get out of step.
+- A storage row shows the address it actually reconnects, including in a failure reason.
+
 ## 0.1.1 — 2026-11-12
 - Browse the shares a device offers and pick one — names with spaces and dashes included.
 - The storage form now says exactly what is missing, and Save stays off until the address or disk is complete.
