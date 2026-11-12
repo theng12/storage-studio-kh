@@ -88,9 +88,13 @@ python3 -I "$HOME/Developer/Shared Tools/kh-shared-ui/whats-new.py" CHANGELOG.md
 [ "$(python3 -c "import json;print(json.load(open('src-tauri/whats-new.json'))[0]['version'])")" = "$version" ] \
   || fail "whats-new.json's newest entry is not $version"
 
-step "Building the web UI"
-npm ci --no-audit --no-fund
+step "Building and testing the web UI"
+if [ -f package-lock.json ]; then npm ci --no-audit --no-fund; else npm install --no-audit --no-fund; fi
 npm run build:web
+if [ -f tests/web.test.mjs ]; then node --test tests/web.test.mjs; fi
+
+step "Rust tests"
+(cd src-tauri && cargo test --quiet)
 
 step "Building the app and DMG (signed)"
 npm run build:desktop -- --bundles app,dmg
