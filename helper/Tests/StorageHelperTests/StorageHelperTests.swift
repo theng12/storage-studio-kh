@@ -89,6 +89,11 @@ final class ShareListerTests: XCTestCase {
     func testTabSeparatedTableIsAccepted() {
         XCTAssertEqual(ShareLister.parse("Media\tDisk\tMedia share"), ["Media"])
     }
+
+    func testTerminalLineEndingsAreAccepted() {
+        XCTAssertEqual(ShareLister.parse("Media       Disk    A share\rSecond     Disk    B\r"), ["Media", "Second"])
+        XCTAssertEqual(ShareLister.parse("Media       Disk    A share\r\nSecond      Disk    B share\r\n"), ["Media", "Second"])
+    }
 }
 
 final class ProtocolTests: XCTestCase {

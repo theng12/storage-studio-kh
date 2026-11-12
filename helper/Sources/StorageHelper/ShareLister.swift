@@ -55,8 +55,12 @@ public enum ShareLister {
     /// `smbutil view` prints `name <2+ spaces> type <spaces> comment`. Names contain single
     /// spaces and dashes, so only a run of two or more spaces separates the name from the type.
     public static func parse(_ output: String) -> [String] {
+        // A pseudo-terminal may end lines with \r or \r\n; both mean the same table.
+        let text = output
+            .replacingOccurrences(of: "\r\n", with: "\n")
+            .replacingOccurrences(of: "\r", with: "\n")
         var shares: [String] = []
-        for raw in output.split(separator: "\n") {
+        for raw in text.split(separator: "\n") {
             let line = raw
                 .replacingOccurrences(of: "\t", with: "  ")
                 .trimmingCharacters(in: .whitespaces)
@@ -95,29 +99,44 @@ public enum ShareLister {
         }
 
         let collected = NSMutableData()
-        var sentPassword = false
+        var answeredPrompts = 0
+        var sawEnd = false
         let deadline = Date().addingTimeInterval(timeout)
-        while process.isRunning && Date() < deadline {
-            let ready = waitForData(output.fileHandleForReading.fileDescriptor, timeout: 0.2)
-            if ready {
+        while Date() < deadline {
+            if sawEnd {
+                // `script` can keep running briefly after closing the pipe; give it a moment.
+                if !process.isRunning { break }
+                usleep(50_000)
+                continue
+            }
+            if !process.isRunning { break }
+            if waitForData(output.fileHandleForReading.fileDescriptor, timeout: 0.2) {
                 let chunk = output.fileHandleForReading.availableData
-                if chunk.isEmpty { break }
+                if chunk.isEmpty {
+                    sawEnd = true
+                    continue
+                }
                 collected.append(chunk)
             }
-            if let password, !sentPassword,
-               String(data: collected as Data, encoding: .utf8)?.contains("assword") == true {
-                input.fileHandleForWriting.write(Data((password + "\n").utf8))
-                sentPassword = true
+            if let password {
+                // smbutil asks again after a refused password; answer up to three times.
+                let text = String(data: collected as Data, encoding: .utf8) ?? ""
+                let prompts = text.components(separatedBy: "assword").count - 1
+                while answeredPrompts < prompts && answeredPrompts < 3 {
+                    input.fileHandleForWriting.write(Data((password + "\n").utf8))
+                    answeredPrompts += 1
+                }
             }
         }
         let timedOut = process.isRunning
         if timedOut { process.terminate() }
         process.waitUntilExit()
-        collected.append(output.fileHandleForReading.availableData)
-        return Outcome(
-            output: String(data: collected as Data, encoding: .utf8) ?? "",
-            timedOut: timedOut
-        )
+        if !sawEnd { collected.append(output.fileHandleForReading.availableData) }
+        let text = String(data: collected as Data, encoding: .utf8) ?? ""
+        if ProcessInfo.processInfo.environment["STORAGE_STUDIO_DEBUG_LIST"] != nil {
+            FileHandle.standardError.write(Data("list: \(collected.length) bytes, \(answeredPrompts) prompt(s), exit \(process.terminationStatus), parsed \(parse(text).count)\n".utf8))
+        }
+        return Outcome(output: text, timedOut: timedOut)
     }
 
     private static func waitForData(_ descriptor: Int32, timeout: TimeInterval) -> Bool {
