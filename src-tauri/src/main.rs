@@ -1131,6 +1131,7 @@ fn main() {
     let settings = load_settings();
     let state = AppState::new(settings.clone());
     let setup_settings = settings.clone();
+    let requested_quit = arguments.iter().any(|a| a == "--quit");
 
     let app = tauri::Builder::default()
         .plugin(tauri_plugin_single_instance::init(|app, args, _cwd| {
@@ -1166,6 +1167,15 @@ fn main() {
         ])
         .setup(move |app| {
             let handle = app.handle().clone();
+
+            if let Some(window) = app.get_webview_window("settings") {
+                let theme = match setup_settings.appearance.as_str() {
+                    "light" => Some(tauri::Theme::Light),
+                    "dark" => Some(tauri::Theme::Dark),
+                    _ => None,
+                };
+                let _ = window.set_theme(theme);
+            }
 
             // A real app menu gives Settings its ⌘, and the text fields their usual
             // Cut/Copy/Paste while the window is focused.
@@ -1249,6 +1259,12 @@ fn main() {
                     _ => {}
                 })
                 .build(app)?;
+
+            if requested_quit {
+                // `--quit` with no running copy still just closes this one.
+                handle.exit(0);
+                return Ok(());
+            }
 
             // The helper needs the app's resources and the Keychain; start it once the UI exists.
             if let Err(error) = start_helper(&handle) {
