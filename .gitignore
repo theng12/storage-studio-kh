@@ -1,0 +1,11 @@
+node_modules/
+src-tauri/target/
+src-tauri/gen/
+helper/.build/
+ui/dist/
+src-tauri/helper/
+src-tauri/whats-new.json
+dist/*.dmg
+.DS_Store
+src-tauri/icons/android/
+src-tauri/icons/ios/

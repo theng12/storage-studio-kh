@@ -1,0 +1,1150 @@
+//! Storage Studio KH — menu-bar shell.
+//!
+//! The Tauri window is only Settings. The macOS work (mount table, SMB mounting,
+//! Keychain, wake/network watching, bounded retries) lives in the bundled helper at
+//! `Contents/Helpers/Storage Studio KH Helper.app`, started as this app's child and
+//! stopped when the app quits. Nothing here or there copies, mirrors or syncs data.
+
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+
+use std::collections::HashMap;
+use std::io::{BufRead, BufReader, Write};
+use std::path::{Path, PathBuf};
+use std::process::{Child, ChildStdin, Command, Stdio};
+use std::sync::Mutex;
+use std::time::Duration;
+
+use serde::{Deserialize, Serialize};
+use tauri::menu::{Menu, MenuItem, PredefinedMenuItem};
+use tauri::tray::TrayIconBuilder;
+use tauri::{AppHandle, Emitter, Manager, RunEvent, State};
+
+const APP_NAME: &str = "Storage Studio KH";
+const APP_VERSION: &str = env!("CARGO_PKG_VERSION");
+const SUPPORT_URL: &str = "https://nowpayments.io/donation/studiokh";
+const DEFAULT_RETRIES: u32 = 3;
+
+// ---------------------------------------------------------------- settings
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+#[serde(rename_all = "camelCase")]
+struct Storage {
+    id: String,
+    name: String,
+    kind: String, // "smb" | "volume"
+    target: String,
+    #[serde(default)]
+    mount_point: String,
+    #[serde(default)]
+    volume_uuid: Option<String>,
+    #[serde(default)]
+    reconnect_at_login: bool,
+    #[serde(default)]
+    reconnect_after_wake: bool,
+    #[serde(default)]
+    username: Option<String>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+#[serde(rename_all = "camelCase")]
+struct General {
+    notifications: bool,
+    launch_at_login: bool,
+    retries: u32,
+}
+
+impl Default for General {
+    fn default() -> Self {
+        Self { notifications: true, launch_at_login: true, retries: DEFAULT_RETRIES }
+    }
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+#[serde(rename_all = "camelCase")]
+struct Settings {
+    schema: u32,
+    appearance: String, // "system" | "light" | "dark"
+    general: General,
+    storages: Vec<Storage>,
+}
+
+impl Default for Settings {
+    fn default() -> Self {
+        Self { schema: 1, appearance: "system".into(), general: General::default(), storages: Vec::new() }
+    }
+}
+
+fn data_dir() -> PathBuf {
+    let home = std::env::var("HOME").unwrap_or_default();
+    PathBuf::from(home).join("Library").join("Application Support").join(APP_NAME)
+}
+
+fn settings_path() -> PathBuf {
+    data_dir().join("settings.json")
+}
+
+fn log_path() -> PathBuf {
+    data_dir().join("log.txt")
+}
+
+fn log(message: &str) {
+    let stamp = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_secs())
+        .unwrap_or(0);
+    let dir = data_dir();
+    let _ = std::fs::create_dir_all(&dir);
+    if let Ok(mut file) = std::fs::OpenOptions::new().create(true).append(true).open(log_path()) {
+        let _ = writeln!(file, "{stamp} {message}");
+    }
+    eprintln!("{message}");
+}
+
+fn load_settings() -> Settings {
+    let text = std::fs::read_to_string(settings_path()).unwrap_or_default();
+    if text.trim().is_empty() {
+        return Settings::default();
+    }
+    match serde_json::from_str::<Settings>(&text) {
+        Ok(mut settings) => {
+            // "default" was an older name for the system choice; keep it reading as System.
+            if settings.appearance != "light" && settings.appearance != "dark" {
+                settings.appearance = "system".into();
+            }
+            if settings.general.retries == 0 {
+                settings.general.retries = DEFAULT_RETRIES;
+            }
+            settings
+        }
+        Err(error) => {
+            // Never lose the owner's file to a parse error: keep it beside the new one.
+            log(&format!("settings.json could not be read ({error}); keeping a copy"));
+            let _ = std::fs::rename(settings_path(), data_dir().join("settings-unreadable.json"));
+            Settings::default()
+        }
+    }
+}
+
+fn save_settings(settings: &Settings) -> Result<(), String> {
+    let dir = data_dir();
+    std::fs::create_dir_all(&dir).map_err(|e| format!("Could not create {APP_NAME}'s data folder: {e}"))?;
+    let text = serde_json::to_string_pretty(settings).map_err(|e| e.to_string())?;
+    let temporary = dir.join(".settings.json.tmp");
+    std::fs::write(&temporary, text).map_err(|e| format!("Could not save settings: {e}"))?;
+    std::fs::rename(&temporary, settings_path()).map_err(|e| format!("Could not save settings: {e}"))
+}
+
+/// What the helper reports about one storage.
+#[derive(Serialize, Deserialize, Clone, Debug, Default)]
+#[serde(rename_all = "camelCase")]
+struct StorageState {
+    #[serde(default)]
+    status: String,
+    #[serde(default)]
+    detail: Option<String>,
+    #[serde(default)]
+    mounted_path: Option<String>,
+    #[serde(default)]
+    has_credentials: bool,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+#[serde(rename_all = "camelCase")]
+struct VolumeCandidate {
+    name: String,
+    path: String,
+    uuid: String,
+    device: String,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+#[serde(rename_all = "camelCase")]
+struct UpdateState {
+    state: String,
+    version: Option<String>,
+    reason: Option<String>,
+}
+
+impl Default for UpdateState {
+    fn default() -> Self {
+        Self { state: "idle".into(), version: None, reason: None }
+    }
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+#[serde(rename_all = "camelCase")]
+struct WhatsNewEntry {
+    version: String,
+    date: Option<String>,
+    items: Vec<String>,
+}
+
+#[derive(Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+struct Snapshot {
+    app_name: String,
+    version: String,
+    appearance: String,
+    general: General,
+    storages: Vec<StorageView>,
+    volumes: Vec<VolumeCandidate>,
+    update: UpdateState,
+    whats_new: Vec<WhatsNewEntry>,
+    launch_at_login_enabled: bool,
+    launch_at_login_error: Option<String>,
+    engine_running: bool,
+    engine_error: Option<String>,
+    second_instance: bool,
+}
+
+#[derive(Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+struct StorageView {
+    #[serde(flatten)]
+    storage: Storage,
+    status: String,
+    detail: Option<String>,
+    mounted_path: Option<String>,
+    has_credentials: bool,
+}
+
+// ---------------------------------------------------------------- app state
+
+struct Helper {
+    child: Child,
+    stdin: ChildStdin,
+}
+
+struct AppState {
+    settings: Mutex<Settings>,
+    helper: Mutex<Option<Helper>>,
+    statuses: Mutex<HashMap<String, StorageState>>,
+    volumes: Mutex<Vec<VolumeCandidate>>,
+    update: Mutex<UpdateState>,
+    login_error: Mutex<Option<String>>,
+    engine_error: Mutex<Option<String>>,
+    second_instance: Mutex<bool>,
+}
+
+impl AppState {
+    fn new(settings: Settings) -> Self {
+        Self {
+            settings: Mutex::new(settings),
+            helper: Mutex::new(None),
+            statuses: Mutex::new(HashMap::new()),
+            volumes: Mutex::new(Vec::new()),
+            update: Mutex::new(UpdateState::default()),
+            login_error: Mutex::new(None),
+            engine_error: Mutex::new(None),
+            second_instance: Mutex::new(false),
+        }
+    }
+}
+
+fn whats_new() -> Vec<WhatsNewEntry> {
+    let mut candidates: Vec<PathBuf> = Vec::new();
+    if let Ok(exe) = std::env::current_exe() {
+        // Contents/MacOS/<exe> -> Contents/Resources/whats-new.json
+        if let Some(contents) = exe.parent().and_then(|p| p.parent()) {
+            candidates.push(contents.join("Resources").join("whats-new.json"));
+        }
+    }
+    candidates.push(PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("whats-new.json"));
+    for path in candidates {
+        if let Ok(text) = std::fs::read_to_string(&path) {
+            if let Ok(entries) = serde_json::from_str::<Vec<WhatsNewEntry>>(&text) {
+                return entries;
+            }
+        }
+    }
+    Vec::new()
+}
+
+fn snapshot(app: &AppHandle) -> Snapshot {
+    let state = app.state::<AppState>();
+    let settings = state.settings.lock().unwrap().clone();
+    let statuses = state.statuses.lock().unwrap().clone();
+    let storages = settings
+        .storages
+        .iter()
+        .map(|storage| {
+            let status = statuses.get(&storage.id).cloned().unwrap_or_default();
+            StorageView {
+                storage: storage.clone(),
+                status: if status.status.is_empty() { "not_mounted".into() } else { status.status },
+                detail: status.detail,
+                mounted_path: status.mounted_path,
+                has_credentials: status.has_credentials,
+            }
+        })
+        .collect();
+    let engine_error = state.engine_error.lock().unwrap().clone();
+    let volumes = state.volumes.lock().unwrap().clone();
+    let update = state.update.lock().unwrap().clone();
+    let second_instance = *state.second_instance.lock().unwrap();
+    let launch_at_login_error = state.login_error.lock().unwrap().clone();
+    let engine_running = state.helper.lock().unwrap().is_some();
+    Snapshot {
+        app_name: APP_NAME.into(),
+        version: APP_VERSION.into(),
+        appearance: settings.appearance.clone(),
+        general: settings.general.clone(),
+        storages,
+        volumes,
+        update,
+        whats_new: whats_new(),
+        launch_at_login_enabled: login_item::is_enabled(),
+        launch_at_login_error,
+        engine_running,
+        engine_error,
+        second_instance,
+    }
+}
+
+fn emit_snapshot(app: &AppHandle) {
+    let snap = snapshot(app);
+    let _ = app.emit("snapshot", snap.clone());
+    if let Some(tray) = app.tray_by_id("main") {
+        if let Ok(menu) = build_tray_menu(app, &snap) {
+            let _ = tray.set_menu(Some(menu));
+        }
+    }
+}
+
+// ---------------------------------------------------------------- tray menu
+
+fn status_label(status: &str) -> &'static str {
+    match status {
+        "mounted" => "Mounted",
+        "mounting" => "Mounting…",
+        "retrying" => "Retrying…",
+        "needs_attention" => "Needs attention",
+        "unreachable" => "Unreachable",
+        _ => "Not mounted",
+    }
+}
+
+fn build_tray_menu(app: &AppHandle, snap: &Snapshot) -> tauri::Result<Menu<tauri::Wry>> {
+    let menu = Menu::new(app)?;
+    if snap.storages.is_empty() {
+        menu.append(&MenuItem::with_id(app, "no-storage", "No storage added yet", false, None::<&str>)?)?;
+    } else {
+        for storage in &snap.storages {
+            let mut label = format!("{} — {}", storage.storage.name, status_label(&storage.status));
+            if storage.status == "needs_attention" {
+                if let Some(detail) = &storage.detail {
+                    label = format!("{} — Needs attention: {}", storage.storage.name, detail);
+                }
+            }
+            menu.append(&MenuItem::with_id(app, format!("storage:{}", storage.storage.id), label, false, None::<&str>)?)?;
+        }
+    }
+    menu.append(&PredefinedMenuItem::separator(app)?)?;
+    let any_unmounted = snap.storages.iter().any(|s| s.status != "mounted");
+    menu.append(&MenuItem::with_id(app, "mount-all", "Mount now", any_unmounted, None::<&str>)?)?;
+    let any_mounted = snap.storages.iter().any(|s| s.status == "mounted");
+    menu.append(&MenuItem::with_id(app, "reveal", "Open in Finder", any_mounted, None::<&str>)?)?;
+    menu.append(&PredefinedMenuItem::separator(app)?)?;
+    menu.append(&MenuItem::with_id(app, "settings", "Settings…", true, Some("CmdOrCtrl+,"))?)?;
+    menu.append(&MenuItem::with_id(app, "whatsnew", "What's New…", true, None::<&str>)?)?;
+    menu.append(&MenuItem::with_id(app, "support", "Support this app…", true, None::<&str>)?)?;
+    menu.append(&PredefinedMenuItem::separator(app)?)?;
+    menu.append(&MenuItem::with_id(app, "version", format!("{APP_NAME} {APP_VERSION}"), false, None::<&str>)?)?;
+    menu.append(&MenuItem::with_id(app, "quit", "Quit Storage Studio KH", true, Some("CmdOrCtrl+Q"))?)?;
+    Ok(menu)
+}
+
+// ---------------------------------------------------------------- helper
+
+fn helper_path() -> Option<PathBuf> {
+    let exe = std::env::current_exe().ok()?;
+    let contents = exe.parent()?.parent()?;
+    let app = contents.join("Helpers").join("Storage Studio KH Helper.app");
+    let binary = app.join("Contents").join("MacOS").join("Storage Studio KH Helper");
+    if binary.is_file() {
+        Some(binary)
+    } else {
+        None
+    }
+}
+
+fn helper_config(settings: &Settings) -> serde_json::Value {
+    serde_json::json!({
+        "type": "configure",
+        "retries": settings.general.retries,
+        "storages": settings.storages,
+    })
+}
+
+fn send_to_helper(state: &AppState, message: &serde_json::Value) -> Result<(), String> {
+    let mut guard = state.helper.lock().unwrap();
+    let helper = guard.as_mut().ok_or_else(|| "The background helper is not running.".to_string())?;
+    let mut line = serde_json::to_string(message).map_err(|e| e.to_string())?;
+    line.push('\n');
+    helper
+        .stdin
+        .write_all(line.as_bytes())
+        .and_then(|_| helper.stdin.flush())
+        .map_err(|e| format!("The background helper did not answer: {e}"))
+}
+
+fn start_helper(app: &AppHandle) -> Result<(), String> {
+    let binary = helper_path().ok_or_else(|| {
+        "The bundled background helper is missing from this copy of the app.".to_string()
+    })?;
+    let mut child = Command::new(&binary)
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .map_err(|e| format!("Could not start the background helper: {e}"))?;
+    let stdin = child.stdin.take().ok_or("The background helper has no input pipe.")?;
+    let stdout = child.stdout.take().ok_or("The background helper has no output pipe.")?;
+    let stderr = child.stderr.take();
+
+    if let Some(stderr) = stderr {
+        std::thread::spawn(move || {
+            for line in BufReader::new(stderr).lines().map_while(Result::ok) {
+                log(&format!("helper: {line}"));
+            }
+        });
+    }
+
+    app.state::<AppState>().helper.lock().unwrap().replace(Helper { child, stdin });
+    app.state::<AppState>().engine_error.lock().unwrap().take();
+
+    // Configure it with the saved storages straight away.
+    let settings = app.state::<AppState>().settings.lock().unwrap().clone();
+    let _ = send_to_helper(&app.state::<AppState>(), &helper_config(&settings));
+
+    let app_handle = app.clone();
+    std::thread::spawn(move || {
+        let reader = BufReader::new(stdout);
+        for line in reader.lines().map_while(Result::ok) {
+            if line.trim().is_empty() {
+                continue;
+            }
+            handle_helper_line(&app_handle, &line);
+        }
+        // The helper ended (crash, quit, or the app is going away).
+        let state = app_handle.state::<AppState>();
+        let gone = state.helper.lock().unwrap().take().is_some();
+        if gone {
+            log("The background helper stopped.");
+            *state.engine_error.lock().unwrap() =
+                Some("The background helper stopped. Reopen the app to start it again.".into());
+            emit_snapshot(&app_handle);
+        }
+    });
+    Ok(())
+}
+
+#[derive(Deserialize)]
+#[serde(tag = "type")]
+#[allow(dead_code)]
+enum HelperEvent {
+    #[serde(rename = "state")]
+    State { items: Vec<HelperItem> },
+    #[serde(rename = "volumes")]
+    Volumes { items: Vec<VolumeCandidate> },
+    #[serde(rename = "attention")]
+    Attention { id: String, name: String, reason: String },
+    #[serde(rename = "recovered")]
+    Recovered { id: String, name: String },
+    #[serde(rename = "needs_credentials")]
+    NeedsCredentials { id: String, name: String },
+    #[serde(rename = "log")]
+    Log { level: String, message: String },
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct HelperItem {
+    id: String,
+    #[serde(default)]
+    status: String,
+    #[serde(default)]
+    detail: Option<String>,
+    #[serde(default)]
+    mounted_path: Option<String>,
+    #[serde(default)]
+    has_credentials: bool,
+}
+
+fn handle_helper_line(app: &AppHandle, line: &str) {
+    let event: HelperEvent = match serde_json::from_str(line) {
+        Ok(event) => event,
+        Err(error) => {
+            log(&format!("helper sent something unexpected ({error}): {line}"));
+            return;
+        }
+    };
+    let state = app.state::<AppState>();
+    match event {
+        HelperEvent::State { items } => {
+            let mut statuses = state.statuses.lock().unwrap();
+            statuses.clear();
+            for item in items {
+                statuses.insert(
+                    item.id,
+                    StorageState {
+                        status: item.status,
+                        detail: item.detail,
+                        mounted_path: item.mounted_path,
+                        has_credentials: item.has_credentials,
+                    },
+                );
+            }
+            drop(statuses);
+            emit_snapshot(app);
+        }
+        HelperEvent::Volumes { items } => {
+            *state.volumes.lock().unwrap() = items;
+            emit_snapshot(app);
+        }
+        HelperEvent::Attention { name, reason, .. } => {
+            log(&format!("{name} needs attention: {reason}"));
+            notify(app, format!("{name} needs attention"), reason);
+        }
+        HelperEvent::Recovered { name, .. } => {
+            log(&format!("{name} is connected again."));
+            notify(app, name.clone(), format!("{name} is connected again."));
+        }
+        HelperEvent::NeedsCredentials { id, name } => {
+            let _ = app.emit("needs-credentials", serde_json::json!({ "id": id, "name": name }));
+            show_settings(app);
+        }
+        HelperEvent::Log { level, message } => log(&format!("helper [{level}]: {message}")),
+    }
+}
+
+fn notify(app: &AppHandle, title: String, body: String) {
+    if std::env::var("STORAGE_STUDIO_NO_NOTIFICATIONS").is_ok() {
+        return;
+    }
+    if !app.state::<AppState>().settings.lock().unwrap().general.notifications {
+        return;
+    }
+    use tauri_plugin_notification::NotificationExt;
+    if let Err(error) = app.notification().builder().title(title).body(body).show() {
+        log(&format!("Could not show a notification: {error}"));
+    }
+}
+
+// ---------------------------------------------------------------- login item
+
+#[cfg(target_os = "macos")]
+mod login_item {
+    use objc2::rc::Retained;
+    use objc2::runtime::AnyObject;
+    use objc2::{class, msg_send};
+
+    fn service() -> Option<Retained<AnyObject>> {
+        unsafe { msg_send![class!(SMAppService), mainAppService] }
+    }
+
+    /// 0 = not registered, 1 = enabled, 2 = requires approval, 3 = not found.
+    pub fn status() -> i64 {
+        match service() {
+            Some(service) => unsafe { msg_send![&*service, status] },
+            None => 3,
+        }
+    }
+
+    pub fn is_enabled() -> bool {
+        status() == 1
+    }
+
+    pub fn set(enabled: bool) -> Result<(), String> {
+        let Some(service) = service() else {
+            return Err("Login items are not available on this version of macOS.".into());
+        };
+        let mut error: *mut AnyObject = std::ptr::null_mut();
+        let ok: bool = unsafe {
+            if enabled {
+                msg_send![&*service, registerAndReturnError: &mut error]
+            } else {
+                msg_send![&*service, unregisterAndReturnError: &mut error]
+            }
+        };
+        if ok {
+            Ok(())
+        } else {
+            Err(match status() {
+                2 => "macOS is waiting for approval in System Settings > General > Login Items.".into(),
+                _ => "macOS would not change the login item. Move the app to Applications and try again.".into(),
+            })
+        }
+    }
+}
+
+#[cfg(not(target_os = "macos"))]
+mod login_item {
+    pub fn status() -> i64 { 3 }
+    pub fn is_enabled() -> bool { false }
+    pub fn set(_enabled: bool) -> Result<(), String> {
+        Err("Launch at login is only available on macOS.".into())
+    }
+}
+
+#[cfg(target_os = "macos")]
+#[link(name = "ServiceManagement", kind = "framework")]
+extern "C" {}
+
+// ---------------------------------------------------------------- windows
+
+fn show_settings(app: &AppHandle) {
+    if let Some(window) = app.get_webview_window("settings") {
+        let _ = window.show();
+        let _ = window.unminimize();
+        let _ = window.set_focus();
+    }
+}
+
+fn hide_settings(window: &tauri::Window) {
+    let _ = window.hide();
+}
+
+fn is_test_mode() -> bool {
+    std::env::var("STORAGE_STUDIO_TEST_DATA_DIR").is_ok()
+}
+
+// ---------------------------------------------------------------- commands
+
+#[tauri::command]
+fn get_snapshot(app: AppHandle) -> Snapshot {
+    snapshot(&app)
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct StorageInput {
+    id: Option<String>,
+    name: String,
+    kind: String,
+    target: String,
+    #[serde(default)]
+    mount_point: String,
+    #[serde(default)]
+    volume_uuid: Option<String>,
+    #[serde(default)]
+    reconnect_at_login: bool,
+    #[serde(default)]
+    reconnect_after_wake: bool,
+    #[serde(default)]
+    username: Option<String>,
+    #[serde(default)]
+    password: Option<String>,
+    #[serde(default)]
+    remove_credentials: bool,
+}
+
+fn clean(value: &str) -> String {
+    value.trim().to_string()
+}
+
+fn validate_input(input: &StorageInput) -> Result<(), String> {
+    if clean(&input.name).is_empty() {
+        return Err("Give this storage a name.".into());
+    }
+    match input.kind.as_str() {
+        "smb" => {
+            let target = clean(&input.target);
+            if !target.starts_with("smb://") || target.trim_start_matches("smb://").is_empty() {
+                return Err("Use a share address like smb://nas.local/photos.".into());
+            }
+            if target.matches('/').count() < 3 {
+                return Err("Include the share name, like smb://nas.local/photos.".into());
+            }
+        }
+        "volume" => {
+            if clean(&input.mount_point).is_empty() {
+                return Err("Choose the disk to reconnect.".into());
+            }
+        }
+        _ => return Err("Choose SMB share or attached disk.".into()),
+    }
+    Ok(())
+}
+
+#[tauri::command]
+fn save_storage(app: AppHandle, state: State<'_, AppState>, input: StorageInput) -> Result<Snapshot, String> {
+    validate_input(&input)?;
+    let id = input.id.clone().unwrap_or_else(|| format!("s{}", unix_millis()));
+    let storage = Storage {
+        id: id.clone(),
+        name: clean(&input.name),
+        kind: input.kind.clone(),
+        target: clean(&input.target),
+        mount_point: clean(&input.mount_point),
+        volume_uuid: input.volume_uuid.clone().filter(|v| !v.trim().is_empty()),
+        reconnect_at_login: input.reconnect_at_login,
+        reconnect_after_wake: input.reconnect_after_wake,
+        username: input.username.clone().filter(|v| !v.trim().is_empty()),
+    };
+
+    {
+        let mut settings = state.settings.lock().unwrap();
+        if let Some(existing) = settings.storages.iter_mut().find(|s| s.id == id) {
+            *existing = storage.clone();
+        } else {
+            settings.storages.push(storage.clone());
+        }
+        save_settings(&settings)?;
+        let _ = send_to_helper(&state, &helper_config(&settings));
+    }
+
+    if input.password.as_deref().map(|p| !p.is_empty()).unwrap_or(false) || input.remove_credentials {
+        let message = if input.remove_credentials {
+            serde_json::json!({ "type": "forget_credentials", "id": id })
+        } else {
+            serde_json::json!({
+                "type": "credentials",
+                "id": id,
+                "username": storage.username.clone().unwrap_or_default(),
+                "password": input.password.clone().unwrap_or_default(),
+            })
+        };
+        // The settings are already saved; a helper that is down is reported by the banner.
+        if let Err(error) = send_to_helper(&state, &message) {
+            log(&format!("credentials: {error}"));
+        }
+    }
+    emit_snapshot(&app);
+    Ok(snapshot(&app))
+}
+
+#[tauri::command]
+fn remove_storage(app: AppHandle, state: State<'_, AppState>, id: String) -> Result<Snapshot, String> {
+    {
+        let mut settings = state.settings.lock().unwrap();
+        settings.storages.retain(|s| s.id != id);
+        save_settings(&settings)?;
+        let _ = send_to_helper(&state, &helper_config(&settings));
+        let _ = send_to_helper(&state, &serde_json::json!({ "type": "forget_credentials", "id": id }));
+    }
+    state.statuses.lock().unwrap().remove(&id);
+    emit_snapshot(&app);
+    Ok(snapshot(&app))
+}
+
+#[tauri::command]
+fn mount_storage(state: State<'_, AppState>, id: String) -> Result<(), String> {
+    send_to_helper(&state, &serde_json::json!({ "type": "mount", "id": id }))
+}
+
+#[tauri::command]
+fn mount_all(state: State<'_, AppState>) -> Result<(), String> {
+    send_to_helper(&state, &serde_json::json!({ "type": "mount_all" }))
+}
+
+#[tauri::command]
+fn unmount_storage(state: State<'_, AppState>, id: String) -> Result<(), String> {
+    send_to_helper(&state, &serde_json::json!({ "type": "unmount", "id": id }))
+}
+
+#[tauri::command]
+fn test_storage(state: State<'_, AppState>, id: String) -> Result<(), String> {
+    send_to_helper(&state, &serde_json::json!({ "type": "test", "id": id }))
+}
+
+#[tauri::command]
+fn reveal_storage(state: State<'_, AppState>, id: String) -> Result<(), String> {
+    let path = {
+        let statuses = state.statuses.lock().unwrap();
+        statuses.get(&id).and_then(|s| s.mounted_path.clone())
+    };
+    let settings = state.settings.lock().unwrap();
+    let storage = settings.storages.iter().find(|s| s.id == id).ok_or("That storage is no longer in the list.")?;
+    let path = path.or_else(|| if storage.mount_point.is_empty() { None } else { Some(storage.mount_point.clone()) });
+    let path = path.ok_or("That storage is not mounted yet.")?;
+    if !Path::new(&path).exists() {
+        return Err(format!("{path} is not available right now."));
+    }
+    Command::new("open")
+        .arg(&path)
+        .spawn()
+        .map_err(|_| "Could not open that folder in Finder.".to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
+fn set_credentials(state: State<'_, AppState>, id: String, username: String, password: String) -> Result<(), String> {
+    send_to_helper(&state, &serde_json::json!({ "type": "credentials", "id": id, "username": username, "password": password }))
+}
+
+#[tauri::command]
+fn set_appearance(app: AppHandle, state: State<'_, AppState>, mode: String) -> Result<Snapshot, String> {
+    let mode = match mode.as_str() {
+        "light" => "light",
+        "dark" => "dark",
+        _ => "system",
+    };
+    {
+        let mut settings = state.settings.lock().unwrap();
+        settings.appearance = mode.into();
+        save_settings(&settings)?;
+    }
+    if let Some(window) = app.get_webview_window("settings") {
+        let theme = match mode {
+            "light" => Some(tauri::Theme::Light),
+            "dark" => Some(tauri::Theme::Dark),
+            _ => None,
+        };
+        let _ = window.set_theme(theme);
+    }
+    emit_snapshot(&app);
+    Ok(snapshot(&app))
+}
+
+#[tauri::command]
+fn set_general(app: AppHandle, state: State<'_, AppState>, notifications: bool, launch_at_login: bool, retries: u32) -> Result<Snapshot, String> {
+    let retries = retries.clamp(1, 8);
+    {
+        let mut settings = state.settings.lock().unwrap();
+        let was = settings.general.launch_at_login;
+        settings.general.notifications = notifications;
+        settings.general.launch_at_login = launch_at_login;
+        settings.general.retries = retries;
+        save_settings(&settings)?;
+        if was != launch_at_login {
+            match login_item::set(launch_at_login) {
+                Ok(()) => *state.login_error.lock().unwrap() = None,
+                Err(error) => {
+                    *state.login_error.lock().unwrap() = Some(error.clone());
+                    log(&format!("launch at login: {error}"));
+                }
+            }
+        }
+        let _ = send_to_helper(&state, &helper_config(&settings));
+    }
+    emit_snapshot(&app);
+    Ok(snapshot(&app))
+}
+
+#[tauri::command]
+fn check_updates(app: AppHandle, state: State<'_, AppState>) -> Result<UpdateState, String> {
+    *state.update.lock().unwrap() = UpdateState { state: "checking".into(), version: None, reason: None };
+    emit_snapshot(&app);
+    let result = feed::check(APP_VERSION);
+    *state.update.lock().unwrap() = result.clone();
+    emit_snapshot(&app);
+    Ok(result)
+}
+
+#[tauri::command]
+fn open_updater() -> Result<(), String> {
+    for name in ["Studio Launcher KH", "Update Studio KH"] {
+        let path = format!("/Applications/{name}.app");
+        if Path::new(&path).exists() && Command::new("open").arg(&path).spawn().is_ok() {
+            return Ok(());
+        }
+    }
+    Err("Studio Launcher KH is not installed on this Mac.".into())
+}
+
+#[tauri::command]
+fn open_support() -> Result<(), String> {
+    Command::new("open")
+        .arg(SUPPORT_URL)
+        .spawn()
+        .map(|_| ())
+        .map_err(|e| format!("Could not open the support page: {e}"))
+}
+
+// ---------------------------------------------------------------- updates
+
+mod feed {
+    use super::{UpdateState, APP_NAME};
+    use base64::Engine as _;
+    use ed25519_dalek::{Signature, VerifyingKey};
+    use serde_json::Value;
+    use std::time::Duration;
+
+    const BUNDLE_ID: &str = "app.storagestudiokh.desktop";
+
+    fn publisher() -> Result<(String, String), String> {
+        let home = std::env::var("HOME").unwrap_or_default();
+        let path = std::path::PathBuf::from(home).join("Library").join("KHUpdater").join("publisher.json");
+        let text = std::fs::read_to_string(path)
+            .map_err(|_| "This Mac is not connected to an Update Studio.".to_string())?;
+        let value: Value = serde_json::from_str(&text).map_err(|_| "The Update Studio connection is incomplete.".to_string())?;
+        let url = value.get("feedURL").and_then(|v| v.as_str()).unwrap_or("").trim().to_string();
+        let key = value.get("publicKey").and_then(|v| v.as_str()).unwrap_or("").trim().to_string();
+        if url.is_empty() || key.is_empty() {
+            return Err("The Update Studio connection is incomplete.".into());
+        }
+        Ok((url, key))
+    }
+
+    fn decode(value: Option<&Value>) -> Result<Vec<u8>, String> {
+        let text = value.and_then(|v| v.as_str()).ok_or_else(|| "Malformed update response.".to_string())?;
+        base64::engine::general_purpose::STANDARD
+            .decode(text)
+            .map_err(|_| "Malformed update response.".to_string())
+    }
+
+    fn verify(feed_bytes: &[u8], signature: &[u8], key: &[u8]) -> Result<Value, String> {
+        if key.len() != 32 || signature.len() != 64 {
+            return Err("The Update Studio's key is not usable.".into());
+        }
+        let key: [u8; 32] = key.try_into().map_err(|_| "Bad key".to_string())?;
+        let signature: [u8; 64] = signature.try_into().map_err(|_| "Bad signature".to_string())?;
+        let key = VerifyingKey::from_bytes(&key).map_err(|_| "The Update Studio's key is not usable.".to_string())?;
+        key.verify_strict(feed_bytes, &Signature::from_bytes(&signature))
+            .map_err(|_| "The update feed's signature did not match.".to_string())?;
+        let value: Value = serde_json::from_slice(feed_bytes).map_err(|_| "The update feed is not readable.".to_string())?;
+        if value.get("schema").and_then(|v| v.as_u64()) != Some(1) {
+            return Err("This update feed uses a newer format than this app understands.".into());
+        }
+        Ok(value)
+    }
+
+    pub(super) fn parse_version(text: &str) -> Option<Vec<u64>> {
+        if text.is_empty() || text.len() > 64 || !text.chars().all(|c| c.is_ascii_digit() || c == '.') {
+            return None;
+        }
+        let parts: Vec<&str> = text.split('.').collect();
+        if parts.len() < 2 || parts.len() > 6 || parts.iter().any(|p| p.is_empty() || p.len() > 9) {
+            return None;
+        }
+        parts.iter().map(|p| p.parse().ok()).collect()
+    }
+
+    pub(super) fn is_newer(candidate: &str, installed: &str) -> Option<bool> {
+        let a = parse_version(candidate)?;
+        let b = parse_version(installed)?;
+        let len = a.len().max(b.len());
+        for i in 0..len {
+            let x = *a.get(i).unwrap_or(&0);
+            let y = *b.get(i).unwrap_or(&0);
+            if x != y {
+                return Some(x > y);
+            }
+        }
+        Some(false)
+    }
+
+    pub fn check(installed: &str) -> UpdateState {
+        let fail = |reason: String| UpdateState { state: "failed".into(), version: None, reason: Some(reason) };
+        let (url, key) = match publisher() {
+            Ok(found) => found,
+            Err(reason) => return UpdateState { state: "not-checked".into(), version: None, reason: Some(reason) },
+        };
+        let agent = ureq::AgentBuilder::new().timeout(Duration::from_secs(8)).build();
+        let body = match agent.get(&url).call() {
+            Ok(response) => match response.into_string() {
+                Ok(text) => text,
+                Err(_) => return fail("The Update Studio sent an unreadable answer.".into()),
+            },
+            Err(error) => return fail(format!("Could not reach the Update Studio: {error}")),
+        };
+        let response: Value = match serde_json::from_str(&body) {
+            Ok(value) => value,
+            Err(_) => return fail("The Update Studio sent an unreadable answer.".into()),
+        };
+        let feed_bytes = match decode(response.get("feed")) {
+            Ok(bytes) => bytes,
+            Err(reason) => return fail(reason),
+        };
+        let signature = match decode(response.get("signature")) {
+            Ok(bytes) => bytes,
+            Err(reason) => return fail(reason),
+        };
+        let key_bytes = match base64::engine::general_purpose::STANDARD.decode(&key) {
+            Ok(bytes) => bytes,
+            Err(_) => return fail("The Update Studio's key is not usable.".into()),
+        };
+        let feed = match verify(&feed_bytes, &signature, &key_bytes) {
+            Ok(value) => value,
+            Err(reason) => return fail(reason),
+        };
+        let entry = feed
+            .get("apps")
+            .and_then(|v| v.as_object())
+            .and_then(|apps| apps.values().find(|app| app.get("bundleID").and_then(|v| v.as_str()) == Some(BUNDLE_ID)).cloned());
+        let Some(entry) = entry else {
+            return fail(format!("{APP_NAME} is not offered by this Update Studio."));
+        };
+        let offered = entry.get("version").and_then(|v| v.as_str()).unwrap_or("");
+        match is_newer(offered, installed) {
+            Some(true) => UpdateState { state: "available".into(), version: Some(offered.into()), reason: None },
+            Some(false) => UpdateState { state: "up-to-date".into(), version: Some(offered.into()), reason: None },
+            None => fail("The update feed has an invalid version.".into()),
+        }
+    }
+}
+
+fn unix_millis() -> u128 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_millis())
+        .unwrap_or(0)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::feed::{is_newer, parse_version};
+
+    #[test]
+    fn versions_compare_numerically() {
+        assert_eq!(parse_version("1.10.0"), Some(vec![1, 10, 0]));
+        assert_eq!(is_newer("1.10", "1.9"), Some(true));
+        assert_eq!(is_newer("1.2", "1.2.0"), Some(false));
+        assert_eq!(is_newer("0.1.1", "0.1.0"), Some(true));
+    }
+
+    #[test]
+    fn bad_versions_are_rejected_not_guessed() {
+        for value in ["", "1", "1.a", "1..2", "１", "1\n", "1.2.3.4.5.6.7"] {
+            assert!(parse_version(value).is_none(), "{value:?} must be rejected");
+            assert!(!is_newer(value, "1.0").unwrap_or(false));
+        }
+    }
+}
+
+// ---------------------------------------------------------------- lifecycle
+
+fn shutdown_helper(app: &AppHandle) {
+    let state = app.state::<AppState>();
+    let mut guard = state.helper.lock().unwrap();
+    if let Some(mut helper) = guard.take() {
+        let _ = helper.stdin.write_all(b"{\"type\":\"quit\"}\n");
+        let _ = helper.stdin.flush();
+        for _ in 0..20 {
+            if let Ok(Some(_)) = helper.child.try_wait() {
+                return;
+            }
+            std::thread::sleep(Duration::from_millis(50));
+        }
+        let _ = helper.child.kill();
+        let _ = helper.child.wait();
+    }
+}
+
+fn main() {
+    // Tests and hidden verification runs use their own data folder.
+    if let Ok(dir) = std::env::var("STORAGE_STUDIO_TEST_DATA_DIR") {
+        std::env::set_var("HOME", dir); // data_dir() and the helper both follow HOME
+    }
+
+    let settings = load_settings();
+    let state = AppState::new(settings.clone());
+    let setup_settings = settings.clone();
+
+    let app = tauri::Builder::default()
+        .plugin(tauri_plugin_single_instance::init(|app, args, _cwd| {
+            // A second launch is a plain note, not a crash. `--quit` lets the
+            // release gate stop a hidden test instance the way the menu does.
+            if args.iter().any(|a| a == "--quit") {
+                app.exit(0);
+                return;
+            }
+            log("another copy was launched; showing the running one");
+            *app.state::<AppState>().second_instance.lock().unwrap() = true;
+            show_settings(app);
+            let _ = app.emit("second-instance", ());
+            emit_snapshot(app);
+        }))
+        .plugin(tauri_plugin_notification::init())
+        .manage(state)
+        .invoke_handler(tauri::generate_handler![
+            get_snapshot,
+            save_storage,
+            remove_storage,
+            mount_storage,
+            mount_all,
+            unmount_storage,
+            test_storage,
+            reveal_storage,
+            set_credentials,
+            set_appearance,
+            set_general,
+            check_updates,
+            open_updater,
+            open_support,
+        ])
+        .setup(move |app| {
+            let handle = app.handle().clone();
+
+            // Launch at login is on by default; report honestly when macOS refuses.
+            if setup_settings.general.launch_at_login
+                && !login_item::is_enabled()
+                && std::env::var("STORAGE_STUDIO_NO_LOGIN_ITEM").is_err()
+            {
+                if let Err(error) = login_item::set(true) {
+                    *handle.state::<AppState>().login_error.lock().unwrap() = Some(error.clone());
+                    log(&format!("launch at login: {error}"));
+                }
+            }
+
+            let snap = snapshot(&handle);
+            let menu = build_tray_menu(&handle, &snap)?;
+            let icon = tauri::image::Image::from_bytes(include_bytes!("../icons/tray.png"))?;
+            TrayIconBuilder::with_id("main")
+                .icon(icon)
+                .icon_as_template(true)
+                .tooltip(APP_NAME)
+                .menu(&menu)
+                .show_menu_on_left_click(true)
+                .on_menu_event(|app, event| match event.id().as_ref() {
+                    "mount-all" => {
+                        let state = app.state::<AppState>();
+                        if let Err(error) = send_to_helper(&state, &serde_json::json!({ "type": "mount_all" })) {
+                            log(&error);
+                        }
+                    }
+                    "reveal" => {
+                        let state = app.state::<AppState>();
+                        let path = state
+                            .statuses
+                            .lock()
+                            .unwrap()
+                            .values()
+                            .find_map(|s| s.mounted_path.clone());
+                        if let Some(path) = path {
+                            let _ = Command::new("open").arg(path).spawn();
+                        }
+                    }
+                    "settings" => show_settings(app),
+                    "whatsnew" => {
+                        show_settings(app);
+                        let _ = app.emit("show-whats-new", ());
+                    }
+                    "support" => {
+                        let _ = Command::new("open").arg(SUPPORT_URL).spawn();
+                    }
+                    "quit" => app.exit(0),
+                    _ => {}
+                })
+                .build(app)?;
+
+            // The helper needs the app's resources and the Keychain; start it once the UI exists.
+            if let Err(error) = start_helper(&handle) {
+                log(&error);
+                *handle.state::<AppState>().engine_error.lock().unwrap() = Some(error);
+            }
+
+            // A first run opens Settings once so the owner can add storage.
+            if setup_settings.storages.is_empty() && !is_test_mode() {
+                show_settings(&handle);
+            }
+
+            Ok(())
+        })
+        .on_window_event(|window, event| {
+            if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                // This is a menu-bar app: closing Settings hides it, it does not quit.
+                api.prevent_close();
+                hide_settings(window);
+            }
+        })
+        .build(tauri::generate_context!())
+        .expect("Storage Studio KH could not start");
+
+    app.run(|app, event| {
+        if let RunEvent::Exit = event {
+            shutdown_helper(app);
+        }
+    });
+}

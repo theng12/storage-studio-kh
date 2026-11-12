@@ -1,0 +1,52 @@
+import Foundation
+
+/// One JSON object per line, both ways, over the helper's stdin/stdout.
+public struct Command: Decodable {
+    public var type: String
+    public var id: String?
+    public var retries: Int?
+    public var storages: [Storage]?
+    public var username: String?
+    public var password: String?
+}
+
+public enum Event {
+    case state([StorageState])
+    case volumes([VolumeCandidate])
+    case attention(id: String, name: String, reason: String)
+    case recovered(id: String, name: String)
+    case needsCredentials(id: String, name: String)
+    case log(level: String, message: String)
+
+    public var json: Data {
+        var object: [String: Any] = [:]
+        switch self {
+        case .state(let items):
+            object["type"] = "state"
+            object["items"] = items.map { item -> [String: Any] in
+                var value: [String: Any] = [
+                    "id": item.id,
+                    "status": item.status.rawValue,
+                    "hasCredentials": item.hasCredentials,
+                ]
+                if let detail = item.detail { value["detail"] = detail }
+                if let path = item.mountedPath { value["mountedPath"] = path }
+                return value
+            }
+        case .volumes(let items):
+            object["type"] = "volumes"
+            object["items"] = items.map {
+                ["name": $0.name, "path": $0.path, "uuid": $0.uuid, "device": $0.device]
+            }
+        case .attention(let id, let name, let reason):
+            object = ["type": "attention", "id": id, "name": name, "reason": reason]
+        case .recovered(let id, let name):
+            object = ["type": "recovered", "id": id, "name": name]
+        case .needsCredentials(let id, let name):
+            object = ["type": "needs_credentials", "id": id, "name": name]
+        case .log(let level, let message):
+            object = ["type": "log", "level": level, "message": message]
+        }
+        return (try? JSONSerialization.data(withJSONObject: object, options: [.sortedKeys])) ?? Data("{}".utf8)
+    }
+}
