@@ -94,6 +94,7 @@ public final class Engine {
 
     private func configure(_ command: Command) {
         retries = RetryPolicy.retryCount(command.retries ?? 3)
+        let previousIds = Set(storages.map(\.id))
         storages = command.storages ?? []
         let ids = Set(storages.map(\.id))
         for (id, work) in scheduled where !ids.contains(id) {
@@ -121,7 +122,13 @@ public final class Engine {
         announce()
         refreshVolumes(force: true)
 
-        guard !configured else { return }
+        if configured {
+            // A storage just added in Settings connects now, without waiting for a wake.
+            for storage in storages where !previousIds.contains(storage.id) && (storage.reconnectAtLogin || storage.reconnectAfterWake) {
+                if states[storage.id]?.status != .mounted { begin(storage) }
+            }
+            return
+        }
         configured = true
         // Login (or first launch): reconnect the storage the owner asked to restore.
         for storage in storages where storage.reconnectAtLogin {
