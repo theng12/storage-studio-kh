@@ -15,7 +15,7 @@ use std::sync::Mutex;
 use std::time::Duration;
 
 use serde::{Deserialize, Serialize};
-use tauri::menu::{Menu, MenuItem, PredefinedMenuItem};
+use tauri::menu::{Menu, MenuItem, PredefinedMenuItem, Submenu};
 use tauri::tray::TrayIconBuilder;
 use tauri::{AppHandle, Emitter, Manager, RunEvent, State};
 
@@ -1167,6 +1167,37 @@ fn main() {
         .setup(move |app| {
             let handle = app.handle().clone();
 
+            // A real app menu gives Settings its ⌘, and the text fields their usual
+            // Cut/Copy/Paste while the window is focused.
+            let app_menu = Submenu::with_items(
+                app,
+                APP_NAME,
+                true,
+                &[
+                    &MenuItem::with_id(app, "app-settings", "Settings…", true, Some("CmdOrCtrl+,"))?,
+                    &PredefinedMenuItem::separator(app)?,
+                    &PredefinedMenuItem::hide(app, Some("Hide Storage Studio KH"))?,
+                    &PredefinedMenuItem::hide_others(app, Some("Hide Others"))?,
+                    &PredefinedMenuItem::separator(app)?,
+                    &PredefinedMenuItem::quit(app, Some("Quit Storage Studio KH"))?,
+                ],
+            )?;
+            let edit_menu = Submenu::with_items(
+                app,
+                "Edit",
+                true,
+                &[
+                    &PredefinedMenuItem::undo(app, Some("Undo"))?,
+                    &PredefinedMenuItem::redo(app, Some("Redo"))?,
+                    &PredefinedMenuItem::separator(app)?,
+                    &PredefinedMenuItem::cut(app, Some("Cut"))?,
+                    &PredefinedMenuItem::copy(app, Some("Copy"))?,
+                    &PredefinedMenuItem::paste(app, Some("Paste"))?,
+                    &PredefinedMenuItem::select_all(app, Some("Select All"))?,
+                ],
+            )?;
+            app.set_menu(Menu::with_items(app, &[&app_menu, &edit_menu])?)?;
+
             // Launch at login is on by default; report honestly when macOS refuses.
             if setup_settings.general.launch_at_login
                 && !login_item::is_enabled()
@@ -1231,6 +1262,11 @@ fn main() {
             }
 
             Ok(())
+        })
+        .on_menu_event(|app, event| {
+            if event.id().as_ref() == "app-settings" {
+                show_settings(app);
+            }
         })
         .on_window_event(|window, event| {
             if let tauri::WindowEvent::CloseRequested { api, .. } = event {
