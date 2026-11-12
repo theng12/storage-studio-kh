@@ -93,7 +93,20 @@ sleep 1
 pgrep -f "$APP/Contents/Helpers/Storage Studio KH Helper" >/dev/null && fail "the helper outlived the app"
 pass "quit stops the app and its helper"
 
-# 5. Nothing was installed behind the app's back.
+# 5. Even a force-quit (crash-like) must not leave the helper running.
+"$BIN" >>"$RUN/app-crash.out" 2>&1 &
+CRASH_PID=$!
+for _ in $(seq 1 40); do [ -n "$(pgrep -P "$CRASH_PID" 2>/dev/null)" ] && break; sleep 0.25; done
+[ -n "$(pgrep -P "$CRASH_PID" 2>/dev/null)" ] || fail "the helper did not start for the crash test"
+kill -9 "$CRASH_PID" 2>/dev/null || true
+for _ in $(seq 1 20); do
+  pgrep -f "$APP/Contents/Helpers/Storage Studio KH Helper" >/dev/null || break
+  sleep 0.25
+done
+pgrep -f "$APP/Contents/Helpers/Storage Studio KH Helper" >/dev/null && fail "the helper survived a force-quit"
+pass "helper ends with a force-quit"
+
+# 6. Nothing was installed behind the app's back.
 launchctl list 2>/dev/null | grep -i "storagestudio" && fail "a launchd job was left behind"
 [ -z "$(ls "$DATA/Library/LaunchAgents" 2>/dev/null || true)" ] || fail "a launch agent was written"
 pass "no launchd job or launch agent left behind"

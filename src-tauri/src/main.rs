@@ -834,7 +834,7 @@ fn set_general(app: AppHandle, state: State<'_, AppState>, notifications: bool, 
 fn check_updates(app: AppHandle, state: State<'_, AppState>) -> Result<UpdateState, String> {
     *state.update.lock().unwrap() = UpdateState { state: "checking".into(), version: None, reason: None };
     emit_snapshot(&app);
-    let result = feed::check(APP_VERSION);
+    let result = feed::check_with_timeout(APP_VERSION);
     *state.update.lock().unwrap() = result.clone();
     emit_snapshot(&app);
     Ok(result)
@@ -931,6 +931,20 @@ mod feed {
             }
         }
         Some(false)
+    }
+
+    /// A DNS lookup can outlive the HTTP timeout; the person still gets an answer.
+    pub fn check_with_timeout(installed: &str) -> UpdateState {
+        let (sender, receiver) = std::sync::mpsc::channel();
+        let installed = installed.to_string();
+        std::thread::spawn(move || {
+            let _ = sender.send(check(&installed));
+        });
+        receiver.recv_timeout(Duration::from_secs(15)).unwrap_or(UpdateState {
+            state: "failed".into(),
+            version: None,
+            reason: Some("The Update Studio did not answer within 15 seconds.".into()),
+        })
     }
 
     pub fn check(installed: &str) -> UpdateState {
@@ -1105,7 +1119,7 @@ fn main() {
         std::process::exit(0);
     }
     if arguments.iter().any(|a| a == "--check-updates") {
-        println!("{:?}", feed::check(APP_VERSION));
+        println!("{:?}", feed::check_with_timeout(APP_VERSION));
         std::process::exit(0);
     }
 
