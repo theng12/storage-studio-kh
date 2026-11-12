@@ -14,6 +14,10 @@ BIN="$APP/Contents/MacOS/Storage Studio KH"
 HELPER="$APP/Contents/Helpers/Storage Studio KH Helper.app/Contents/MacOS/Storage Studio KH Helper"
 [ -x "$BIN" ] || { echo "no app executable at $BIN"; exit 2; }
 [ -x "$HELPER" ] || { echo "no helper inside the app at $HELPER"; exit 2; }
+[ "$(/usr/libexec/PlistBuddy -c 'Print :LSUIElement' "$APP/Contents/Info.plist" 2>/dev/null)" = "true" ] \
+  || { echo "LSUIElement must be true: this is a menu-bar app"; exit 2; }
+[ "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleDisplayName' "$APP/Contents/Helpers/Storage Studio KH Helper.app/Contents/Info.plist" 2>/dev/null)" = "Storage Studio KH Helper" ] \
+  || { echo "the helper must be named Storage Studio KH Helper"; exit 2; }
 
 RUN="$(mktemp -d "${TMPDIR:-/tmp}/storage-studio-gate.XXXXXX")"
 DATA="$RUN/home"
