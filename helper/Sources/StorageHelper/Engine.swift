@@ -305,6 +305,14 @@ public final class Engine {
         }
     }
 
+    /// The row must say which address was tried, not just that something failed.
+    private func failureText(_ storage: Storage, _ failure: MountFailure) -> String {
+        if storage.kind == "smb" {
+            return "\(failure.message) Address tried: \(storage.target)"
+        }
+        return failure.message
+    }
+
     private func failed(_ storage: Storage, _ failure: MountFailure) {
         let previous = states[storage.id]?.status
         let attempt = (attempts[storage.id] ?? 0) + 1
@@ -312,10 +320,11 @@ public final class Engine {
         if failure.needsCredentials {
             emit(Event.needsCredentials(id: storage.id, name: storage.name).json)
         }
+        let reason = failureText(storage, failure)
         if attempt <= retries, let wait = retryDelay(attempt) {
             let retryState: StorageStatus = failure.unreachable ? .unreachable : .retrying
             let when = wait >= 1 ? "Retrying in \(Int(wait)) s." : "Retrying…"
-            set(storage, retryState, detail: "\(failure.message) \(when)")
+            set(storage, retryState, detail: "\(reason) \(when)")
             let work = DispatchWorkItem { [weak self] in
                 guard let self, let current = self.storage(storage.id) else { return }
                 if self.states[storage.id]?.status != .mounted { self.begin(current) }
@@ -324,9 +333,9 @@ public final class Engine {
             scheduled[storage.id] = work
             queue.asyncAfter(deadline: .now() + wait, execute: work)
         } else {
-            set(storage, .needsAttention, detail: failure.message)
+            set(storage, .needsAttention, detail: reason)
             if previous != .needsAttention {
-                emit(Event.attention(id: storage.id, name: storage.name, reason: failure.message).json)
+                emit(Event.attention(id: storage.id, name: storage.name, reason: reason).json)
             }
         }
     }

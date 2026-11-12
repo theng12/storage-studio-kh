@@ -37,16 +37,19 @@ Build here, then `packaging/release-push.sh storage-studio 0.1.0 "dist/Storage S
 It stages the DMG and changelog on 1301, publishes with the host's own key (the only feed
 writer), and reads the served feed back to prove the version it offers.
 
-## Verification status (0.1.0)
+## Verification status (0.1.1)
 
-Verified on this Mac: mount-table detection against the real attached volumes, the bounded retry
-ladder ending in one Needs attention, Keychain save/forget, launch/quit/force-quit leaving no
-helper or launchd job, a second launch handled plainly, DMG signature and install, launch at login.
+Verified on this Mac: mount-table detection against the real attached volumes and the real NAS
+shares; unmount → remount of a NAS share through NetFS with the login Keychain supplying the
+credential, and through `open -g smb://…`; share listing (`smbutil view`) over a private terminal,
+including spaces and dashes, with IPC$ filtered and wrong credentials reported as needing a user
+name and password; the bounded retry ladder ending in one Needs attention; Keychain save/forget;
+launch/quit/force-quit leaving no helper or launchd job; a second launch handled plainly; DMG
+signature and install; launch at login.
 
-**Not yet verified: a live SMB mount/unmount against the owner's NAS** — no SMB server was
-reachable when this build was made. Resume when the NAS is reachable at a quiet point: add the
-share in Settings, mount, open it in Finder, unmount, and confirm Needs attention with a reason
-when the NAS is switched off.
+Still the owner's hands-on step: add a share in the app's own dialog on a Mac whose Keychain has
+no credential yet, so the in-app password prompt itself is exercised; the mechanism behind it
+(private terminal for listing, Keychain for mounting) is verified.
 
 ## Data
 
