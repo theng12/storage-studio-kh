@@ -1201,6 +1201,7 @@ fn main() {
         println!("{:?}", feed::check_with_timeout(APP_VERSION));
         std::process::exit(0);
     }
+    let dump_snapshot = arguments.iter().any(|a| a == "--dump-snapshot");
 
     // Tests and hidden verification runs use their own data folder.
     if let Ok(dir) = std::env::var("STORAGE_STUDIO_TEST_DATA_DIR") {
@@ -1340,6 +1341,19 @@ fn main() {
                     _ => {}
                 })
                 .build(app)?;
+
+            if dump_snapshot {
+                // Acceptance capture: let the helper settle, print the real state, close.
+                let dump_handle = handle.clone();
+                std::thread::spawn(move || {
+                    std::thread::sleep(std::time::Duration::from_secs(7));
+                    let snap = snapshot(&dump_handle);
+                    if let Ok(text) = serde_json::to_string(&snap) {
+                        println!("SNAPSHOT_JSON:{text}");
+                    }
+                    dump_handle.exit(0);
+                });
+            }
 
             if requested_quit {
                 // `--quit` with no running copy still just closes this one.

@@ -1,0 +1,563 @@
+{
+  "generatedAt": "2026-11-12T15:29:34.773Z",
+  "appVersion": "0.1.2",
+  "checks": [
+    {
+      "page": "Storage",
+      "id": "heading",
+      "expected": "Storage",
+      "actual": "\"Storage\"",
+      "pass": "\"Storage\"",
+      "evidence": true
+    },
+    {
+      "page": "Storage",
+      "id": "row count",
+      "expected": 4,
+      "actual": "4",
+      "pass": "4",
+      "evidence": true
+    },
+    {
+      "page": "Storage",
+      "id": "real shares visible",
+      "expected": "Public Space-System pool in list",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Storage",
+      "id": "mounted state visible",
+      "expected": "Mounted chip",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Storage",
+      "id": "mounted path visible",
+      "expected": "real /Volumes path",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Storage",
+      "id": "footer pill",
+      "expected": "Storage Studio KH v0.1.2",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Audit",
+      "id": "storage controls named",
+      "expected": [],
+      "actual": "[]",
+      "pass": "[]",
+      "evidence": true
+    },
+    {
+      "page": "Audit",
+      "id": "storage no overflow",
+      "expected": "no horizontal overflow",
+      "actual": "0",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Storage",
+      "id": "row Unmount invokes",
+      "expected": "unmount_storage",
+      "actual": "true",
+      "pass": true,
+      "evidence": "tests/acceptance/screenshots/storage/list-light-820x640.png"
+    },
+    {
+      "page": "Storage",
+      "id": "row Test invokes",
+      "expected": "test_storage",
+      "actual": "true",
+      "pass": true,
+      "evidence": "tests/acceptance/screenshots/storage/list-light-820x640.png"
+    },
+    {
+      "page": "Storage",
+      "id": "row Open in Finder invokes",
+      "expected": "reveal_storage",
+      "actual": "true",
+      "pass": true,
+      "evidence": "tests/acceptance/screenshots/storage/list-light-820x640.png"
+    },
+    {
+      "page": "Storage",
+      "id": "row Edit opens the editor",
+      "expected": "dialog open",
+      "actual": "true",
+      "pass": true,
+      "evidence": "tests/acceptance/screenshots/storage/list-light-820x640.png"
+    },
+    {
+      "page": "Audit",
+      "id": "storage no overflow at 700x520",
+      "expected": "no horizontal overflow",
+      "actual": "0",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Attention",
+      "id": "chip",
+      "expected": "Needs attention",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Attention",
+      "id": "address in reason",
+      "expected": "Address tried: smb://",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Attention",
+      "id": "Mount now invokes",
+      "expected": "mount_storage",
+      "actual": "true",
+      "pass": true,
+      "evidence": "tests/acceptance/screenshots/attention/attention-light-820x640.png"
+    },
+    {
+      "page": "Attention",
+      "id": "test result toasted",
+      "expected": "toast mentions reachable",
+      "actual": "true",
+      "pass": true,
+      "evidence": "tests/acceptance/screenshots/attention/attention-light-820x640.png"
+    },
+    {
+      "page": "Engine",
+      "id": "banner on Storage",
+      "expected": "helper stopped sentence",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Engine",
+      "id": "banner on General",
+      "expected": "helper stopped sentence",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Engine",
+      "id": "banner on Appearance",
+      "expected": "helper stopped sentence",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Add",
+      "id": "label says host + share",
+      "expected": "Share address (host + share)",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Add",
+      "id": "Save disabled before address",
+      "expected": "disabled",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Add",
+      "id": "reason visible next to Save",
+      "expected": "Add the share name…",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Add",
+      "id": "reason linked to Save",
+      "expected": "aria-describedby",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Add",
+      "id": "host-only keeps Save off",
+      "expected": "disabled",
+      "actual": "true",
+      "pass": true,
+      "evidence": "tests/acceptance/screenshots/add/add-validation-light-820x640.png"
+    },
+    {
+      "page": "Add",
+      "id": "host-only reason",
+      "expected": "Add the share name",
+      "actual": "true",
+      "pass": true,
+      "evidence": "tests/acceptance/screenshots/add/add-validation-light-820x640.png"
+    },
+    {
+      "page": "Add",
+      "id": "Browse sends the host",
+      "expected": "list_shares",
+      "actual": "\"list_shares\"",
+      "pass": "\"list_shares\"",
+      "evidence": true
+    },
+    {
+      "page": "Add",
+      "id": "Browse sends address",
+      "expected": "address contains host",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Add",
+      "id": "chooser shows real names",
+      "expected": [
+        "Public Space-Media - 4TB - Music",
+        "Public Space-System pool"
+      ],
+      "actual": "[\"Public Space-Media - 4TB - Music\",\"Public Space-System pool\"]",
+      "pass": "[\"Public Space-Media - 4TB - Music\",\"Public Space-System pool\"]",
+      "evidence": true
+    },
+    {
+      "page": "Add",
+      "id": "picked address is encoded",
+      "expected": "smb://192.168.0.217/Public%20Space-Media%20-%204TB%20-%20Music",
+      "actual": "\"smb://192.168.0.217/Public%20Space-Media%20-%204TB%20-%20Music\"",
+      "pass": "\"smb://192.168.0.217/Public%20Space-Media%20-%204TB%20-%20Music\"",
+      "evidence": true
+    },
+    {
+      "page": "Add",
+      "id": "readable share line",
+      "expected": "Share: Public Space-Media - 4TB - Music",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Add",
+      "id": "Save enabled for a full address",
+      "expected": "enabled",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Add",
+      "id": "credential message",
+      "expected": "needs a user name and password",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Add",
+      "id": "connected shares offered",
+      "expected": "at least one row",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Add",
+      "id": "connected pick fills encoded address",
+      "expected": "smb://vengtheng@100.69.137.42/Public%20Space-Media%20-%204TB%20-%20Music",
+      "actual": "\"smb://vengtheng@100.69.137.42/Public%20Space-Media%20-%204TB%20-%20Music\"",
+      "pass": "\"smb://vengtheng@100.69.137.42/Public%20Space-Media%20-%204TB%20-%20Music\"",
+      "evidence": true
+    },
+    {
+      "page": "Add",
+      "id": "connected list hides after the pick",
+      "expected": 0,
+      "actual": "0",
+      "pass": "0",
+      "evidence": true
+    },
+    {
+      "page": "Add",
+      "id": "connected pick fills user",
+      "expected": "vengtheng",
+      "actual": "\"vengtheng\"",
+      "pass": "\"vengtheng\"",
+      "evidence": true
+    },
+    {
+      "page": "Add",
+      "id": "disk Save blocked",
+      "expected": "disabled",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Add",
+      "id": "disk reason",
+      "expected": "Choose a disk to reconnect.",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Add",
+      "id": "connected disks offered",
+      "expected": "options include real volumes",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Add",
+      "id": "disk choice shows mount point",
+      "expected": "/Volumes/",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Add",
+      "id": "disk Save enabled",
+      "expected": "enabled",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "General",
+      "id": "three settings rows",
+      "expected": 3,
+      "actual": "3",
+      "pass": "3",
+      "evidence": true
+    },
+    {
+      "page": "General",
+      "id": "notifications toggle invokes",
+      "expected": "set_general",
+      "actual": "\"set_general\"",
+      "pass": "\"set_general\"",
+      "evidence": true
+    },
+    {
+      "page": "General",
+      "id": "sends all three values",
+      "expected": "notifications/launchAtLogin/retries present",
+      "actual": "true",
+      "pass": true,
+      "evidence": "tests/acceptance/screenshots/general/general-light-820x640.png"
+    },
+    {
+      "page": "General",
+      "id": "retries saved",
+      "expected": 5,
+      "actual": "5",
+      "pass": "5",
+      "evidence": true
+    },
+    {
+      "page": "General",
+      "id": "login item error shown",
+      "expected": "Move the app to Applications",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Appearance",
+      "id": "three choices",
+      "expected": "System, Light, Dark",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Appearance",
+      "id": "dark applies live",
+      "expected": "dark",
+      "actual": "\"dark\"",
+      "pass": "\"dark\"",
+      "evidence": true
+    },
+    {
+      "page": "Appearance",
+      "id": "invokes set_appearance",
+      "expected": "set_appearance",
+      "actual": "\"set_appearance\"",
+      "pass": "\"set_appearance\"",
+      "evidence": true
+    },
+    {
+      "page": "Appearance",
+      "id": "light applies live",
+      "expected": "light",
+      "actual": "\"light\"",
+      "pass": "\"light\"",
+      "evidence": true
+    },
+    {
+      "page": "Updates",
+      "id": "What's New opens",
+      "expected": "title",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Updates",
+      "id": "current version marked",
+      "expected": "Current version",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Updates",
+      "id": "check icon invokes",
+      "expected": "check_updates",
+      "actual": "\"check_updates\"",
+      "pass": "\"check_updates\"",
+      "evidence": true
+    },
+    {
+      "page": "Updates",
+      "id": "checking state announced",
+      "expected": "Checking for updates",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Updates",
+      "id": "download icon appears",
+      "expected": "download button",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Updates",
+      "id": "download opens the Launcher",
+      "expected": "open_updater",
+      "actual": "\"open_updater\"",
+      "pass": "\"open_updater\"",
+      "evidence": true
+    },
+    {
+      "page": "Updates",
+      "id": "failed check shown honestly",
+      "expected": "Could not reach the Update Studio",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Support",
+      "id": "support page opens",
+      "expected": "donation copy",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Support",
+      "id": "donation button invokes",
+      "expected": "open_support",
+      "actual": "\"open_support\"",
+      "pass": "\"open_support\"",
+      "evidence": true
+    },
+    {
+      "page": "Empty",
+      "id": "empty state teaches",
+      "expected": "No storage yet",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Dialog",
+      "id": "credentials prompt opens",
+      "expected": "user name and password fields",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Dialog",
+      "id": "save invokes set_credentials",
+      "expected": "set_credentials",
+      "actual": "\"set_credentials\"",
+      "pass": "\"set_credentials\"",
+      "evidence": true
+    },
+    {
+      "page": "Dialog",
+      "id": "password never rendered in plain text after save",
+      "expected": "input type=password",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Dialog",
+      "id": "second instance noted once",
+      "expected": "already running",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Dialog",
+      "id": "second instance not repeated",
+      "expected": "single note",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
+    }
+  ],
+  "screenshots": [
+    "tests/acceptance/screenshots/storage/list-light-820x640.png",
+    "tests/acceptance/screenshots/storage/list-light-700x520.png",
+    "tests/acceptance/screenshots/storage/list-dark-820x640.png",
+    "tests/acceptance/screenshots/attention/attention-light-820x640.png",
+    "tests/acceptance/screenshots/engine/engine-down-appearance-light-820x640.png",
+    "tests/acceptance/screenshots/add/add-validation-light-820x640.png",
+    "tests/acceptance/screenshots/add/add-browse-chooser-light-820x640.png",
+    "tests/acceptance/screenshots/add/add-connected-light-820x640.png",
+    "tests/acceptance/screenshots/add/add-disk-light-820x640.png",
+    "tests/acceptance/screenshots/general/general-light-820x640.png",
+    "tests/acceptance/screenshots/general/general-dark-820x640.png",
+    "tests/acceptance/screenshots/general/general-login-error-light-820x640.png",
+    "tests/acceptance/screenshots/appearance/appearance-dark-820x640.png",
+    "tests/acceptance/screenshots/updates/whats-new-light-820x640.png",
+    "tests/acceptance/screenshots/updates/update-available-light-820x640.png",
+    "tests/acceptance/screenshots/updates/update-failed-light-820x640.png",
+    "tests/acceptance/screenshots/support/support-light-820x640.png",
+    "tests/acceptance/screenshots/empty/empty-light-820x640.png",
+    "tests/acceptance/screenshots/dialog/credentials-light-820x640.png"
+  ],
+  "summary": {
+    "total": 66,
+    "passed": 66,
+    "failed": 0
+  }
+}

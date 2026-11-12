@@ -132,13 +132,23 @@ function hostOf(target: string): string {
   return target.replace(/^smb:\/\//i, "").split("/")[0] || "The share";
 }
 
+interface DevTestHook {
+  snapshot?: Snapshot;
+  commands?: Array<{ command: string; args?: unknown }>;
+}
+
 export function createDevBackend(hash: string): {
   backend: {
     invoke<T>(command: string, args?: Record<string, unknown>): Promise<T>;
     listen<T>(event: string, handler: (payload: T) => void): Promise<() => void>;
   };
 } {
-  const snapshot = buildSnapshot(hash);
+  // Acceptance runs inject a snapshot captured from the real app and record every command.
+  const hook = (window as unknown as { __SS_TEST__?: DevTestHook }).__SS_TEST__;
+  const snapshot = hook?.snapshot
+    ? (JSON.parse(JSON.stringify(hook.snapshot)) as Snapshot)
+    : buildSnapshot(hash);
+  (window as unknown as { __SS_EMIT__?: typeof emit }).__SS_EMIT__ = emit;
   const params = new URLSearchParams(hash.replace(/^#/, ""));
   let bootFailures = 0;
 
@@ -155,6 +165,7 @@ export function createDevBackend(hash: string): {
   }
 
   async function handle(command: string, args?: Record<string, unknown>): Promise<unknown> {
+    hook?.commands?.push({ command, args });
     window.dispatchEvent(new CustomEvent("dev-command", { detail: command }));
     switch (command) {
       case "get_snapshot":
