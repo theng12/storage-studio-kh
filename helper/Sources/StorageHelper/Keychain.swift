@@ -23,13 +23,14 @@ public enum Keychain {
         ]
     }
 
-    public static func save(id: String, credentials: Credentials) {
-        guard let data = try? JSONEncoder().encode(credentials) else { return }
+    @discardableResult
+    public static func save(id: String, credentials: Credentials) -> OSStatus {
+        guard let data = try? JSONEncoder().encode(credentials) else { return errSecParam }
         SecItemDelete(query(id: id) as CFDictionary)
         var item = query(id: id)
         item[kSecValueData as String] = data
         item[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlock
-        SecItemAdd(item as CFDictionary, nil)
+        return SecItemAdd(item as CFDictionary, nil)
     }
 
     public static func load(id: String) -> Credentials? {

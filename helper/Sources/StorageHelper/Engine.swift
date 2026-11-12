@@ -78,7 +78,10 @@ public final class Engine {
                     username: command.username ?? storage.username ?? "",
                     password: command.password ?? ""
                 )
-                Keychain.save(id: storage.id, credentials: credentials)
+                let status = Keychain.save(id: storage.id, credentials: credentials)
+                if status != errSecSuccess {
+                    emit(Event.log(level: "warn", message: "The Keychain refused the password for \(storage.name) (status \(status)); it was not saved.").json)
+                }
                 mountNow(storage)
             }
         case "forget_credentials":
