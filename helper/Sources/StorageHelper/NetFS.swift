@@ -63,15 +63,24 @@ enum NetFS {
 
         var pairs: [(CFString, CFBoolean)] = [(noUserPrompt, kCFBooleanTrue)]
         if mountPath != nil { pairs.append((mountAtMountDir, kCFBooleanTrue)) }
-        if credentials == nil { pairs.append((useGuest, kCFBooleanTrue)) }
         // Only loopback shares need this, and it is harmless for the rest.
         pairs.append((allowLoopback, kCFBooleanTrue))
-        let options = options(pairs)
+        let openOptions = options(pairs)
 
         let user = credentials?.username as CFString?
         let password = credentials?.password as CFString?
-        let code = mountSync(cleanURL as CFURL, mountPath, user, password, options, nil, nil)
+        var code = mountSync(cleanURL as CFURL, mountPath, user, password, openOptions, nil, nil)
         if code == 0 { return nil }
+
+        // No password of our own: the login Keychain (what Finder remembered) may still have
+        // one, and NetFS uses it when no user is forced. Only then fall back to guest.
+        if credentials == nil {
+            var guestPairs = pairs
+            guestPairs.append((useGuest, kCFBooleanTrue))
+            let guestOptions = options(guestPairs)
+            code = mountSync(cleanURL as CFURL, mountPath, nil, nil, guestOptions, nil, nil)
+            if code == 0 { return nil }
+        }
 
         let needsCredentials = code == 1 || code == 13 || code == 80 || code == -6003
         let message: String

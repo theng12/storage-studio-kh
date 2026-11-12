@@ -76,6 +76,7 @@ interface Snapshot {
 | `unmount_storage` | `{ id }` | `null` |
 | `test_storage` | `{ id }` | `null` — the result arrives as a new snapshot (`detail`) |
 | `refresh_storage` | — | `null` — re-reads the mount table and connected disks (⌘R) |
+| `list_shares` | `{ address, username?, password? }` | `null` — the shares arrive on the `shares` event |
 | `reveal_storage` | `{ id }` | `null` |
 | `set_credentials` | `{ id, username, password }` | `null` |
 | `set_appearance` | `{ mode: "system" \| "light" \| "dark" }` | `Snapshot` |
@@ -92,6 +93,9 @@ Errors come back as a rejected promise with a plain sentence; show it, never swa
 - `second-instance` — another copy was launched; show the plain note.
 - `needs-credentials` — `{ id, name }`; ask for a user name and password for that storage.
 - `show-whats-new` — open the What's New view (from the menu-bar dropdown).
+- `shares` — `{ host: string; shares: string[]; needsCredentials: boolean; error: string | null }`.
+  `address` may be `smb://host` or `smb://host/share`; the host is what gets listed. Share names
+  come back readable (spaces and dashes intact); the app stores them percent-encoded in `target`.
 
 ## Copy rules
 

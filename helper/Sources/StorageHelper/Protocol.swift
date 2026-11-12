@@ -8,6 +8,7 @@ public struct Command: Decodable {
     public var storages: [Storage]?
     public var username: String?
     public var password: String?
+    public var host: String?
 }
 
 public enum Event {
@@ -16,6 +17,7 @@ public enum Event {
     case attention(id: String, name: String, reason: String)
     case recovered(id: String, name: String)
     case needsCredentials(id: String, name: String)
+    case shares(host: String, shares: [String], needsCredentials: Bool, error: String?)
     case log(level: String, message: String)
 
     public var json: Data {
@@ -44,6 +46,14 @@ public enum Event {
             object = ["type": "recovered", "id": id, "name": name]
         case .needsCredentials(let id, let name):
             object = ["type": "needs_credentials", "id": id, "name": name]
+        case .shares(let host, let shares, let needsCredentials, let error):
+            object = [
+                "type": "shares",
+                "host": host,
+                "shares": shares,
+                "needsCredentials": needsCredentials,
+            ]
+            if let error { object["error"] = error }
         case .log(let level, let message):
             object = ["type": "log", "level": level, "message": message]
         }

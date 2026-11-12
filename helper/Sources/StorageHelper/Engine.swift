@@ -72,6 +72,24 @@ public final class Engine {
         case "refresh":
             refreshMountStates()
             refreshVolumes(force: true)
+        case "list_shares":
+            guard let host = command.host, !host.isEmpty else {
+                emit(Event.shares(host: "", shares: [], needsCredentials: false, error: "Enter a device address first.").json)
+                return
+            }
+            let credentials: Keychain.Credentials?
+            if let username = command.username, let password = command.password, !username.isEmpty, !password.isEmpty {
+                credentials = Keychain.Credentials(username: username, password: password)
+            } else {
+                credentials = nil
+            }
+            let result = ShareLister.list(host: host, credentials: credentials)
+            emit(Event.shares(
+                host: host,
+                shares: result.shares,
+                needsCredentials: result.needsCredentials,
+                error: result.error
+            ).json)
         case "credentials":
             if let storage = storage(command.id) {
                 let credentials = Keychain.Credentials(

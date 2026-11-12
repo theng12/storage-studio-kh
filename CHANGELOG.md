@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.1 — 2026-11-12
+- Browse the shares a device offers and pick one — names with spaces and dashes included.
+- The storage form now says exactly what is missing, and Save stays off until the address or disk is complete.
+- Connecting a share works with the password your Mac already remembers for that device.
+- Attached disks explain what to do when no disk is connected.
+
 ## 0.1.0 — 2026-11-12
 - Storage Studio KH keeps your chosen network shares and attached disks connected after login, after the Mac wakes, and when the network changes.
 - The menu-bar item shows each storage and whether it is connected, with Mount now and Open in Finder.

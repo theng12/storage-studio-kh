@@ -59,6 +59,38 @@ final class MountTableTests: XCTestCase {
     }
 }
 
+final class ShareListerTests: XCTestCase {
+    func testRealSmbutilTable() {
+        let output = """
+        Share                                           Type    Comments
+        -------------------------------                 ----    --------
+        Public Space-Media - 4TB - Music                Disk    Public Space-Media - 4TB - Music
+        Public Space-System pool                        Disk    Public Space-System pool
+        IPC$                                            Pipe    IPC Service (Samba 4.17.12-Debian)
+        Public Space-Media - 6TB - Movies               Disk    Public Space-Media - 6TB - Movies
+
+        4 shares listed
+        """
+        XCTAssertEqual(
+            ShareLister.parse(output),
+            [
+                "Public Space-Media - 4TB - Music",
+                "Public Space-System pool",
+                "Public Space-Media - 6TB - Movies",
+            ]
+        )
+    }
+
+    func testEmptyAndErrorsGiveNoShares() {
+        XCTAssertEqual(ShareLister.parse(""), [])
+        XCTAssertEqual(ShareLister.parse("smbutil: server rejected the authentication: Authentication error"), [])
+    }
+
+    func testTabSeparatedTableIsAccepted() {
+        XCTAssertEqual(ShareLister.parse("Media\tDisk\tMedia share"), ["Media"])
+    }
+}
+
 final class ProtocolTests: XCTestCase {
     func testConfigureCommandDecodesCamelCaseStorage() throws {
         let line = """

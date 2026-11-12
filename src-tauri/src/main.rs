@@ -455,6 +455,8 @@ enum HelperEvent {
     NeedsCredentials { id: String, name: String },
     #[serde(rename = "log")]
     Log { level: String, message: String },
+    #[serde(rename = "shares")]
+    Shares { host: String, shares: Vec<String>, needs_credentials: bool, error: Option<String> },
 }
 
 #[derive(Deserialize)]
@@ -513,6 +515,17 @@ fn handle_helper_line(app: &AppHandle, line: &str) {
         HelperEvent::NeedsCredentials { id, name } => {
             let _ = app.emit("needs-credentials", serde_json::json!({ "id": id, "name": name }));
             show_settings(app);
+        }
+        HelperEvent::Shares { host, shares, needs_credentials, error } => {
+            let _ = app.emit(
+                "shares",
+                serde_json::json!({
+                    "host": host,
+                    "shares": shares,
+                    "needsCredentials": needs_credentials,
+                    "error": error,
+                }),
+            );
         }
         HelperEvent::Log { level, message } => log(&format!("helper [{level}]: {message}")),
     }
@@ -763,6 +776,31 @@ fn test_storage(state: State<'_, AppState>, id: String) -> Result<(), String> {
 #[tauri::command]
 fn refresh_storage(state: State<'_, AppState>) -> Result<(), String> {
     send_to_helper(&state, &serde_json::json!({ "type": "refresh" }))
+}
+
+fn host_from_address(address: &str) -> Option<String> {
+    let text = address.trim().trim_start_matches("smb://");
+    let host = text.split('/').next().unwrap_or("").trim();
+    if host.is_empty() { None } else { Some(host.to_string()) }
+}
+
+#[tauri::command]
+fn list_shares(
+    state: State<'_, AppState>,
+    address: String,
+    username: Option<String>,
+    password: Option<String>,
+) -> Result<(), String> {
+    let host = host_from_address(&address).ok_or("Enter a device address like 192.168.0.217.")?;
+    send_to_helper(
+        &state,
+        &serde_json::json!({
+            "type": "list_shares",
+            "host": host,
+            "username": username,
+            "password": password,
+        }),
+    )
 }
 
 #[tauri::command]
@@ -1070,6 +1108,16 @@ mod tests {
     }
 
     #[test]
+    fn a_host_is_taken_from_the_typed_address() {
+        use super::host_from_address;
+        assert_eq!(host_from_address("smb://192.168.0.217"), Some("192.168.0.217".into()));
+        assert_eq!(host_from_address("smb://192.168.0.217/Photos"), Some("192.168.0.217".into()));
+        assert_eq!(host_from_address(" nas.local/photos "), Some("nas.local".into()));
+        assert_eq!(host_from_address("smb://"), None);
+        assert_eq!(host_from_address("   "), None);
+    }
+
+    #[test]
     fn a_name_is_required() {
         let mut empty = input("smb", "smb://nas.local/photos", "");
         empty.name = "   ".into();
@@ -1167,6 +1215,7 @@ fn main() {
             unmount_storage,
             test_storage,
             refresh_storage,
+            list_shares,
             reveal_storage,
             set_credentials,
             set_appearance,
