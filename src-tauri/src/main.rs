@@ -1287,7 +1287,7 @@ mod tests {
             volume_uuid: None,
             reconnect_at_login: true,
             reconnect_after_wake: true,
-            username: user.map(str::to_string),
+            username: user.map(|name| name.to_string()),
         };
         let with_user = storage("a", "smb://studio@nas.local/studio", Some("studio"));
         let without_user = storage("b", "SMB://NAS.local/studio", None);
