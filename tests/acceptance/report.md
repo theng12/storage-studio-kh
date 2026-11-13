@@ -1,6 +1,6 @@
 # Storage Studio KH — page acceptance
 
-Run: 2026-11-13T17:40:52.811Z · app 0.1.10 · 258/258 checks passed
+Run: 2026-11-13T19:02:05.355Z · app 0.1.10 · 270/270 checks passed
 
 | Page | Check | Expected | Actual | Result |
 | --- | --- | --- | --- | --- |
@@ -253,6 +253,18 @@ Run: 2026-11-13T17:40:52.811Z · app 0.1.10 · 258/258 checks passed
 | Completeness | Appearance has exactly three controls | System/Light/Dark | true | PASS |
 | Add | an uppercase scheme is refused with the same message | Use an smb:// address | true | PASS |
 | Storage | opening another row's menu resets the first | aria-expanded false | true | PASS |
+| Keys | the editor's Test keeps focus on its button | editor-test | true | PASS |
+| Add | a trailing slash is the same share | Save disabled with the duplicate reason | true | PASS |
+| Add | percent escapes are the same share | Save disabled with the duplicate reason | true | PASS |
+| View | the table keeps Actions visible at 820 | menu inside the wrap | true | PASS |
+| View | a table row's menu opens | menu items | true | PASS |
+| View | arrow keys move inside the row menu | a different item | true | PASS |
+| Add | at 375 the toast clears the footer | toast above the footer | true | PASS |
+| Add | at 375 the version pill stays clickable | pill is the topmost control | true | PASS |
+| Boot | the boot error focuses Retry | retry-boot | true | PASS |
+| Boot | the boot error hides navigation | 0 | 0 | PASS |
+| Boot | the navigation comes back after Retry | 3 | 3 | PASS |
+| Remove | a timed-out Undo leaves focus on the page | main | true | PASS |
 | Layout | long name wraps instead of clipping | 0 | 0 | PASS |
 | Layout | long name adds no page overflow at 375 | 0 | 0 | PASS |
 | Footer | download control stays inside at 768 | right edge within the window | true | PASS |

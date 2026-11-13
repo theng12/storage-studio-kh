@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-13T17:40:52.811Z",
+  "generatedAt": "2026-11-13T19:02:05.355Z",
   "appVersion": "0.1.10",
   "checks": [
     {
@@ -1819,7 +1819,7 @@
       "expected": "Mounted chip and no stale sign-in line",
       "actual": "true",
       "pass": true,
-      "evidence": "Public Space-Media - 4TB - MusicSMB share | Mounted |  | Connected. |  | Mounted at | /Volumes/Public Space-Media - 4TB - Music | Address | smb://vengtheng@100.69.137.42/Public Space-Media - 4TB - Music | Reconnects | At login · after wake | Open in Finder"
+      "evidence": "Public Space-Media - 4TB - MusicSMB share | , SMB share | Mounted |  | Connected. |  | Mounted at | /Volumes/Public Space-Media - 4TB - Music | Address | smb://vengtheng@100.69.137.42/Public Space-Media - 4TB - Music | Reconnects | At login · after wake | Open in Finder"
     },
     {
       "page": "Add",
@@ -1998,6 +1998,102 @@
       "evidence": "false"
     },
     {
+      "page": "Keys",
+      "id": "the editor's Test keeps focus on its button",
+      "expected": "editor-test",
+      "actual": "true",
+      "pass": true,
+      "evidence": "editor-test"
+    },
+    {
+      "page": "Add",
+      "id": "a trailing slash is the same share",
+      "expected": "Save disabled with the duplicate reason",
+      "actual": "true",
+      "pass": true,
+      "evidence": "This share is already added as Public Space-Media - 4TB - Music."
+    },
+    {
+      "page": "Add",
+      "id": "percent escapes are the same share",
+      "expected": "Save disabled with the duplicate reason",
+      "actual": "true",
+      "pass": true,
+      "evidence": "This share is already added as Public Space-Media - 4TB - Music."
+    },
+    {
+      "page": "View",
+      "id": "the table keeps Actions visible at 820",
+      "expected": "menu inside the wrap",
+      "actual": "true",
+      "pass": true,
+      "evidence": "{\"wrapRight\":792,\"buttonRight\":779}"
+    },
+    {
+      "page": "View",
+      "id": "a table row's menu opens",
+      "expected": "menu items",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "View",
+      "id": "arrow keys move inside the row menu",
+      "expected": "a different item",
+      "actual": "true",
+      "pass": true,
+      "evidence": "unmount -> test"
+    },
+    {
+      "page": "Add",
+      "id": "at 375 the toast clears the footer",
+      "expected": "toast above the footer",
+      "actual": "true",
+      "pass": true,
+      "evidence": "{\"toastBottom\":708,\"footTop\":742,\"pillHittable\":true}"
+    },
+    {
+      "page": "Add",
+      "id": "at 375 the version pill stays clickable",
+      "expected": "pill is the topmost control",
+      "actual": "true",
+      "pass": true,
+      "evidence": "{\"toastBottom\":708,\"footTop\":742,\"pillHittable\":true}"
+    },
+    {
+      "page": "Boot",
+      "id": "the boot error focuses Retry",
+      "expected": "retry-boot",
+      "actual": "true",
+      "pass": true,
+      "evidence": "{\"focus\":\"retry-boot\",\"nav\":0}"
+    },
+    {
+      "page": "Boot",
+      "id": "the boot error hides navigation",
+      "expected": 0,
+      "actual": "0",
+      "pass": "0",
+      "evidence": true
+    },
+    {
+      "page": "Boot",
+      "id": "the navigation comes back after Retry",
+      "expected": 3,
+      "actual": "3",
+      "pass": "3",
+      "evidence": true
+    },
+    {
+      "page": "Remove",
+      "id": "a timed-out Undo leaves focus on the page",
+      "expected": "main",
+      "actual": "true",
+      "pass": true,
+      "evidence": "main"
+    },
+    {
       "page": "Layout",
       "id": "long name wraps instead of clipping",
       "expected": 0,
@@ -2123,8 +2219,8 @@
     "tests/acceptance/screenshots/appearance/appearance-light-820x640.png"
   ],
   "summary": {
-    "total": 258,
-    "passed": 258,
+    "total": 270,
+    "passed": 270,
     "failed": 0
   }
 }
