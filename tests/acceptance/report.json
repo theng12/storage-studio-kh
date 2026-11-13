@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-13T13:07:08.820Z",
+  "generatedAt": "2026-11-13T15:45:03.048Z",
   "appVersion": "0.1.10",
   "checks": [
     {
@@ -1366,6 +1366,198 @@
       "evidence": true
     },
     {
+      "page": "Contrast",
+      "id": "body text at light",
+      "expected": "at least 4.5:1",
+      "actual": "16.33:1",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Contrast",
+      "id": "muted text at light",
+      "expected": "at least 4.5:1",
+      "actual": "7.3:1",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Contrast",
+      "id": "quiet text at light",
+      "expected": "at least 4.5:1",
+      "actual": "5.13:1",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Contrast",
+      "id": "chip text at light",
+      "expected": "at least 4.5:1",
+      "actual": "5.1:1",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Contrast",
+      "id": "primary text at light",
+      "expected": "at least 4.5:1",
+      "actual": "6.41:1",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Contrast",
+      "id": "border at light",
+      "expected": "measured (decorative)",
+      "actual": "1.53:1",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Contrast",
+      "id": "planes at light",
+      "expected": "measured (decorative)",
+      "actual": "1.22:1",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Contrast",
+      "id": "body text at dark",
+      "expected": "at least 4.5:1",
+      "actual": "12.6:1",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Contrast",
+      "id": "muted text at dark",
+      "expected": "at least 4.5:1",
+      "actual": "8.01:1",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Contrast",
+      "id": "quiet text at dark",
+      "expected": "at least 4.5:1",
+      "actual": "7.14:1",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Contrast",
+      "id": "chip text at dark",
+      "expected": "at least 4.5:1",
+      "actual": "7.91:1",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Contrast",
+      "id": "primary text at dark",
+      "expected": "at least 4.5:1",
+      "actual": "8.92:1",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Contrast",
+      "id": "border at dark",
+      "expected": "measured (decorative)",
+      "actual": "1.28:1",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Contrast",
+      "id": "planes at dark",
+      "expected": "measured (decorative)",
+      "actual": "1.07:1",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "View",
+      "id": "cards is the default view",
+      "expected": "storage cards",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "View",
+      "id": "switching to Table invokes",
+      "expected": "set_list_view",
+      "actual": "\"set_list_view\"",
+      "pass": "\"set_list_view\"",
+      "evidence": true
+    },
+    {
+      "page": "View",
+      "id": "the table renders",
+      "expected": "a storage table",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "View",
+      "id": "the table's first column is pinned",
+      "expected": "sticky",
+      "actual": "true",
+      "pass": true,
+      "evidence": "sticky"
+    },
+    {
+      "page": "View",
+      "id": "switching back shows cards",
+      "expected": "cards again",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "View",
+      "id": "duplicate storage rows are deduped",
+      "expected": 4,
+      "actual": "4",
+      "pass": "4",
+      "evidence": true
+    },
+    {
+      "page": "View",
+      "id": "the row shows how many entries share it",
+      "expected": "×2",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Warnings",
+      "id": "warnings are grouped by kind with counts",
+      "expected": "Needs a password 1 and Can't be reached 1",
+      "actual": "true",
+      "pass": true,
+      "evidence": "[\"Needs a password\\n1\\nShow\",\"Can't be reached\\n1\\nShow\"]"
+    },
+    {
+      "page": "Warnings",
+      "id": "no repeated warning line",
+      "expected": 2,
+      "actual": "2",
+      "pass": "2",
+      "evidence": true
+    },
+    {
+      "page": "Warnings",
+      "id": "Show focuses the affected row",
+      "expected": "a row control",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
+    },
+    {
       "page": "Keys",
       "id": "Return saves a complete form",
       "expected": "save_storage",
@@ -1435,7 +1627,7 @@
       "expected": "row inside the visible list",
       "actual": "true",
       "pass": true,
-      "evidence": "{\"top\":441,\"bottom\":544,\"mainTop\":0,\"mainBottom\":640,\"newMark\":true}"
+      "evidence": "{\"top\":390,\"bottom\":544,\"mainTop\":0,\"mainBottom\":640,\"newMark\":true}"
     },
     {
       "page": "Add",
@@ -1443,7 +1635,7 @@
       "expected": "is-new class",
       "actual": "true",
       "pass": true,
-      "evidence": "{\"top\":441,\"bottom\":544,\"mainTop\":0,\"mainBottom\":640,\"newMark\":true}"
+      "evidence": "{\"top\":390,\"bottom\":544,\"mainTop\":0,\"mainBottom\":640,\"newMark\":true}"
     },
     {
       "page": "Remove",
@@ -1480,7 +1672,7 @@
     {
       "page": "Remove",
       "id": "Undo leaves focus on the restored row",
-      "expected": "row-s1794488987703-edit",
+      "expected": "row-s1794488987703-menu",
       "actual": "true",
       "pass": true,
       "evidence": null
@@ -1568,7 +1760,7 @@
     {
       "page": "Dialog",
       "id": "closing the password prompt focuses the row",
-      "expected": "row test control",
+      "expected": "row menu control",
       "actual": "true",
       "pass": true,
       "evidence": null
@@ -1627,7 +1819,7 @@
       "expected": "Mounted chip and no stale sign-in line",
       "actual": "true",
       "pass": true,
-      "evidence": "Public Space-Media - 4TB - MusicSMB share | Mounted |  | Connected. |  | Mounted at | /Volumes/Public Space-Media - 4TB - Music |  | Reconnects at login | Reconnects after wake |  | Unmount | Open in Finder | Test | Edit"
+      "evidence": "Public Space-Media - 4TB - MusicSMB share | Mounted |  | Connected. |  | Mounted at | /Volumes/Public Space-Media - 4TB - Music | Address | smb://vengtheng@100.69.137.42/Public Space-Media - 4TB - Music | Reconnects | At login · after wake | Open in Finder"
     },
     {
       "page": "Add",
@@ -1640,10 +1832,10 @@
     {
       "page": "Storage",
       "id": "a Test reports without mounting",
-      "expected": "still Unreachable with no mount",
+      "expected": "the chip still says Unreachable",
       "actual": "true",
       "pass": true,
-      "evidence": "Public Space-System poolAttached disk | Unreachable |  | The disk isn't connected. |  | Reconnects at login | Reconnects after wake |  | Mount now | Open in Finder | Test | Edit"
+      "evidence": "Unreachable"
     },
     {
       "page": "Storage",
@@ -1695,11 +1887,11 @@
     },
     {
       "page": "Keys",
-      "id": "Test keeps keyboard focus on its button",
-      "expected": "the row's Test control",
+      "id": "Test returns keyboard focus to the row menu",
+      "expected": "row-s1794488987703-menu",
       "actual": "true",
       "pass": true,
-      "evidence": "row-s1794488987703-test"
+      "evidence": "row-s1794488987703-menu"
     },
     {
       "page": "Keys",
@@ -1724,6 +1916,70 @@
       "actual": "true",
       "pass": true,
       "evidence": "nav-storage"
+    },
+    {
+      "page": "Completeness",
+      "id": "reconnect flags are saved",
+      "expected": "reconnectAfterWake false",
+      "actual": "true",
+      "pass": true,
+      "evidence": "{\"input\":{\"name\":\"Flags check\",\"kind\":\"smb\",\"target\":\"smb://nas.local/flags\",\"mountPoint\":\"\",\"volumeUUID\":null,\"reconnectAtLogin\":true,\"reconnectAfterWake\":false,\"username\":\"\"}}"
+    },
+    {
+      "page": "Completeness",
+      "id": "editing saves the new name",
+      "expected": "Renamed share row",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Completeness",
+      "id": "forget the saved password is offered",
+      "expected": "a checkbox",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Completeness",
+      "id": "forget disables the password field",
+      "expected": "password input disabled",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Completeness",
+      "id": "forget sends remove_credentials",
+      "expected": "removeCredentials true",
+      "actual": "true",
+      "pass": true,
+      "evidence": "{\"input\":{\"name\":\"Public Space-Media - 4TB - Music\",\"kind\":\"smb\",\"target\":\"smb://vengtheng@100.69.137.42/Public%20Space-Media%20-%204TB%20-%20Music\",\"mountPoint\":\"\",\"volumeUUID\":null,\"reconnectAtLogin\":true,\"reconnectAfterWake\":true,\"id\":\"s1794488987703\",\"username\":\"vengtheng\",\"removeCredentials\":true}}"
+    },
+    {
+      "page": "Completeness",
+      "id": "declared page capabilities have controls",
+      "expected": "all present",
+      "actual": "true",
+      "pass": true,
+      "evidence": "{\"add\":true,\"viewCards\":true,\"viewTable\":true,\"primary\":true,\"menu\":true,\"check\":true,\"pill\":true,\"support\":true,\"nav\":true}"
+    },
+    {
+      "page": "Completeness",
+      "id": "General capabilities have controls",
+      "expected": "notifications, login, retries",
+      "actual": "true",
+      "pass": true,
+      "evidence": "{\"notifications\":true,\"login\":true,\"retries\":true}"
+    },
+    {
+      "page": "Completeness",
+      "id": "Appearance has exactly three controls",
+      "expected": "System/Light/Dark",
+      "actual": "true",
+      "pass": true,
+      "evidence": "true"
     },
     {
       "page": "Layout",
@@ -1763,7 +2019,7 @@
       "expected": "each accessible name includes the share name",
       "actual": "true",
       "pass": true,
-      "evidence": "[\"Unmount Public Space-Media - 4TB - Music\",\"Open Public Space-Media - 4TB - Music in Finder\",\"Test Public Space-Media - 4TB - Music\",\"Edit Public Space-Media - 4TB - Music\"]"
+      "evidence": "[\"Open Public Space-Media - 4TB - Music in Finder\",\"More actions for Public Space-Media - 4TB - Music\"]"
     },
     {
       "page": "Storage",
@@ -1845,13 +2101,14 @@
     "tests/acceptance/screenshots/layout/general-1440x900.png",
     "tests/acceptance/screenshots/layout/appearance-1440x900.png",
     "tests/acceptance/screenshots/layout/support-1440x900.png",
+    "tests/acceptance/screenshots/view/table-light-820x640.png",
     "tests/acceptance/screenshots/add/add-saved-feedback-light-820x640.png",
     "tests/acceptance/screenshots/stress/long-name-375x812.png",
     "tests/acceptance/screenshots/appearance/appearance-light-820x640.png"
   ],
   "summary": {
-    "total": 224,
-    "passed": 224,
+    "total": 256,
+    "passed": 256,
     "failed": 0
   }
 }

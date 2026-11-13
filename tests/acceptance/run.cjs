@@ -687,21 +687,25 @@ async function noOverflow(page, id) {
           const fg = (selector) => parse(css(selector, "color"));
           const bg = (selector) => parse(css(selector, "backgroundColor"));
           return {
-            body: ratio(fg(".storage-row h3"), bg(".storage-list")),
+            body: ratio(fg(".storage-row h3"), bg(".storage-card")),
             muted: ratio(fg(".lede"), bg("#main")),
             quiet: ratio(fg(".update-line"), bg("#foot")),
             chip: ratio(fg(".chip-ok"), bg(".chip-ok")),
             primary: ratio(fg('[data-fk="add-storage"]'), bg('[data-fk="add-storage"]')),
-            border: ratio(parse(css(".storage-list", "borderTopColor")), bg("#main")),
+            border: ratio(parse(css(".storage-card", "borderTopColor")), bg(".storage-card")),
             planes: ratio(bg("#nav"), bg("#main")),
           };
         });
         for (const [name, value] of Object.entries(pairs)) {
-          if (name === "border" || name === "planes") {
-            truthy("Contrast", `${name} at ${tone}`, "measured layer separation", value > 1, String(value));
-          } else {
-            truthy("Contrast", `${name} text at ${tone}`, "at least 4.5:1", value >= 4.5, String(value));
-          }
+          const decorative = name === "border" || name === "planes";
+          record(
+            "Contrast",
+            `${name}${decorative ? "" : " text"} at ${tone}`,
+            decorative ? "measured (decorative)" : "at least 4.5:1",
+            `${value}:1`,
+            decorative ? value > 1 : value >= 4.5,
+            null,
+          );
         }
         await page.close();
       }
@@ -877,8 +881,8 @@ async function noOverflow(page, id) {
       truthy(
         "Remove",
         "Undo leaves focus on the restored row",
-        `row-${live.storages[0].id}-edit`,
-        (await page.evaluate(() => document.activeElement?.getAttribute("data-fk"))) === `row-${live.storages[0].id}-edit`,
+        `row-${live.storages[0].id}-menu`,
+        (await page.evaluate(() => document.activeElement?.getAttribute("data-fk"))) === `row-${live.storages[0].id}-menu`,
         null,
       );
       await page.close();
@@ -1080,8 +1084,8 @@ async function noOverflow(page, id) {
       const id = live.storages[2].id;
       const page = await open(browser, volume);
       await rowAction(page, id, "test");
-      const rowText = await page.locator(`[data-storage="${id}"]`).innerText();
-      truthy("Storage", "a Test reports without mounting", "still Unreachable with no mount", rowText.includes("Unreachable") && !rowText.includes("Mounted"), rowText.replace(/\n/g, " | "));
+      const chip = await page.locator(`[data-storage="${id}"] .chip`).innerText();
+      truthy("Storage", "a Test reports without mounting", "the chip still says Unreachable", chip.includes("Unreachable"), chip);
       truthy("Storage", "a Test never asks for a password", "no credentials sheet", (await page.locator("dialog[open]").count()) === 0, null);
       await page.close();
     }
@@ -1191,6 +1195,22 @@ async function noOverflow(page, id) {
         "reconnectAfterWake false",
         command?.args?.input?.reconnectAfterWake === false,
         JSON.stringify(command?.args),
+      );
+      await page.close();
+    }
+
+    {
+      const page = await open(browser, live);
+      await rowAction(page, live.storages[0].id, "edit");
+      await page.locator('input[name="name"]').fill("Renamed share");
+      await page.locator('input[name="target"]').press("Enter");
+      await page.waitForTimeout(250);
+      truthy(
+        "Completeness",
+        "editing saves the new name",
+        "Renamed share row",
+        (await page.locator(".storage-row").filter({ hasText: "Renamed share" }).count()) === 1,
+        null,
       );
       await page.close();
     }

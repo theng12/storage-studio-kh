@@ -195,6 +195,15 @@ export function warningGroups(storages: { id: string; status: string; detail: st
   return [...groups.values()];
 }
 
+/** Addresses are stored percent-encoded; the list shows the name a person typed. */
+export function readableTarget(target: string): string {
+  try {
+    return decodeURIComponent(target);
+  } catch {
+    return target;
+  }
+}
+
 export function retrySentence(retries: number): string {
   const n = Math.min(Math.max(Math.round(retries) || 1, 1), 8);
   const tail = "then stops and marks the storage Needs attention until you choose Mount now.";

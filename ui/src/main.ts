@@ -15,6 +15,7 @@ import {
   storageSummary,
   dedupeStorages,
   warningGroups,
+  readableTarget,
   updateIsAvailable,
   updateWording,
   validateStorageDraft,
@@ -126,6 +127,7 @@ let credentialsOpener: string | undefined;
 let credentialsPending: { storageId: string; toastId: number } | null = null;
 let pendingRowFocus: string[] | null = null;
 let openMenuFor: string | null = null;
+let menuOpenedAt = 0;
 let booting = false;
 let devPrepared = false;
 let eventsWired = false;
@@ -475,7 +477,7 @@ function renderStorageCards(groups: { storage: StorageView; count: number }[]): 
           }</dd></div>
           ${
             storage.kind === "smb"
-              ? `<div class="metric"><dt>Address</dt><dd class="path-text">${esc(storage.target)}</dd></div>`
+              ? `<div class="metric"><dt>Address</dt><dd class="path-text">${esc(readableTarget(storage.target))}</dd></div>`
               : ""
           }
           <div class="metric"><dt>Reconnects</dt><dd>${
@@ -502,7 +504,7 @@ function renderStorageTable(groups: { storage: StorageView; count: number }[]): 
           <td class="cell-status"><span class="chip chip-${tone}">${statusLabel(storage.status)}</span>${
             storage.detail ? `<p class="table-detail">${esc(storage.detail)}</p>` : ""
           }</td>
-          <td class="path-text">${storage.kind === "smb" ? esc(storage.target) : "—"}</td>
+          <td class="path-text">${storage.kind === "smb" ? esc(readableTarget(storage.target)) : "—"}</td>
           <td class="path-text">${storage.mountedPath ? esc(storage.mountedPath) : "—"}</td>
           <td>${storage.reconnectAtLogin ? "Login" : "—"} · ${storage.reconnectAfterWake ? "Wake" : "—"}</td>
           <td class="cell-actions">${renderRowActions(storage)}</td>
@@ -530,6 +532,7 @@ function openRowMenu(id: string, anchor: HTMLElement): void {
   const storage = snapshot?.storages.find((item) => item.id === id);
   if (!storage) return;
   openMenuFor = id;
+  menuOpenedAt = performance.now();
   renderRowMenu(storage);
   rowMenuEl.hidden = false;
   const rect = anchor.getBoundingClientRect();
@@ -541,7 +544,7 @@ function openRowMenu(id: string, anchor: HTMLElement): void {
   rowMenuEl.style.left = `${Math.round(left)}px`;
   rowMenuEl.style.top = `${Math.round(top)}px`;
   anchor.setAttribute("aria-expanded", "true");
-  rowMenuEl.querySelector<HTMLElement>('[role="menuitem"]')?.focus();
+  rowMenuEl.querySelector<HTMLElement>('[role="menuitem"]:not([disabled])')?.focus();
 }
 
 function closeRowMenu(restoreFocusToToggle = false): void {
@@ -1391,7 +1394,7 @@ async function restoreStorage(draft: Draft): Promise<void> {
     snapshot = await backend.invoke<Snapshot>("save_storage", { input });
     render();
     flashRow(draft.id);
-    if (!restoreFocus(`row-${draft.id}-edit`)) mainEl.focus({ preventScroll: true });
+    if (!restoreFocus(`row-${draft.id}-menu`)) mainEl.focus({ preventScroll: true });
     toast(`Restored ${draft.name}.`);
   } catch (error) {
     toast(errText(error), { error: true });
@@ -1887,7 +1890,8 @@ function wireEvents(): void {
   });
 
   mainEl.addEventListener("scroll", () => {
-    if (openMenuFor) closeRowMenu();
+    // The scroll that brings a row into view happens just before its click; ignore that one.
+    if (openMenuFor && performance.now() - menuOpenedAt > 250) closeRowMenu();
   }, { passive: true });
 
   navEl.addEventListener("keydown", (event) => {

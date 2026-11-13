@@ -1,6 +1,6 @@
 # Storage Studio KH — page acceptance
 
-Run: 2026-11-13T13:07:08.820Z · app 0.1.10 · 224/224 checks passed
+Run: 2026-11-13T15:45:03.048Z · app 0.1.10 · 256/256 checks passed
 
 | Page | Check | Expected | Actual | Result |
 | --- | --- | --- | --- | --- |
@@ -174,6 +174,30 @@ Run: 2026-11-13T13:07:08.820Z · app 0.1.10 · 224/224 checks passed
 | Layout | support at 1440: footer on the bottom edge | footer within the sidebar inset of the window edge | true | PASS |
 | Layout | support at 1440: pill bottom-left | pill in the left half near the bottom | true | PASS |
 | Layout | support at 1440: every nav item has an icon | 3 | 3 | PASS |
+| Contrast | body text at light | at least 4.5:1 | 16.33:1 | PASS |
+| Contrast | muted text at light | at least 4.5:1 | 7.3:1 | PASS |
+| Contrast | quiet text at light | at least 4.5:1 | 5.13:1 | PASS |
+| Contrast | chip text at light | at least 4.5:1 | 5.1:1 | PASS |
+| Contrast | primary text at light | at least 4.5:1 | 6.41:1 | PASS |
+| Contrast | border at light | measured (decorative) | 1.53:1 | PASS |
+| Contrast | planes at light | measured (decorative) | 1.22:1 | PASS |
+| Contrast | body text at dark | at least 4.5:1 | 12.6:1 | PASS |
+| Contrast | muted text at dark | at least 4.5:1 | 8.01:1 | PASS |
+| Contrast | quiet text at dark | at least 4.5:1 | 7.14:1 | PASS |
+| Contrast | chip text at dark | at least 4.5:1 | 7.91:1 | PASS |
+| Contrast | primary text at dark | at least 4.5:1 | 8.92:1 | PASS |
+| Contrast | border at dark | measured (decorative) | 1.28:1 | PASS |
+| Contrast | planes at dark | measured (decorative) | 1.07:1 | PASS |
+| View | cards is the default view | storage cards | true | PASS |
+| View | switching to Table invokes | set_list_view | "set_list_view" | PASS |
+| View | the table renders | a storage table | true | PASS |
+| View | the table's first column is pinned | sticky | true | PASS |
+| View | switching back shows cards | cards again | true | PASS |
+| View | duplicate storage rows are deduped | 4 | 4 | PASS |
+| View | the row shows how many entries share it | ×2 | true | PASS |
+| Warnings | warnings are grouped by kind with counts | Needs a password 1 and Can't be reached 1 | true | PASS |
+| Warnings | no repeated warning line | 2 | 2 | PASS |
+| Warnings | Show focuses the affected row | a row control | true | PASS |
 | Keys | Return saves a complete form | save_storage | true | PASS |
 | Dialog | a click outside keeps typed input | editor still open | true | PASS |
 | Dialog | Escape asks before discarding | Discard changes? | true | PASS |
@@ -188,7 +212,7 @@ Run: 2026-11-13T13:07:08.820Z · app 0.1.10 · 224/224 checks passed
 | Remove | removal offers Undo | Undo button | true | PASS |
 | Remove | Undo takes keyboard focus after Remove | the Undo toast button | true | PASS |
 | Remove | Undo puts the storage back | Public Space-Media - 4TB - Music returned | true | PASS |
-| Remove | Undo leaves focus on the restored row | row-s1794488987703-edit | true | PASS |
+| Remove | Undo leaves focus on the restored row | row-s1794488987703-menu | true | PASS |
 | Dialog | saving a password says what happens next | Password saved. Trying | true | PASS |
 | Dialog | the Trying note ends when the share answers | no stale Trying toast | true | PASS |
 | Esc | first Escape asks before discarding | Discard changes? | true | PASS |
@@ -199,7 +223,7 @@ Run: 2026-11-13T13:07:08.820Z · app 0.1.10 · 224/224 checks passed
 | Esc | Keep editing keeps the typed name and focus | Changed name in editor-name | true | PASS |
 | Dialog | Browse dismissal returns focus to the address | target field | true | PASS |
 | Dialog | Remove return focuses the form | editor-name | true | PASS |
-| Dialog | closing the password prompt focuses the row | row test control | true | PASS |
+| Dialog | closing the password prompt focuses the row | row menu control | true | PASS |
 | Dialog | saving returns focus to the opener | add-storage | true | PASS |
 | Dialog | closing What's New focuses the pill | pill | true | PASS |
 | Layout | 375 Tab order is nav, content, footer | DOM order matches the screen | true | PASS |
@@ -208,17 +232,25 @@ Run: 2026-11-13T13:07:08.820Z · app 0.1.10 · 224/224 checks passed
 | Storage | a mounting row says Mounting on its button | Mounting… | true | PASS |
 | Dialog | saved password mounts the share in the preview | Mounted chip and no stale sign-in line | true | PASS |
 | Add | the new row's actions are clear of the toast | no intersection at 820x640 | true | PASS |
-| Storage | a Test reports without mounting | still Unreachable with no mount | true | PASS |
+| Storage | a Test reports without mounting | the chip still says Unreachable | true | PASS |
 | Storage | a Test never asks for a password | no credentials sheet | true | PASS |
 | Updates | a check keeps an available update | still offers 0.2.0 with its download control | true | PASS |
 | Boot | Retry leaves focus on the restored page | main | true | PASS |
 | Dialog | Tab wraps inside the editor | focus stays in the sheet | true | PASS |
 | Updates | What's New opens with Close focused | close button | true | PASS |
 | Updates | closing What's New restores the pill | pill | true | PASS |
-| Keys | Test keeps keyboard focus on its button | the row's Test control | true | PASS |
+| Keys | Test returns keyboard focus to the row menu | row-s1794488987703-menu | true | PASS |
 | Keys | Unmount moves keyboard focus to Mount now | row-s1794488987703-mount | true | PASS |
 | Keys | Check for Updates keeps keyboard focus | check | true | PASS |
 | Keys | Restart helper lands on a control, not BODY | nav-storage | true | PASS |
+| Completeness | reconnect flags are saved | reconnectAfterWake false | true | PASS |
+| Completeness | editing saves the new name | Renamed share row | true | PASS |
+| Completeness | forget the saved password is offered | a checkbox | true | PASS |
+| Completeness | forget disables the password field | password input disabled | true | PASS |
+| Completeness | forget sends remove_credentials | removeCredentials true | true | PASS |
+| Completeness | declared page capabilities have controls | all present | true | PASS |
+| Completeness | General capabilities have controls | notifications, login, retries | true | PASS |
+| Completeness | Appearance has exactly three controls | System/Light/Dark | true | PASS |
 | Layout | long name wraps instead of clipping | 0 | 0 | PASS |
 | Layout | long name adds no page overflow at 375 | 0 | 0 | PASS |
 | Footer | download control stays inside at 768 | right edge within the window | true | PASS |
@@ -277,6 +309,7 @@ Run: 2026-11-13T13:07:08.820Z · app 0.1.10 · 224/224 checks passed
 - tests/acceptance/screenshots/layout/general-1440x900.png
 - tests/acceptance/screenshots/layout/appearance-1440x900.png
 - tests/acceptance/screenshots/layout/support-1440x900.png
+- tests/acceptance/screenshots/view/table-light-820x640.png
 - tests/acceptance/screenshots/add/add-saved-feedback-light-820x640.png
 - tests/acceptance/screenshots/stress/long-name-375x812.png
 - tests/acceptance/screenshots/appearance/appearance-light-820x640.png

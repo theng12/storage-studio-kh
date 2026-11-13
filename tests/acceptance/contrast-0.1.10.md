@@ -43,3 +43,20 @@ download control.
 
 Borders are decorative; the 1px line goes from 1.35:1 to 1.46:1 against the content surface in
 light and from 1.30:1 to 1.42:1 in dark, while the planes themselves separate more clearly.
+
+## Rendered values from the acceptance run (cards view)
+
+These are the computed colours read by `tests/acceptance/run.cjs`; they are the numbers the critic
+should compare against. (The table above reports the worst pair over the four planes; the run reads
+the card surface for body text and the navigation plane for the footer line.)
+
+| Pair | Light | Dark |
+| --- | --- | --- |
+| Body text on a card | 16.33:1 | 12.60:1 |
+| Muted text on the content surface | 7.30:1 | 8.01:1 |
+| Quiet footer text on the navigation plane | 5.13:1 | 7.14:1 |
+| Mounted chip | 5.10:1 | 7.91:1 |
+| Primary button label | 6.41:1 | 8.92:1 |
+| Card border vs card (decorative) | 1.53:1 | 1.28:1 |
+| Navigation vs content surface (decorative) | 1.22:1 | 1.07:1 |
+

@@ -1008,6 +1008,10 @@ h3 {
   min-width: 150px;
 }
 
+.storage-table .path-text {
+  overflow-wrap: anywhere;
+}
+
 .storage-table .cell-actions {
   text-align: right;
 }
