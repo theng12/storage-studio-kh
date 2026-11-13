@@ -75,6 +75,7 @@ export interface Snapshot {
   launchAtLoginError: string | null;
   engineRunning: boolean;
   engineError: string | null;
+  lastChecked: number | null;
   secondInstance: boolean;
 }
 

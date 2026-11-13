@@ -1047,6 +1047,31 @@ h3 {
   font-size: var(--t-caption);
 }
 
+/* Below 1100px the table keeps Storage, Status, Address and Actions; the pinned Actions cell
+   would otherwise cover the middle columns. */
+@media (max-width: 1099px) {
+  .storage-table th:nth-child(4),
+  .storage-table th:nth-child(5),
+  .storage-table td:nth-child(4),
+  .storage-table td:nth-child(5) {
+    display: none;
+  }
+
+  .storage-table .cell-actions {
+    position: static;
+    border-left: 0;
+  }
+}
+
+/* Under 900px the Address column makes the table wider than the window; Cards shows it. */
+@media (max-width: 899px) {
+  .storage-table th:nth-child(3),
+  .storage-table td:nth-child(3) {
+    display: none;
+  }
+}
+
+
 /* Empty state --------------------------------------------------------- */
 
 .empty {

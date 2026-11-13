@@ -219,6 +219,7 @@ struct Snapshot {
     launch_at_login_error: Option<String>,
     engine_running: bool,
     engine_error: Option<String>,
+    last_checked: Option<u64>,
     second_instance: bool,
 }
 
@@ -249,6 +250,7 @@ struct AppState {
     update: Mutex<UpdateState>,
     login_error: Mutex<Option<String>>,
     engine_error: Mutex<Option<String>>,
+    last_checked: Mutex<Option<u64>>,
     second_instance: Mutex<bool>,
 }
 
@@ -263,6 +265,7 @@ impl AppState {
             update: Mutex::new(UpdateState::default()),
             login_error: Mutex::new(None),
             engine_error: Mutex::new(None),
+            last_checked: Mutex::new(None),
             second_instance: Mutex::new(false),
         }
     }
@@ -326,6 +329,7 @@ fn snapshot(app: &AppHandle) -> Snapshot {
         launch_at_login_enabled: login_item::is_enabled(),
         launch_at_login_error,
         engine_running,
+        last_checked: *state.last_checked.lock().unwrap(),
         engine_error,
         second_instance,
     }
@@ -530,6 +534,7 @@ fn handle_helper_line(app: &AppHandle, line: &str) {
                 );
             }
             drop(statuses);
+            *state.last_checked.lock().unwrap() = Some(unix_millis() as u64);
             emit_snapshot(app);
         }
         HelperEvent::Volumes { items } => {
@@ -866,9 +871,11 @@ fn save_storage(app: AppHandle, state: State<'_, AppState>, input: StorageInput)
 fn share_key(target: &str) -> String {
     let lower = target.trim().to_lowercase();
     let rest = lower.strip_prefix("smb://").unwrap_or(&lower);
-    let after_user = match rest.split_once('@') {
+    let after_query = rest.split('?').next().unwrap_or(rest);
+    let after_query = after_query.split('#').next().unwrap_or(after_query);
+    let after_user = match after_query.split_once('@') {
         Some((_, host)) => host,
-        None => rest,
+        None => after_query,
     };
     let mut decoded = String::new();
     let mut chars = after_user.chars();
@@ -887,7 +894,29 @@ fn share_key(target: &str) -> String {
             decoded.push(character);
         }
     }
-    decoded.trim_end_matches('/').to_string()
+    let decoded = decoded.trim_end_matches('/').to_string();
+    let decoded = match decoded.split_once('/') {
+        Some((host, path)) => {
+            let mut resolved: Vec<&str> = Vec::new();
+            for segment in path.split('/').filter(|part| !part.is_empty()) {
+                match segment {
+                    "." => {}
+                    ".." => {
+                        resolved.pop();
+                    }
+                    other => resolved.push(other),
+                }
+            }
+            let host = host.strip_suffix(":445").unwrap_or(host);
+            if resolved.is_empty() {
+                host.to_string()
+            } else {
+                format!("{host}/{}", resolved.join("/"))
+            }
+        }
+        None => decoded.strip_suffix(":445").unwrap_or(&decoded).to_string(),
+    };
+    decoded
 }
 
 /// The same share is one mount whether or not a user name is written in front of the host.
@@ -1314,9 +1343,15 @@ mod tests {
         let other = storage("c", "smb://nas.local/other", None);
         let trailing = storage("d", "smb://nas.local/studio/", None);
         let escaped = storage("e", "smb://nas.local/st%75dio", None);
+        let port = storage("f", "smb://nas.local:445/studio", None);
+        let query = storage("g", "smb://nas.local/studio?x=1", None);
+        let dotted = storage("h", "smb://nas.local/./studio", None);
         assert!(super::same_storage(&with_user, &without_user));
         assert!(super::same_storage(&with_user, &trailing));
         assert!(super::same_storage(&with_user, &escaped));
+        assert!(super::same_storage(&with_user, &port));
+        assert!(super::same_storage(&with_user, &query));
+        assert!(super::same_storage(&with_user, &dotted));
         assert!(!super::same_storage(&with_user, &other));
     }
 

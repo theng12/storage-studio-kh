@@ -318,6 +318,7 @@ async function noOverflow(page, id) {
       const storageText = await downPage.locator("main, .content").first().innerText();
       truthy("Engine", "banner on Storage", "helper stopped sentence", storageText.includes("It stopped unexpectedly"), null);
       truthy("Engine", "status line admits the helper is down", "Helper isn't running", storageText.includes("Helper isn't running"), null);
+      truthy("Engine", "status line shows when the state was last received", "Last update", storageText.includes("Last update"), null);
       truthy("Engine", "banner offers a way out", "Restart helper button", (await downPage.locator('[data-fk="restart-helper"]').count()) === 1, null);
       await downPage.locator('[data-fk="nav-general"]').click();
       truthy("Engine", "banner on General", "helper stopped sentence", (await downPage.locator("main, .content").first().innerText()).includes("It stopped unexpectedly"), null);
@@ -590,6 +591,7 @@ async function noOverflow(page, id) {
       await emit(page, "needs-credentials", { id: "s1794488987703", name: "Public Space-Media - 4TB - Music" });
       const dialog = await page.locator("dialog[open]").innerText().catch(() => "");
       truthy("Dialog", "credentials prompt opens", "user name and password fields", dialog.toLowerCase().includes("password"), null);
+      truthy("Dialog", "the prompt names where the password is saved", "secrets.json path", dialog.includes("secrets.json"), null);
       const focusInside = await page.evaluate(() => {
         const name = document.activeElement?.getAttribute("name") ?? "";
         return name === "credential-password" || name === "credential-username";
@@ -1015,8 +1017,8 @@ async function noOverflow(page, id) {
       const page = await open(browser, live);
       await rowAction(page, live.storages[0].id, "test");
       await rowAction(page, live.storages[0].id, "test");
-      const testToasts = await page.locator(".toast").filter({ hasText: "Test:" }).count();
-      truthy("Storage", "a repeated Test still names its result", "two Test toasts", testToasts >= 2, String(testToasts));
+      const testToastText = (await page.locator(".toast").filter({ hasText: "Test:" }).allInnerTexts()).join(" ");
+      truthy("Storage", "a repeated Test still names its result", "one replaced Test toast with a result", testToastText.includes("Test:"), testToastText);
       await page.close();
     }
 
@@ -1222,6 +1224,7 @@ async function noOverflow(page, id) {
       });
       const page = await open(browser, credentials);
       await rowAction(page, live.storages[0].id, "edit");
+      eq("Add", "Edit does not offer the connected-share picker", 0, await page.locator('[data-editor-action="add-connected"]').count());
       const forget = page.locator('input[name="forgetPassword"]');
       truthy("Completeness", "forget the saved password is offered", "a checkbox", (await forget.count()) === 1, null);
       await forget.check();
@@ -1231,6 +1234,8 @@ async function noOverflow(page, id) {
       await page.waitForTimeout(250);
       const last = await lastCommand(page);
       truthy("Completeness", "forget sends remove_credentials", "removeCredentials true", last?.args?.input?.removeCredentials === true, JSON.stringify(last?.args));
+      const forgetToast = (await page.locator(".toast").allInnerTexts()).join(" ");
+      truthy("Completeness", "the forget toast names the forgotten password", "forgotten", forgetToast.includes("forgotten"), forgetToast);
       await page.close();
     }
 
@@ -1292,6 +1297,21 @@ async function noOverflow(page, id) {
       await page.close();
     }
 
+    {
+      const page = await open(browser, live);
+      const before = await page.locator(".storage-row").count();
+      const name = live.storages[0].name;
+      await rowAction(page, live.storages[0].id, "remove");
+      truthy("Remove", "the row menu offers Remove", "a confirmation", (await page.locator("#editor-title").innerText()).includes("Remove"), null);
+      await page.locator('[data-editor-action="confirm-remove"]').click();
+      await page.waitForTimeout(250);
+      eq("Remove", "menu Remove removes the row", before - 1, await page.locator(".storage-row").count());
+      await page.locator("[data-toast-action]").click();
+      await page.waitForTimeout(250);
+      truthy("Remove", "menu Remove can be undone", `${name} returned`, (await page.locator(".storage-row").filter({ hasText: name }).count()) === 1, null);
+      await page.close();
+    }
+
     /* --------------------------------------- Round-5: focus, identity, table, toasts */
     {
       const page = await open(browser, live);
@@ -1325,6 +1345,22 @@ async function noOverflow(page, id) {
           (await page.locator("#save-reason").innerText()).includes("already added"),
         await page.locator("#save-reason").innerText().catch(() => ""),
       );
+      for (const form of [
+        "smb://100.69.137.42:445/Public%20Space-Media%20-%204TB%20-%20Music",
+        "smb://100.69.137.42/Public%20Space-Media%20-%204TB%20-%20Music?x=1",
+        "smb://100.69.137.42/./Public%20Space-Media%20-%204TB%20-%20Music",
+      ]) {
+        await page.locator('input[name="target"]').fill(form);
+        await page.waitForTimeout(120);
+        truthy(
+          "Add",
+          `equivalent address refused: ${form.replace("smb://", "").slice(0, 28)}`,
+          "Save disabled with the duplicate reason",
+          await page.locator('[data-editor-action="save"]').isDisabled() &&
+            (await page.locator("#save-reason").innerText()).includes("already added"),
+          await page.locator("#save-reason").innerText().catch(() => ""),
+        );
+      }
       await closeEditorDiscarding(page);
       await page.close();
     }
@@ -1343,6 +1379,11 @@ async function noOverflow(page, id) {
         };
       });
       truthy("View", "the table keeps Actions visible at 820", "menu inside the wrap", visible.buttonRight !== null && visible.buttonRight <= visible.wrapRight, JSON.stringify(visible));
+      const narrow = await page.evaluate(() => {
+        const address = document.querySelector(".storage-table .cell-address");
+        return { addressShown: address ? getComputedStyle(address).display !== "none" : null };
+      });
+      truthy("View", "the table drops Address at 820 (Cards carries it)", "Address hidden", narrow.addressShown === false, JSON.stringify(narrow));
       await page.locator(".storage-table [data-row-menu]").first().click();
       await page.waitForTimeout(150);
       truthy("View", "a table row's menu opens", "menu items", (await page.locator("#row-menu [role=menuitem]").count()) > 0, null);
@@ -1406,10 +1447,10 @@ async function noOverflow(page, id) {
       await page.waitForTimeout(12500);
       truthy(
         "Remove",
-        "a timed-out Undo leaves focus on the page",
-        "main",
-        (await page.evaluate(() => document.activeElement?.id)) === "main",
-        await page.evaluate(() => document.activeElement?.id || document.activeElement?.tagName),
+        "a timed-out Undo leaves focus on a real control",
+        "add-storage",
+        (await page.evaluate(() => document.activeElement?.getAttribute("data-fk"))) === "add-storage",
+        await page.evaluate(() => document.activeElement?.getAttribute("data-fk") || document.activeElement?.tagName),
       );
       await page.close();
     }

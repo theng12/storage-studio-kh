@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-13T19:02:05.355Z",
+  "generatedAt": "2026-11-13T22:55:14.527Z",
   "appVersion": "0.1.10",
   "checks": [
     {
@@ -278,6 +278,14 @@
       "page": "Engine",
       "id": "status line admits the helper is down",
       "expected": "Helper isn't running",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Engine",
+      "id": "status line shows when the state was last received",
+      "expected": "Last update",
       "actual": "true",
       "pass": true,
       "evidence": null
@@ -809,6 +817,14 @@
       "page": "Dialog",
       "id": "credentials prompt opens",
       "expected": "user name and password fields",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Dialog",
+      "id": "the prompt names where the password is saved",
+      "expected": "secrets.json path",
       "actual": "true",
       "pass": true,
       "evidence": null
@@ -1800,10 +1816,10 @@
     {
       "page": "Storage",
       "id": "a repeated Test still names its result",
-      "expected": "two Test toasts",
+      "expected": "one replaced Test toast with a result",
       "actual": "true",
       "pass": true,
-      "evidence": "2"
+      "evidence": "Test: Connected at /Volumes/Public Space-Media - 4TB - Music."
     },
     {
       "page": "Storage",
@@ -1934,6 +1950,14 @@
       "evidence": null
     },
     {
+      "page": "Add",
+      "id": "Edit does not offer the connected-share picker",
+      "expected": 0,
+      "actual": "0",
+      "pass": "0",
+      "evidence": true
+    },
+    {
       "page": "Completeness",
       "id": "forget the saved password is offered",
       "expected": "a checkbox",
@@ -1956,6 +1980,14 @@
       "actual": "true",
       "pass": true,
       "evidence": "{\"input\":{\"name\":\"Public Space-Media - 4TB - Music\",\"kind\":\"smb\",\"target\":\"smb://vengtheng@100.69.137.42/Public%20Space-Media%20-%204TB%20-%20Music\",\"mountPoint\":\"\",\"volumeUUID\":null,\"reconnectAtLogin\":true,\"reconnectAfterWake\":true,\"id\":\"s1794488987703\",\"username\":\"vengtheng\",\"removeCredentials\":true}}"
+    },
+    {
+      "page": "Completeness",
+      "id": "the forget toast names the forgotten password",
+      "expected": "forgotten",
+      "actual": "true",
+      "pass": true,
+      "evidence": "Saved Public Space-Media - 4TB - Music. The saved password was forgotten."
     },
     {
       "page": "Completeness",
@@ -1998,6 +2030,30 @@
       "evidence": "false"
     },
     {
+      "page": "Remove",
+      "id": "the row menu offers Remove",
+      "expected": "a confirmation",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Remove",
+      "id": "menu Remove removes the row",
+      "expected": 3,
+      "actual": "3",
+      "pass": "3",
+      "evidence": true
+    },
+    {
+      "page": "Remove",
+      "id": "menu Remove can be undone",
+      "expected": "Public Space-Media - 4TB - Music returned",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
+    },
+    {
       "page": "Keys",
       "id": "the editor's Test keeps focus on its button",
       "expected": "editor-test",
@@ -2022,12 +2078,44 @@
       "evidence": "This share is already added as Public Space-Media - 4TB - Music."
     },
     {
+      "page": "Add",
+      "id": "equivalent address refused: 100.69.137.42:445/Public%20S",
+      "expected": "Save disabled with the duplicate reason",
+      "actual": "true",
+      "pass": true,
+      "evidence": "This share is already added as Public Space-Media - 4TB - Music."
+    },
+    {
+      "page": "Add",
+      "id": "equivalent address refused: 100.69.137.42/Public%20Space",
+      "expected": "Save disabled with the duplicate reason",
+      "actual": "true",
+      "pass": true,
+      "evidence": "This share is already added as Public Space-Media - 4TB - Music."
+    },
+    {
+      "page": "Add",
+      "id": "equivalent address refused: 100.69.137.42/./Public%20Spa",
+      "expected": "Save disabled with the duplicate reason",
+      "actual": "true",
+      "pass": true,
+      "evidence": "This share is already added as Public Space-Media - 4TB - Music."
+    },
+    {
       "page": "View",
       "id": "the table keeps Actions visible at 820",
       "expected": "menu inside the wrap",
       "actual": "true",
       "pass": true,
       "evidence": "{\"wrapRight\":792,\"buttonRight\":779}"
+    },
+    {
+      "page": "View",
+      "id": "the table drops Address at 820 (Cards carries it)",
+      "expected": "Address hidden",
+      "actual": "true",
+      "pass": true,
+      "evidence": "{\"addressShown\":false}"
     },
     {
       "page": "View",
@@ -2087,11 +2175,11 @@
     },
     {
       "page": "Remove",
-      "id": "a timed-out Undo leaves focus on the page",
-      "expected": "main",
+      "id": "a timed-out Undo leaves focus on a real control",
+      "expected": "add-storage",
       "actual": "true",
       "pass": true,
-      "evidence": "main"
+      "evidence": "add-storage"
     },
     {
       "page": "Layout",
@@ -2219,8 +2307,8 @@
     "tests/acceptance/screenshots/appearance/appearance-light-820x640.png"
   ],
   "summary": {
-    "total": 270,
-    "passed": 270,
+    "total": 281,
+    "passed": 281,
     "failed": 0
   }
 }

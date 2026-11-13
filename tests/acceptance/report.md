@@ -1,6 +1,6 @@
 # Storage Studio KH — page acceptance
 
-Run: 2026-11-13T19:02:05.355Z · app 0.1.10 · 270/270 checks passed
+Run: 2026-11-13T22:55:14.527Z · app 0.1.10 · 281/281 checks passed
 
 | Page | Check | Expected | Actual | Result |
 | --- | --- | --- | --- | --- |
@@ -39,6 +39,7 @@ Run: 2026-11-13T19:02:05.355Z · app 0.1.10 · 270/270 checks passed
 | Audit | attention no overflow at 700x520 | no horizontal overflow | 0 | PASS |
 | Engine | banner on Storage | helper stopped sentence | true | PASS |
 | Engine | status line admits the helper is down | Helper isn't running | true | PASS |
+| Engine | status line shows when the state was last received | Last update | true | PASS |
 | Engine | banner offers a way out | Restart helper button | true | PASS |
 | Engine | banner on General | helper stopped sentence | true | PASS |
 | Engine | banner on Appearance | helper stopped sentence | true | PASS |
@@ -105,6 +106,7 @@ Run: 2026-11-13T19:02:05.355Z · app 0.1.10 · 270/270 checks passed
 | Support | donation button invokes | open_support | "open_support" | PASS |
 | Empty | empty state teaches | No storage yet | true | PASS |
 | Dialog | credentials prompt opens | user name and password fields | true | PASS |
+| Dialog | the prompt names where the password is saved | secrets.json path | true | PASS |
 | Dialog | focus starts inside the prompt | a credentials field | true | PASS |
 | Dialog | save invokes set_credentials | set_credentials | "set_credentials" | PASS |
 | Dialog | password never rendered in plain text after save | input type=password | true | PASS |
@@ -228,7 +230,7 @@ Run: 2026-11-13T19:02:05.355Z · app 0.1.10 · 270/270 checks passed
 | Dialog | closing What's New focuses the pill | pill | true | PASS |
 | Layout | 375 Tab order is nav, content, footer | DOM order matches the screen | true | PASS |
 | Keys | arrow keys move between sections | General focused and shown | true | PASS |
-| Storage | a repeated Test still names its result | two Test toasts | true | PASS |
+| Storage | a repeated Test still names its result | one replaced Test toast with a result | true | PASS |
 | Storage | a mounting row says Mounting on its button | Mounting… | true | PASS |
 | Dialog | saved password mounts the share in the preview | Mounted chip and no stale sign-in line | true | PASS |
 | Add | the new row's actions are clear of the toast | no intersection at 820x640 | true | PASS |
@@ -245,18 +247,27 @@ Run: 2026-11-13T19:02:05.355Z · app 0.1.10 · 270/270 checks passed
 | Keys | Restart helper lands on a control, not BODY | nav-storage | true | PASS |
 | Completeness | reconnect flags are saved | reconnectAfterWake false | true | PASS |
 | Completeness | editing saves the new name | Renamed share row | true | PASS |
+| Add | Edit does not offer the connected-share picker | 0 | 0 | PASS |
 | Completeness | forget the saved password is offered | a checkbox | true | PASS |
 | Completeness | forget disables the password field | password input disabled | true | PASS |
 | Completeness | forget sends remove_credentials | removeCredentials true | true | PASS |
+| Completeness | the forget toast names the forgotten password | forgotten | true | PASS |
 | Completeness | declared page capabilities have controls | all present | true | PASS |
 | Completeness | General capabilities have controls | notifications, login, retries | true | PASS |
 | Completeness | Appearance has exactly three controls | System/Light/Dark | true | PASS |
 | Add | an uppercase scheme is refused with the same message | Use an smb:// address | true | PASS |
 | Storage | opening another row's menu resets the first | aria-expanded false | true | PASS |
+| Remove | the row menu offers Remove | a confirmation | true | PASS |
+| Remove | menu Remove removes the row | 3 | 3 | PASS |
+| Remove | menu Remove can be undone | Public Space-Media - 4TB - Music returned | true | PASS |
 | Keys | the editor's Test keeps focus on its button | editor-test | true | PASS |
 | Add | a trailing slash is the same share | Save disabled with the duplicate reason | true | PASS |
 | Add | percent escapes are the same share | Save disabled with the duplicate reason | true | PASS |
+| Add | equivalent address refused: 100.69.137.42:445/Public%20S | Save disabled with the duplicate reason | true | PASS |
+| Add | equivalent address refused: 100.69.137.42/Public%20Space | Save disabled with the duplicate reason | true | PASS |
+| Add | equivalent address refused: 100.69.137.42/./Public%20Spa | Save disabled with the duplicate reason | true | PASS |
 | View | the table keeps Actions visible at 820 | menu inside the wrap | true | PASS |
+| View | the table drops Address at 820 (Cards carries it) | Address hidden | true | PASS |
 | View | a table row's menu opens | menu items | true | PASS |
 | View | arrow keys move inside the row menu | a different item | true | PASS |
 | Add | at 375 the toast clears the footer | toast above the footer | true | PASS |
@@ -264,7 +275,7 @@ Run: 2026-11-13T19:02:05.355Z · app 0.1.10 · 270/270 checks passed
 | Boot | the boot error focuses Retry | retry-boot | true | PASS |
 | Boot | the boot error hides navigation | 0 | 0 | PASS |
 | Boot | the navigation comes back after Retry | 3 | 3 | PASS |
-| Remove | a timed-out Undo leaves focus on the page | main | true | PASS |
+| Remove | a timed-out Undo leaves focus on a real control | add-storage | true | PASS |
 | Layout | long name wraps instead of clipping | 0 | 0 | PASS |
 | Layout | long name adds no page overflow at 375 | 0 | 0 | PASS |
 | Footer | download control stays inside at 768 | right edge within the window | true | PASS |

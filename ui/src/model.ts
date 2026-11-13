@@ -127,13 +127,25 @@ export function storageSummary(storages: { status: string }[]): string {
   return `${parts.join(", ")}.`;
 }
 
-/** A share is the same mount with or without a user name, a trailing slash or escapes. */
+/** A share is the same mount with or without a user, port, query, escapes, dot segments or slash. */
 function shareKey(target: string): string {
-  let key = target.trim().toLowerCase().replace(/^smb:\/\/([^/@]*@)?/, "smb://");
+  let key = target.trim().toLowerCase().replace(/^smb:\/\/([^/@]*@)?/, "smb://").split(/[?#]/)[0];
   try {
     key = decodeURIComponent(key);
   } catch {
     // A malformed escape stays as typed; the form reports the real address problem.
+  }
+  key = key.replace(/^(smb:\/\/[^/]+?):445(?=\/|$)/, "$1");
+  const parts = /^(smb:\/\/[^/]+)(\/.*)?$/.exec(key);
+  if (parts) {
+    const segments = (parts[2] ?? "").split("/").filter(Boolean);
+    const resolved: string[] = [];
+    for (const segment of segments) {
+      if (segment === ".") continue;
+      if (segment === "..") resolved.pop();
+      else resolved.push(segment);
+    }
+    key = parts[1] + (resolved.length ? "/" + resolved.join("/") : "");
   }
   return key.replace(/\/+$/, "");
 }

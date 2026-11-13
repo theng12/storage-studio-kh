@@ -169,6 +169,8 @@ function toast(
     focusAction?: boolean;
   } = {},
 ): number {
+  const duplicate = toasts.find((entry) => entry.message === message && !entry.action);
+  if (duplicate) dismissToast(duplicate.id);
   const item: ToastItem = {
     id: (toastSeq += 1),
     message,
@@ -199,7 +201,13 @@ function dismissToast(id: number): void {
   window.clearTimeout(toasts[index].timer);
   toasts.splice(index, 1);
   renderToasts();
-  if (hadFocus) mainEl.focus({ preventScroll: true });
+  if (hadFocus) {
+    if (!restoreFocus("add-storage")) {
+      const first = mainEl.querySelector<HTMLElement>(".row-primary, .row-menu-btn");
+      if (first) first.focus({ preventScroll: true });
+      else mainEl.focus({ preventScroll: true });
+    }
+  }
 }
 
 function dismissToastsMatching(prefix: string): void {
@@ -345,7 +353,11 @@ function renderEngineBannerIfNeeded(): string {
 function storageStatusLine(groups: { storage: { status: string } }[]): string {
   if (!groups.length) return "Shares and disks reconnect after login, after wake, and when the network changes.";
   const summary = storageSummary(groups.map((group) => group.storage));
-  return snapshot?.engineRunning === false ? `Helper isn't running. ${summary}` : summary;
+  if (snapshot?.engineRunning !== false) return summary;
+  const checked = snapshot.lastChecked
+    ? new Date(snapshot.lastChecked).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+    : null;
+  return checked ? `Helper isn't running. Last update ${checked}. ${summary}` : `Helper isn't running. ${summary}`;
 }
 
 function renderStorage(): string {
@@ -529,7 +541,8 @@ function renderRowMenu(storage: StorageView): void {
   rowMenuEl.innerHTML = `
     ${mounted ? item("unmount", "Unmount", blocked) : ""}
     ${item("test", rowBusy[storage.id] === "test" ? "Testing…" : "Test", blocked)}
-    ${item("edit", "Edit", false)}`;
+    ${item("edit", "Edit", false)}
+    ${item("remove", "Remove…", false)}`;
 }
 
 function openRowMenu(id: string, anchor: HTMLElement): void {
@@ -901,7 +914,7 @@ function renderEditor(): void {
   const blockReason = editorBlockReason();
   const showReason = editor.touched && blockReason;
   const connectedShares =
-    d.kind === "smb" && !editor.connectedChosen
+    !isEdit && d.kind === "smb" && !editor.connectedChosen
       ? (snapshot?.mountedShares ?? []).filter(
           (candidate) =>
             candidate.url !== d.target &&
@@ -1294,7 +1307,7 @@ async function saveEditor(): Promise<void> {
       saved.storages.find((item) => item.name === input.name && item.target === input.target && item.kind === input.kind);
     flashRow(row?.id);
     if (isEdit) {
-      toast(`Saved ${input.name}.`);
+      toast(d.removeCredentials ? `Saved ${input.name}. The saved password was forgotten.` : `Saved ${input.name}.`);
     } else {
       toast(`Added ${input.name}.`, {
         action: row ? { label: "Mount now", run: () => void runRowAction(row.id, "mount") } : undefined,
@@ -1681,7 +1694,7 @@ function renderCredentials(): void {
   credentialsEl.innerHTML = `
     <div class="sheet-head">
       <h2 id="credentials-title">Sign in to ${esc(credentials.name)}</h2>
-      <p class="sheet-sub">Storage Studio KH needs a user name and password for this share. The password is saved privately in the app's own data folder.</p>
+      <p class="sheet-sub">Storage Studio KH needs a user name and password for this share. It is saved privately at ~/Library/Application Support/Storage Studio KH/secrets.json.</p>
     </div>
     <div class="sheet-body">
       ${credentials.error ? `<p class="form-error" role="alert">${esc(credentials.error)}</p>` : ""}
@@ -1867,6 +1880,16 @@ function wireEvents(): void {
         const storage = snapshot?.storages.find((item) => item.id === id);
         if (storage) openEditor(storage, `row-${id}-menu`);
       } else if (action === "show-warning") showWarningRow(id);
+      else if (action === "remove") {
+        const storage = snapshot?.storages.find((item) => item.id === id);
+        if (storage) {
+          openEditor(storage, `row-${id}-menu`);
+          if (editor) {
+            editor.confirmRemove = true;
+            renderEditor();
+          }
+        }
+      }
       return;
     }
 
