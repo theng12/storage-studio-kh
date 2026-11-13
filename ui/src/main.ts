@@ -13,6 +13,8 @@ import {
   statusLabel,
   statusTone,
   storageSummary,
+  dedupeStorages,
+  warningGroups,
   updateIsAvailable,
   updateWording,
   validateStorageDraft,
@@ -43,6 +45,7 @@ interface Draft {
   volumeUUID: string | null;
   username: string;
   password: string;
+  removeCredentials: boolean;
   reconnectAtLogin: boolean;
   reconnectAfterWake: boolean;
 }
@@ -94,6 +97,7 @@ const navEl = document.querySelector<HTMLElement>("#nav")!;
 const footEl = document.querySelector<HTMLElement>("#foot")!;
 const mainEl = document.querySelector<HTMLElement>("#main")!;
 const toastsEl = document.querySelector<HTMLElement>("#toasts")!;
+const rowMenuEl = document.querySelector<HTMLElement>("#row-menu")!;
 const editorEl = document.querySelector<HTMLDialogElement>("#editor")!;
 const whatsnewEl = document.querySelector<HTMLDialogElement>("#whatsnew")!;
 const credentialsEl = document.querySelector<HTMLDialogElement>("#credentials")!;
@@ -121,6 +125,7 @@ let whatsnewOpener: string | undefined;
 let credentialsOpener: string | undefined;
 let credentialsPending: { storageId: string; toastId: number } | null = null;
 let pendingRowFocus: string[] | null = null;
+let openMenuFor: string | null = null;
 let booting = false;
 let devPrepared = false;
 let eventsWired = false;
@@ -331,31 +336,45 @@ function renderEngineBannerIfNeeded(): string {
   return snapshot && !snapshot.engineRunning ? renderEngineBanner(snapshot) : "";
 }
 
-function storageStatusLine(s: Snapshot): string {
-  if (!s.storages.length) return "Shares and disks reconnect after login, after wake, and when the network changes.";
-  const summary = storageSummary(s.storages);
-  return s.engineRunning ? summary : `Helper isn't running. ${summary}`;
+function storageStatusLine(groups: { storage: { status: string } }[]): string {
+  if (!groups.length) return "Shares and disks reconnect after login, after wake, and when the network changes.";
+  const summary = storageSummary(groups.map((group) => group.storage));
+  return snapshot?.engineRunning === false ? `Helper isn't running. ${summary}` : summary;
 }
 
 function renderStorage(): string {
   if (!snapshot) return "";
   const s = snapshot;
+  // shortcut: no search or sort; the list is small — add them when it grows past ~12 rows.
+  const groups = dedupeStorages(s.storages);
+  const mode = s.listView === "table" ? "table" : "cards";
+  const warnings = warningGroups(groups.map((group) => group.storage));
   return `
     <header class="page-head">
       <div>
         <h1>Storage</h1>
-        <p class="lede" title="${
-          s.storages.length ? "Press ⌘R to re-read the mount table." : ""
-        }">${esc(storageStatusLine(s))}</p>
+        <p class="lede" title="${groups.length ? "Press ⌘R to re-read the mount table." : ""}">${esc(storageStatusLine(groups))}</p>
       </div>
       ${
-        s.storages.length
+        groups.length
           ? `<button type="button" class="btn btn-primary" data-action="add-storage" data-fk="add-storage">${icons.plus}<span>Add storage</span></button>`
           : ""
       }
     </header>
     ${renderEngineBannerIfNeeded()}
-    ${s.storages.length ? `<ul class="storage-list">${s.storages.map(renderStorageRow).join("")}</ul>` : renderEmpty()}`;
+    ${
+      groups.length
+        ? `<div class="storage-toolbar">
+            ${
+              warnings.length
+                ? `<div class="warning-groups" aria-label="Warnings">${warnings.map(renderWarningGroup).join("")}</div>`
+                : ""
+            }
+            ${renderViewSwitch(mode)}
+          </div>
+          ${mode === "table" ? renderStorageTable(groups) : renderStorageCards(groups)}`
+        : renderEmpty()
+    }`;
 }
 
 function renderEngineBanner(s: Snapshot): string {
@@ -383,66 +402,180 @@ function renderEmpty(): string {
     </div>`;
 }
 
-function renderStorageRow(storage: StorageView): string {
-  const tone = statusTone(storage.status);
-  const mounted = storage.status === "mounted";
-  const busyAction = rowBusy[storage.id];
-  const engine = Boolean(snapshot?.engineRunning);
-  const helperTitle = engine ? "" : ' title="The background helper isn\'t running."';
-  const disabled = busyAction ? " disabled" : "";
-
-  const mounting = busyAction === "mount" || storage.status === "mounting";
-  const mountLabel = mounted
-    ? ""
-    : `<button type="button" class="row-btn row-btn-accent" data-action="mount" data-id="${esc(storage.id)}" data-fk="row-${esc(storage.id)}-mount" aria-label="${
-        mounting ? "Mounting" : "Mount now"
-      } ${esc(storage.name)}"${
-        disabled || !engine || storage.status === "mounting" ? " disabled" : ""
-      }${helperTitle}>${mounting ? "Mounting…" : "Mount now"}</button>`;
-  const unmountLabel = mounted
-    ? `<button type="button" class="row-btn" data-action="unmount" data-id="${esc(storage.id)}" data-fk="row-${esc(storage.id)}-unmount" aria-label="Unmount ${esc(storage.name)}"${
-        disabled || !engine ? " disabled" : ""
-      }${helperTitle}>${busyAction === "unmount" ? "Unmounting…" : "Unmount"}</button>`
-    : "";
-  const finderLabel = `<button type="button" class="row-btn" data-action="reveal" data-id="${esc(storage.id)}" data-fk="row-${esc(storage.id)}-reveal" aria-label="Open ${esc(
-    storage.name,
-  )} in Finder"${storage.mountedPath ? "" : ' disabled title="Mount the storage to open it in Finder."'}>Open in Finder</button>`;
-  const testLabel = `<button type="button" class="row-btn" data-action="test" data-id="${esc(storage.id)}" data-fk="row-${esc(storage.id)}-test" aria-label="${
-    busyAction === "test" ? "Testing" : "Test"
-  } ${esc(storage.name)}"${disabled || !engine ? " disabled" : ""}${helperTitle}>${busyAction === "test" ? "Testing…" : "Test"}</button>`;
-  const editLabel = `<button type="button" class="row-btn" data-action="edit" data-id="${esc(storage.id)}" data-fk="row-${esc(storage.id)}-edit" aria-label="Edit ${esc(
-    storage.name,
-  )}">Edit</button>`;
-
-  const facts = [
-    storage.reconnectAtLogin ? "Reconnects at login" : "No reconnect at login",
-    storage.reconnectAfterWake ? "Reconnects after wake" : "No reconnect after wake",
+function renderViewSwitch(mode: string): string {
+  const options = [
+    { value: "cards", label: "Cards", icon: icons.grid },
+    { value: "table", label: "Table", icon: icons.rows },
   ];
+  return `<div class="segmented view-switch" role="radiogroup" aria-label="List view">
+    ${options
+      .map(
+        (option) => `<label>
+          <input type="radio" name="list-view" value="${option.value}" data-list-view="${option.value}" data-fk="view-${option.value}" ${
+            mode === option.value ? "checked" : ""
+          }${busy.listView ? " disabled" : ""} />
+          <span>${option.icon}${option.label}</span>
+        </label>`,
+      )
+      .join("")}
+  </div>`;
+}
 
-  return `
-    <li class="storage-row" data-storage="${esc(storage.id)}">
-      <div class="storage-head">
-        <div class="storage-id">
-          <h3>${esc(storage.name)}<span class="storage-kind">${storage.kind === "smb" ? "SMB share" : "Attached disk"}</span></h3>
+function renderWarningGroup(group: { label: string; count: number; firstId: string }): string {
+  return `<button type="button" class="warning-group" data-action="show-warning" data-id="${esc(group.firstId)}" aria-label="${esc(
+    group.label,
+  )}: ${group.count}. Show the first one.">
+    <span class="warning-label">${esc(group.label)}</span>
+    <span class="warning-count">${group.count}</span>
+    <span class="warning-show">Show</span>
+  </button>`;
+}
+
+function renderRowActions(storage: StorageView): string {
+  const id = esc(storage.id);
+  const mounted = storage.status === "mounted";
+  const engine = Boolean(snapshot?.engineRunning);
+  const busyAction = rowBusy[storage.id];
+  const mounting = busyAction === "mount" || storage.status === "mounting";
+  const primary = mounted
+    ? `<button type="button" class="row-primary" data-action="reveal" data-id="${id}" data-fk="row-${id}-reveal" aria-label="Open ${esc(
+        storage.name,
+      )} in Finder"${storage.mountedPath ? "" : " disabled"}>${icons.folder}<span>Open in Finder</span></button>`
+    : `<button type="button" class="row-primary row-primary-accent" data-action="mount" data-id="${id}" data-fk="row-${id}-mount" aria-label="${
+        mounting ? "Mounting" : "Mount now"
+      } ${esc(storage.name)}"${busyAction || !engine || storage.status === "mounting" ? " disabled" : ""}>${
+        mounting ? "Mounting…" : "Mount now"
+      }</button>`;
+  return `<div class="row-actions">
+    ${primary}
+    <button type="button" class="row-menu-btn" data-row-menu data-id="${id}" data-fk="row-${id}-menu" aria-haspopup="menu" aria-expanded="${
+      openMenuFor === storage.id
+    }" aria-label="More actions for ${esc(storage.name)}" title="More actions">${icons.more}</button>
+  </div>`;
+}
+
+function renderStorageCards(groups: { storage: StorageView; count: number }[]): string {
+  return `<ul class="storage-list storage-cards">${groups
+    .map(({ storage, count }) => {
+      const tone = statusTone(storage.status);
+      const kind = storage.kind === "smb" ? "SMB share" : "Attached disk";
+      return `<li class="storage-row storage-card" data-storage="${esc(storage.id)}">
+        <div class="storage-head">
+          <div class="storage-id">
+            <h3>${esc(storage.name)}${
+              count > 1 ? `<span class="dup-count" title="${count} entries for this one storage">×${count}</span>` : ""
+            }<span class="storage-kind">${kind}</span></h3>
+          </div>
+          <span class="chip chip-${tone}">${statusLabel(storage.status)}</span>
         </div>
-        <span class="chip chip-${tone}">${statusLabel(storage.status)}</span>
-      </div>
-      ${storage.detail ? `<p class="storage-detail">${esc(storage.detail)}</p>` : ""}
-      ${
-        storage.mountedPath
-          ? `<p class="storage-path">${icons.folder}<span>Mounted at</span> <span class="path-text">${esc(storage.mountedPath)}</span></p>`
-          : ""
-      }
-      <p class="facts">${facts
-        .map(
-          (fact, index) =>
-            `<span class="fact${index === 0 && !storage.reconnectAtLogin ? " fact-off" : ""}${
-              index === 1 && !storage.reconnectAfterWake ? " fact-off" : ""
-            }">${index === 0 ? (storage.reconnectAtLogin ? icons.check : icons.dash) : storage.reconnectAfterWake ? icons.check : icons.dash}<span>${fact}</span></span>`,
-        )
-        .join("")}</p>
-      <div class="row-actions">${mountLabel}${unmountLabel}${finderLabel}${testLabel}${editLabel}</div>
-    </li>`;
+        ${storage.detail ? `<p class="storage-detail">${esc(storage.detail)}</p>` : ""}
+        <dl class="metrics">
+          <div class="metric"><dt>Mounted at</dt><dd class="path-text">${
+            storage.mountedPath ? esc(storage.mountedPath) : "Not mounted"
+          }</dd></div>
+          ${
+            storage.kind === "smb"
+              ? `<div class="metric"><dt>Address</dt><dd class="path-text">${esc(storage.target)}</dd></div>`
+              : ""
+          }
+          <div class="metric"><dt>Reconnects</dt><dd>${
+            storage.reconnectAtLogin ? "At login" : "No login"
+          } · ${storage.reconnectAfterWake ? "after wake" : "not after wake"}</dd></div>
+        </dl>
+        ${renderRowActions(storage)}
+      </li>`;
+    })
+    .join("")}</ul>`;
+}
+
+function renderStorageTable(groups: { storage: StorageView; count: number }[]): string {
+  return `<div class="storage-table-wrap"><table class="storage-table">
+    <thead><tr><th>Storage</th><th>Status</th><th>Address</th><th>Mounted at</th><th>Reconnects</th><th>Actions</th></tr></thead>
+    <tbody>${groups
+      .map(({ storage, count }) => {
+        const tone = statusTone(storage.status);
+        const kind = storage.kind === "smb" ? "SMB share" : "Attached disk";
+        return `<tr class="storage-table-row" data-storage="${esc(storage.id)}">
+          <td class="cell-name"><span class="table-name">${esc(storage.name)}${
+            count > 1 ? ` <span class="dup-count">×${count}</span>` : ""
+          }</span><span class="storage-kind">${kind}</span></td>
+          <td class="cell-status"><span class="chip chip-${tone}">${statusLabel(storage.status)}</span>${
+            storage.detail ? `<p class="table-detail">${esc(storage.detail)}</p>` : ""
+          }</td>
+          <td class="path-text">${storage.kind === "smb" ? esc(storage.target) : "—"}</td>
+          <td class="path-text">${storage.mountedPath ? esc(storage.mountedPath) : "—"}</td>
+          <td>${storage.reconnectAtLogin ? "Login" : "—"} · ${storage.reconnectAfterWake ? "Wake" : "—"}</td>
+          <td class="cell-actions">${renderRowActions(storage)}</td>
+        </tr>`;
+      })
+      .join("")}</tbody></table></div>`;
+}
+
+function renderRowMenu(storage: StorageView): void {
+  if (!snapshot) return;
+  const id = esc(storage.id);
+  const mounted = storage.status === "mounted";
+  const blocked = Boolean(rowBusy[storage.id]) || !snapshot.engineRunning;
+  const item = (action: string, label: string, disabled: boolean): string =>
+    `<button type="button" class="row-menu-item" role="menuitem" data-action="${action}" data-id="${id}" data-fk="row-${id}-${action}"${
+      disabled ? " disabled" : ""
+    }>${label}</button>`;
+  rowMenuEl.innerHTML = `
+    ${mounted ? item("unmount", "Unmount", blocked) : ""}
+    ${item("test", rowBusy[storage.id] === "test" ? "Testing…" : "Test", blocked)}
+    ${item("edit", "Edit", false)}`;
+}
+
+function openRowMenu(id: string, anchor: HTMLElement): void {
+  const storage = snapshot?.storages.find((item) => item.id === id);
+  if (!storage) return;
+  openMenuFor = id;
+  renderRowMenu(storage);
+  rowMenuEl.hidden = false;
+  const rect = anchor.getBoundingClientRect();
+  const width = rowMenuEl.offsetWidth;
+  const height = rowMenuEl.offsetHeight;
+  const left = Math.max(8, Math.min(window.innerWidth - width - 8, rect.right - width));
+  const top =
+    rect.bottom + 4 + height > window.innerHeight - 8 ? Math.max(8, rect.top - height - 4) : rect.bottom + 4;
+  rowMenuEl.style.left = `${Math.round(left)}px`;
+  rowMenuEl.style.top = `${Math.round(top)}px`;
+  anchor.setAttribute("aria-expanded", "true");
+  rowMenuEl.querySelector<HTMLElement>('[role="menuitem"]')?.focus();
+}
+
+function closeRowMenu(restoreFocusToToggle = false): void {
+  if (!openMenuFor) return;
+  const id = openMenuFor;
+  openMenuFor = null;
+  rowMenuEl.hidden = true;
+  rowMenuEl.innerHTML = "";
+  const toggle = document.querySelector<HTMLElement>(`[data-row-menu][data-id="${id.replace(/["\\]/g, "")}"]`);
+  toggle?.setAttribute("aria-expanded", "false");
+  if (restoreFocusToToggle) toggle?.focus();
+}
+
+async function setListView(mode: "cards" | "table"): Promise<void> {
+  if (!snapshot || busy.listView || (snapshot.listView ?? "cards") === mode) return;
+  const fk = focusedKey();
+  busy.listView = true;
+  render();
+  try {
+    snapshot = await backend.invoke<Snapshot>("set_list_view", { mode });
+  } catch (error) {
+    toast(errText(error), { error: true });
+  } finally {
+    delete busy.listView;
+    render();
+    restoreFocus(fk);
+  }
+}
+
+function showWarningRow(id: string): void {
+  const row = mainEl.querySelector<HTMLElement>(`[data-storage="${id.replace(/["\\]/g, "")}"]`);
+  if (!row) return;
+  row.scrollIntoView({ block: "nearest" });
+  row.querySelector<HTMLElement>(".row-primary, .row-menu-btn")?.focus();
 }
 
 function renderGeneral(): string {
@@ -580,6 +713,7 @@ function openEditor(storage?: StorageView, openerFk?: string): void {
         volumeUUID: storage.volumeUUID,
         username: storage.username ?? "",
         password: "",
+        removeCredentials: false,
         reconnectAtLogin: storage.reconnectAtLogin,
         reconnectAfterWake: storage.reconnectAfterWake,
       }
@@ -591,6 +725,7 @@ function openEditor(storage?: StorageView, openerFk?: string): void {
         volumeUUID: null,
         username: "",
         password: "",
+        removeCredentials: false,
         reconnectAtLogin: true,
         reconnectAfterWake: true,
       };
@@ -747,6 +882,8 @@ function renderEditor(): void {
 
   const d = editor.draft;
   const isEdit = Boolean(d.id);
+  const savedStorage = d.id ? snapshot?.storages.find((item) => item.id === d.id) : undefined;
+  const savedCredentials = Boolean(savedStorage?.hasCredentials);
   const volumes = snapshot?.volumes ?? [];
   const savedVolumeMissing = d.kind === "volume" && d.volumeUUID && !volumes.some((volume) => volume.uuid === d.volumeUUID);
   const blockReason = editorBlockReason();
@@ -805,10 +942,17 @@ function renderEditor(): void {
         </label>
         <label class="field">
           <span class="field-label">Password (optional)</span>
-          <input type="password" name="password" value="${esc(d.password)}" placeholder="${isEdit ? "Leave blank to keep the saved one" : "Stored privately by Storage Studio KH"}" autocomplete="off"${
-            editor.busy ? " disabled" : ""
-          } />
+          <input type="password" name="password" value="${esc(d.password)}" placeholder="${
+            d.removeCredentials ? "Saved password will be forgotten" : isEdit ? "Leave blank to keep the saved one" : "Stored privately by Storage Studio KH"
+          }" autocomplete="off"${editor.busy || d.removeCredentials ? " disabled" : ""} />
         </label>
+        ${
+          isEdit && savedCredentials
+            ? `<label class="check-row"><input type="checkbox" name="forgetPassword" data-fk="editor-forget" ${
+                d.removeCredentials ? "checked" : ""
+              }${editor.busy ? " disabled" : ""} /> Forget the saved password</label>`
+            : ""
+        }
         <label class="field">
           <span class="field-label">Mount point (optional)</span>
           <input type="text" name="mountPoint" value="${esc(d.mountPoint)}" placeholder="e.g. /Volumes/studio" spellcheck="false" autocomplete="off"${
@@ -940,6 +1084,11 @@ function syncEditorField(target: HTMLInputElement | HTMLSelectElement): void {
       break;
     case "password":
       draft.password = target.value;
+      break;
+    case "forgetPassword":
+      draft.removeCredentials = (target as HTMLInputElement).checked;
+      if (draft.removeCredentials) draft.password = "";
+      renderEditor();
       break;
     case "mountPoint":
       draft.mountPoint = target.value;
@@ -1121,6 +1270,7 @@ async function saveEditor(): Promise<void> {
   if (d.kind === "smb") {
     input.username = d.username.trim();
     if (d.password) input.password = d.password;
+    if (d.removeCredentials) input.removeCredentials = true;
   }
   try {
     const saved = await backend.invoke<Snapshot>("save_storage", { input });
@@ -1261,7 +1411,11 @@ async function runRowAction(id: string, action: string): Promise<void> {
   const command = ROW_COMMANDS[action];
   if (!command) return;
   pendingRowFocus =
-    action === "unmount" ? [`row-${id}-mount`, `row-${id}-test`] : [`row-${id}-${action}`, `row-${id}-edit`];
+    action === "unmount"
+      ? [`row-${id}-mount`, `row-${id}-menu`]
+      : action === "mount"
+        ? [`row-${id}-reveal`, `row-${id}-menu`]
+        : [`row-${id}-menu`];
   rowBusy[id] = action;
   if (action === "test") beginTest(id);
   render();
@@ -1474,8 +1628,8 @@ function renderWhatsNew(): void {
 /* Credentials --------------------------------------------------------- */
 
 function openCredentials(id: string, name: string): void {
-  // The prompt arrives from the helper, not a click; the row's Test control is the way back.
-  credentialsOpener = `row-${id}-test`;
+  // The prompt arrives from the helper, not a click; the row's menu control is the way back.
+  credentialsOpener = `row-${id}-menu`;
   const storage = snapshot?.storages.find((item) => item.id === id);
   credentials = {
     id,
@@ -1658,6 +1812,15 @@ function wireEvents(): void {
   document.addEventListener("click", (event) => {
     const target = event.target as HTMLElement;
 
+    const menuButton = target.closest<HTMLElement>("[data-row-menu]");
+    if (menuButton?.dataset.id) {
+      const id = menuButton.dataset.id;
+      if (openMenuFor === id) closeRowMenu(true);
+      else openRowMenu(id, menuButton);
+      return;
+    }
+    if (openMenuFor && !target.closest("#row-menu")) closeRowMenu();
+
     const viewButton = target.closest<HTMLElement>("[data-view]");
     if (viewButton?.dataset.view) {
       view = viewButton.dataset.view as View;
@@ -1668,6 +1831,8 @@ function wireEvents(): void {
 
     const actionButton = target.closest<HTMLElement>("[data-action]");
     if (actionButton) {
+      // Close first: the action's snapshot re-render must not fight a menu that is about to go.
+      if (openMenuFor) closeRowMenu();
       const action = actionButton.dataset.action;
       const id = actionButton.dataset.id ?? "";
       if (action === "whats-new") openWhatsNew();
@@ -1681,8 +1846,8 @@ function wireEvents(): void {
       else if (action === "reveal") void revealStorage(id);
       else if (action === "edit") {
         const storage = snapshot?.storages.find((item) => item.id === id);
-        if (storage) openEditor(storage, actionButton.dataset.fk);
-      }
+        if (storage) openEditor(storage, `row-${id}-menu`);
+      } else if (action === "show-warning") showWarningRow(id);
       return;
     }
 
@@ -1704,6 +1869,7 @@ function wireEvents(): void {
     else if (target.dataset.general === "launchAtLogin") void setGeneral({ launchAtLogin: target.checked });
     else if (target.dataset.general === "retries") void setGeneral({ retries: Number(target.value) });
     else if (target.dataset.appearance) void setAppearance(target.dataset.appearance as ThemeChoice);
+    else if (target.dataset.listView) void setListView(target.dataset.listView as "cards" | "table");
   });
 
   document.addEventListener("keydown", (event) => {
@@ -1712,6 +1878,17 @@ function wireEvents(): void {
       if (!document.querySelector("dialog[open]")) void refreshStorage();
     }
   });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && openMenuFor) {
+      event.preventDefault();
+      closeRowMenu(true);
+    }
+  });
+
+  mainEl.addEventListener("scroll", () => {
+    if (openMenuFor) closeRowMenu();
+  }, { passive: true });
 
   navEl.addEventListener("keydown", (event) => {
     if (!["ArrowDown", "ArrowRight", "ArrowUp", "ArrowLeft"].includes(event.key)) return;

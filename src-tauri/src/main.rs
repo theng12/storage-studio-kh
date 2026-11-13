@@ -64,13 +64,25 @@ impl Default for General {
 struct Settings {
     schema: u32,
     appearance: String, // "system" | "light" | "dark"
+    #[serde(default = "default_list_view")]
+    list_view: String, // "cards" | "table"
     general: General,
     storages: Vec<Storage>,
 }
 
+fn default_list_view() -> String {
+    "cards".into()
+}
+
 impl Default for Settings {
     fn default() -> Self {
-        Self { schema: 1, appearance: "system".into(), general: General::default(), storages: Vec::new() }
+        Self {
+            schema: 1,
+            appearance: "system".into(),
+            list_view: default_list_view(),
+            general: General::default(),
+            storages: Vec::new(),
+        }
     }
 }
 
@@ -196,6 +208,7 @@ struct Snapshot {
     app_name: String,
     version: String,
     appearance: String,
+    list_view: String,
     general: General,
     storages: Vec<StorageView>,
     volumes: Vec<VolumeCandidate>,
@@ -303,6 +316,7 @@ fn snapshot(app: &AppHandle) -> Snapshot {
         app_name: APP_NAME.into(),
         version: APP_VERSION.into(),
         appearance: settings.appearance.clone(),
+        list_view: settings.list_view.clone(),
         general: settings.general.clone(),
         storages,
         volumes,
@@ -976,6 +990,18 @@ fn open_updater() -> Result<(), String> {
 }
 
 #[tauri::command]
+fn set_list_view(app: AppHandle, state: State<'_, AppState>, mode: String) -> Result<Snapshot, String> {
+    let mode = if mode == "table" { "table" } else { "cards" };
+    {
+        let mut settings = state.settings.lock().unwrap();
+        settings.list_view = mode.into();
+        save_settings(&settings)?;
+    }
+    emit_snapshot(&app);
+    Ok(snapshot(&app))
+}
+
+#[tauri::command]
 fn restart_helper(app: AppHandle, state: State<'_, AppState>) -> Result<(), String> {
     let running = state.helper.lock().unwrap().is_some();
     if running {
@@ -1335,6 +1361,7 @@ fn main() {
             open_updater,
             open_support,
             restart_helper,
+            set_list_view,
         ])
         .setup(move |app| {
             let handle = app.handle().clone();

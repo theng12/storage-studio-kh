@@ -64,6 +64,7 @@ export interface Snapshot {
   appName: string;
   version: string;
   appearance: "system" | "light" | "dark";
+  listView: "cards" | "table";
   general: General;
   storages: StorageView[];
   volumes: VolumeCandidate[];
@@ -88,6 +89,7 @@ export interface StorageInput {
   reconnectAfterWake: boolean;
   username?: string;
   password?: string;
+  removeCredentials?: boolean;
 }
 
 export interface SharesPayload {

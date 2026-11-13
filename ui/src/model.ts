@@ -148,6 +148,53 @@ export function duplicateStorageReason(
   return `${draft.kind === "smb" ? "This share" : "This disk"} is already added as ${match.name}.`;
 }
 
+export interface StorageRowGroup<T> {
+  storage: T;
+  count: number;
+}
+
+/** One visible row per real storage; older settings files can hold the same share twice. */
+export function dedupeStorages<T extends { id: string; kind: string; target: string; volumeUUID: string | null }>(
+  storages: T[],
+): StorageRowGroup<T>[] {
+  const seen = new Map<string, StorageRowGroup<T>>();
+  const order: string[] = [];
+  for (const storage of storages) {
+    const key = storage.kind === "smb" ? `smb:${shareKey(storage.target)}` : `vol:${storage.volumeUUID ?? storage.id}`;
+    const found = seen.get(key);
+    if (found) found.count += 1;
+    else {
+      seen.set(key, { storage, count: 1 });
+      order.push(key);
+    }
+  }
+  return order.map((key) => seen.get(key) as StorageRowGroup<T>);
+}
+
+export interface WarningGroup {
+  label: string;
+  count: number;
+  firstId: string;
+}
+
+/** Warnings are grouped by kind with a count, never one repeated line per row. */
+export function warningGroups(storages: { id: string; status: string; detail: string | null }[]): WarningGroup[] {
+  const groups = new Map<string, WarningGroup>();
+  for (const storage of storages) {
+    let label: string | null = null;
+    if (storage.status === "needs_attention") {
+      label = /password|sign in/i.test(storage.detail ?? "") ? "Needs a password" : "Needs attention";
+    } else if (storage.status === "unreachable") label = "Can't be reached";
+    else if (storage.status === "retrying") label = "Retrying";
+    else if (storage.status === "mounting") label = "Connecting";
+    if (!label) continue;
+    const found = groups.get(label);
+    if (found) found.count += 1;
+    else groups.set(label, { label, count: 1, firstId: storage.id });
+  }
+  return [...groups.values()];
+}
+
 export function retrySentence(retries: number): string {
   const n = Math.min(Math.max(Math.round(retries) || 1, 1), 8);
   const tail = "then stops and marks the storage Needs attention until you choose Mount now.";

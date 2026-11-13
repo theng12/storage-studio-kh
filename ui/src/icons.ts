@@ -34,4 +34,9 @@ export const icons = {
   ),
   moon: svg('<path d="M13.2 9.6A5.6 5.6 0 0 1 6.4 2.8a5.5 5.5 0 1 0 6.8 6.8Z"/>'),
   close: svg('<path d="m4.2 4.2 7.6 7.6M11.8 4.2l-7.6 7.6"/>'),
+  more: svg(
+    '<circle cx="3.4" cy="8" r="1.15" fill="currentColor" stroke="none"/><circle cx="8" cy="8" r="1.15" fill="currentColor" stroke="none"/><circle cx="12.6" cy="8" r="1.15" fill="currentColor" stroke="none"/>',
+  ),
+  grid: svg('<rect x="2.2" y="2.2" width="4.8" height="4.8" rx="1"/><rect x="9" y="2.2" width="4.8" height="4.8" rx="1"/><rect x="2.2" y="9" width="4.8" height="4.8" rx="1"/><rect x="9" y="9" width="4.8" height="4.8" rx="1"/>'),
+  rows: svg('<path d="M2.5 4h11M2.5 8h11M2.5 12h11"/>'),
 };

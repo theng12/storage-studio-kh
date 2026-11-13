@@ -66,6 +66,13 @@ async function open(browser, snapshot, options = {}) {
   return page;
 }
 
+async function rowAction(page, id, action) {
+  await page.locator(`[data-storage="${id}"] [data-row-menu]`).click();
+  await page.waitForTimeout(100);
+  await page.locator(`#row-menu [data-action="${action}"]`).click();
+  await page.waitForTimeout(180);
+}
+
 async function closeEditorDiscarding(page) {
   await page.keyboard.press("Escape");
   await page.waitForTimeout(100);
@@ -180,7 +187,7 @@ async function noOverflow(page, id) {
       truthy("Esc", "discard closes the editor", "dialog closed", (await page.locator("dialog[open]").count()) === 0, null);
       // Esc returns from a Remove confirmation to the editor.
       const escRow = await open(browser, live);
-      await escRow.locator('[data-action="edit"]').first().click();
+      await rowAction(escRow, live.storages[0].id, "edit");
       await escRow.waitForTimeout(120);
       await escRow.locator('[data-editor-action="remove"]').click();
       await escRow.waitForTimeout(100);
@@ -191,12 +198,10 @@ async function noOverflow(page, id) {
       await escRow.close();
 
       // Row actions invoke their commands.
-      await page.locator('[data-action="unmount"]').first().click().catch(() => {});
-      await page.waitForTimeout(150);
+      await rowAction(page, live.storages[0].id, "unmount");
       let names = await commands(page);
       truthy("Storage", "row Unmount invokes", "unmount_storage", names.includes("unmount_storage"), evidence);
-      await page.locator('[data-action="test"]').first().click().catch(() => {});
-      await page.waitForTimeout(150);
+      await rowAction(page, live.storages[0].id, "test");
       names = await commands(page);
       truthy("Storage", "row Test invokes", "test_storage", names.includes("test_storage"), evidence);
       {
@@ -206,8 +211,7 @@ async function noOverflow(page, id) {
         truthy("Storage", "row Open in Finder invokes", "reveal_storage", (await commands(revealPage)).includes("reveal_storage"), evidence);
         await revealPage.close();
       }
-      await page.locator('[data-action="edit"]').first().click().catch(() => {});
-      await page.waitForTimeout(150);
+      await rowAction(page, live.storages[0].id, "edit");
       truthy("Storage", "row Edit opens the editor", "dialog open", await page.locator("dialog[open]").count() > 0, evidence);
       await page.keyboard.press("Escape");
 
@@ -295,7 +299,7 @@ async function noOverflow(page, id) {
       truthy("Attention", "Mount now invokes", "mount_storage", (await commands(page)).includes("mount_storage"), evidence);
 
       // Test result toast follows the storage's changed detail.
-      await page.locator('[data-action="test"]').first().click().catch(() => {});
+      await rowAction(page, live.storages[0].id, "test");
       await page.waitForTimeout(700);
       const toastText = await page.locator(".toast").allInnerTexts().catch(() => []);
       truthy("Attention", "test result toasted", "a Test: toast", toastText.some((text) => text.startsWith("Test:")), evidence);
@@ -655,6 +659,112 @@ async function noOverflow(page, id) {
       }
     }
 
+    /* ------------------------------------------ Contrast ramp, light and dark */
+    {
+      for (const tone of ["light", "dark"]) {
+        const snap = variant((snapshot) => {
+          snapshot.appearance = tone;
+        });
+        const page = await open(browser, snap, { width: 1440, height: 900 });
+        await page.waitForSelector(`html[data-theme="${tone}"]`, { timeout: 3000 });
+        const pairs = await page.evaluate(() => {
+          const parse = (value) => (value.match(/\d+(\.\d+)?/g) || []).slice(0, 3).map(Number);
+          const lum = ([r, g, b]) => {
+            const f = (c) => {
+              const n = c / 255;
+              return n <= 0.04045 ? n / 12.92 : ((n + 0.055) / 1.055) ** 2.4;
+            };
+            return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b);
+          };
+          const ratio = (a, b) => {
+            const la = lum(a);
+            const lb = lum(b);
+            const hi = Math.max(la, lb);
+            const lo = Math.min(la, lb);
+            return Math.round(((hi + 0.05) / (lo + 0.05)) * 100) / 100;
+          };
+          const css = (selector, property) => getComputedStyle(document.querySelector(selector))[property];
+          const fg = (selector) => parse(css(selector, "color"));
+          const bg = (selector) => parse(css(selector, "backgroundColor"));
+          return {
+            body: ratio(fg(".storage-row h3"), bg(".storage-list")),
+            muted: ratio(fg(".lede"), bg("#main")),
+            quiet: ratio(fg(".update-line"), bg("#foot")),
+            chip: ratio(fg(".chip-ok"), bg(".chip-ok")),
+            primary: ratio(fg('[data-fk="add-storage"]'), bg('[data-fk="add-storage"]')),
+            border: ratio(parse(css(".storage-list", "borderTopColor")), bg("#main")),
+            planes: ratio(bg("#nav"), bg("#main")),
+          };
+        });
+        for (const [name, value] of Object.entries(pairs)) {
+          if (name === "border" || name === "planes") {
+            truthy("Contrast", `${name} at ${tone}`, "measured layer separation", value > 1, String(value));
+          } else {
+            truthy("Contrast", `${name} text at ${tone}`, "at least 4.5:1", value >= 4.5, String(value));
+          }
+        }
+        await page.close();
+      }
+    }
+
+    /* ------------------------------ Table/Cards switch, deduped rows, grouped warnings */
+    {
+      const page = await open(browser, live);
+      truthy("View", "cards is the default view", "storage cards", (await page.locator(".storage-card").count()) > 0, null);
+      await page.locator('[data-list-view="table"]').check();
+      await page.waitForTimeout(250);
+      eq("View", "switching to Table invokes", "set_list_view", (await lastCommand(page))?.command);
+      truthy("View", "the table renders", "a storage table", (await page.locator("table.storage-table").count()) === 1, null);
+      const sticky = await page.evaluate(() => getComputedStyle(document.querySelector(".storage-table th")).position);
+      truthy("View", "the table's first column is pinned", "sticky", sticky === "sticky", sticky);
+      await shot(page, "view/table-light-820x640");
+      await page.locator('[data-list-view="cards"]').check();
+      await page.waitForTimeout(250);
+      truthy("View", "switching back shows cards", "cards again", (await page.locator(".storage-card").count()) > 0, null);
+      await page.close();
+    }
+
+    {
+      const duplicated = variant((snapshot) => {
+        snapshot.storages.push({ ...snapshot.storages[0], id: "dup-old", name: "Public Space-Media - 4TB - Music (old)" });
+      });
+      const page = await open(browser, duplicated);
+      eq("View", "duplicate storage rows are deduped", 4, await page.locator(".storage-row").count());
+      truthy("View", "the row shows how many entries share it", "×2", (await page.locator(".storage-row").first().innerText()).includes("×2"), null);
+      await page.close();
+    }
+
+    {
+      const attention = variant((snapshot) => {
+        snapshot.storages[1].status = "needs_attention";
+        snapshot.storages[1].detail = "The device refused the user name or password.";
+        snapshot.storages[2].status = "unreachable";
+        snapshot.storages[2].detail = "Can't reach the host right now.";
+        snapshot.storages[2].mountedPath = null;
+      });
+      const page = await open(browser, attention);
+      const groups = await page.locator(".warning-group").allInnerTexts();
+      truthy(
+        "Warnings",
+        "warnings are grouped by kind with counts",
+        "Needs a password 1 and Can't be reached 1",
+        groups.some((group) => group.includes("Needs a password") && group.includes("1")) &&
+          groups.some((group) => group.includes("Can't be reached") && group.includes("1")),
+        JSON.stringify(groups),
+      );
+      eq("Warnings", "no repeated warning line", 2, groups.length);
+      await page.locator(".warning-group").first().click();
+      await page.waitForTimeout(150);
+      truthy(
+        "Warnings",
+        "Show focuses the affected row",
+        "a row control",
+        await page.evaluate(() => Boolean(document.activeElement?.closest(".storage-row"))),
+        null,
+      );
+      await page.close();
+    }
+
     /* ------------------------------------------ Keyboard and dialog behaviour */
     {
       const page = await open(browser, live);
@@ -741,7 +851,7 @@ async function noOverflow(page, id) {
       const page = await open(browser, live);
       const before = await page.locator(".storage-row").count();
       const removedName = live.storages[0].name;
-      await page.locator('[data-action="edit"]').first().click();
+      await rowAction(page, live.storages[0].id, "edit");
       await page.locator('[data-editor-action="remove"]').click();
       await page.locator('[data-editor-action="confirm-remove"]').click();
       await page.waitForTimeout(200);
@@ -792,7 +902,7 @@ async function noOverflow(page, id) {
     /* ------------------------------- Escape ×3, focus after every transition */
     {
       const page = await open(browser, live);
-      await page.locator('[data-action="edit"]').first().click();
+      await rowAction(page, live.storages[0].id, "edit");
       await page.locator('input[name="name"]').fill("Changed name");
       await page.keyboard.press("Escape");
       await page.waitForTimeout(120);
@@ -836,7 +946,7 @@ async function noOverflow(page, id) {
       await closeEditorDiscarding(page);
 
       // Returning from Remove focuses the form again.
-      await page.locator('[data-action="edit"]').first().click();
+      await rowAction(page, live.storages[0].id, "edit");
       await page.locator('[data-editor-action="remove"]').click();
       await page.keyboard.press("Escape");
       await page.waitForTimeout(120);
@@ -851,7 +961,7 @@ async function noOverflow(page, id) {
       await emit(page, "needs-credentials", { id: "s1794488987703", name: "Public Space-Media - 4TB - Music" });
       await page.keyboard.press("Escape");
       await page.waitForTimeout(120);
-      truthy("Dialog", "closing the password prompt focuses the row", "row test control", (await page.evaluate(() => document.activeElement?.getAttribute("data-fk"))) === "row-s1794488987703-test", null);
+      truthy("Dialog", "closing the password prompt focuses the row", "row menu control", (await page.evaluate(() => document.activeElement?.getAttribute("data-fk"))) === "row-s1794488987703-menu", null);
 
       // Saving Add returns focus to the Add button.
       await page.locator('[data-fk="add-storage"]').click();
@@ -899,11 +1009,8 @@ async function noOverflow(page, id) {
 
     {
       const page = await open(browser, live);
-      const testButton = page.locator('[data-action="test"]:not([disabled])').first();
-      await testButton.click();
-      await page.waitForTimeout(250);
-      await testButton.click();
-      await page.waitForTimeout(250);
+      await rowAction(page, live.storages[0].id, "test");
+      await rowAction(page, live.storages[0].id, "test");
       const testToasts = await page.locator(".toast").filter({ hasText: "Test:" }).count();
       truthy("Storage", "a repeated Test still names its result", "two Test toasts", testToasts >= 2, String(testToasts));
       await page.close();
@@ -951,7 +1058,7 @@ async function noOverflow(page, id) {
         const toast = document.querySelector(".toast")?.getBoundingClientRect();
         const row = [...document.querySelectorAll(".storage-row")].find((el) => el.textContent.includes("Copy of NAS"));
         if (!toast || !row) return { toast: Boolean(toast), row: Boolean(row), intersects: null };
-        const intersects = [...row.querySelectorAll(".row-btn")].some((button) => {
+        const intersects = [...row.querySelectorAll(".row-primary, .row-menu-btn")].some((button) => {
           const r = button.getBoundingClientRect();
           const x = Math.max(0, Math.min(r.right, toast.right) - Math.max(r.left, toast.left));
           const y = Math.max(0, Math.min(r.bottom, toast.bottom) - Math.max(r.top, toast.top));
@@ -972,8 +1079,7 @@ async function noOverflow(page, id) {
       });
       const id = live.storages[2].id;
       const page = await open(browser, volume);
-      await page.locator(`[data-storage="${id}"] [data-action="test"]`).click();
-      await page.waitForTimeout(300);
+      await rowAction(page, id, "test");
       const rowText = await page.locator(`[data-storage="${id}"]`).innerText();
       truthy("Storage", "a Test reports without mounting", "still Unreachable with no mount", rowText.includes("Unreachable") && !rowText.includes("Mounted"), rowText.replace(/\n/g, " | "));
       truthy("Storage", "a Test never asks for a password", "no credentials sheet", (await page.locator("dialog[open]").count()) === 0, null);
@@ -1030,16 +1136,18 @@ async function noOverflow(page, id) {
     /* ------------------------------- Keyboard focus after row/footer transitions */
     {
       const page = await open(browser, live);
-      const testButton = page.locator('[data-action="test"]:not([disabled])').first();
-      await testButton.focus();
+      const rowId = live.storages[0].id;
+      await page.locator(`[data-storage="${rowId}"] [data-row-menu]`).click();
+      await page.waitForTimeout(100);
+      await page.locator('#row-menu [data-action="test"]').focus();
       await page.keyboard.press("Enter");
       await page.waitForTimeout(300);
       const afterTest = await page.evaluate(() => document.activeElement?.getAttribute("data-fk") || document.activeElement?.tagName);
-      truthy("Keys", "Test keeps keyboard focus on its button", "the row's Test control", String(afterTest).endsWith("-test"), String(afterTest));
+      truthy("Keys", "Test returns keyboard focus to the row menu", `row-${rowId}-menu`, afterTest === `row-${rowId}-menu`, String(afterTest));
 
-      const unmount = page.locator('[data-action="unmount"]:not([disabled])').first();
-      const rowId = await unmount.getAttribute("data-id");
-      await unmount.focus();
+      await page.locator(`[data-storage="${rowId}"] [data-row-menu]`).click();
+      await page.waitForTimeout(100);
+      await page.locator('#row-menu [data-action="unmount"]').focus();
       await page.keyboard.press("Enter");
       await page.waitForTimeout(300);
       const afterUnmount = await page.evaluate(() => document.activeElement?.getAttribute("data-fk") || document.activeElement?.tagName);
@@ -1064,6 +1172,76 @@ async function noOverflow(page, id) {
       await page.waitForTimeout(250);
       const afterRestart = await page.evaluate(() => document.activeElement?.getAttribute("data-fk") || document.activeElement?.tagName);
       truthy("Keys", "Restart helper lands on a control, not BODY", "nav-storage", afterRestart === "nav-storage", String(afterRestart));
+      await page.close();
+    }
+
+    /* -------------------------------- Completeness: flags, forget, capability controls */
+    {
+      const page = await open(browser, live);
+      await page.locator('[data-fk="add-storage"]').click();
+      await page.locator('input[name="name"]').fill("Flags check");
+      await page.locator('input[name="target"]').fill("smb://nas.local/flags");
+      await page.locator('input[name="wake"]').uncheck();
+      await page.locator('input[name="target"]').press("Enter");
+      await page.waitForTimeout(250);
+      const command = await lastCommand(page);
+      truthy(
+        "Completeness",
+        "reconnect flags are saved",
+        "reconnectAfterWake false",
+        command?.args?.input?.reconnectAfterWake === false,
+        JSON.stringify(command?.args),
+      );
+      await page.close();
+    }
+
+    {
+      const credentials = variant((snapshot) => {
+        snapshot.storages[0].hasCredentials = true;
+        snapshot.storages[0].username = "vengtheng";
+      });
+      const page = await open(browser, credentials);
+      await rowAction(page, live.storages[0].id, "edit");
+      const forget = page.locator('input[name="forgetPassword"]');
+      truthy("Completeness", "forget the saved password is offered", "a checkbox", (await forget.count()) === 1, null);
+      await forget.check();
+      await page.waitForTimeout(120);
+      truthy("Completeness", "forget disables the password field", "password input disabled", await page.locator('input[name="password"]').isDisabled(), null);
+      await page.locator('[data-editor-action="save"]').click();
+      await page.waitForTimeout(250);
+      const last = await lastCommand(page);
+      truthy("Completeness", "forget sends remove_credentials", "removeCredentials true", last?.args?.input?.removeCredentials === true, JSON.stringify(last?.args));
+      await page.close();
+    }
+
+    {
+      const page = await open(browser, live);
+      const caps = await page.evaluate(() => ({
+        add: Boolean(document.querySelector('[data-action="add-storage"]')),
+        viewCards: Boolean(document.querySelector('[data-list-view="cards"]')),
+        viewTable: Boolean(document.querySelector('[data-list-view="table"]')),
+        primary: Boolean(document.querySelector(".storage-row .row-primary")),
+        menu: Boolean(document.querySelector("[data-row-menu]")),
+        check: Boolean(document.querySelector('[data-fk="check"]')),
+        pill: Boolean(document.querySelector('[data-fk="pill"]')),
+        support: Boolean(document.querySelector(".foot-support")),
+        nav: document.querySelectorAll(".nav-item").length === 3,
+      }));
+      truthy("Completeness", "declared page capabilities have controls", "all present", Object.values(caps).every(Boolean), JSON.stringify(caps));
+      const general = await page.evaluate(() => {
+        document.querySelector('[data-fk="nav-general"]').click();
+        return {
+          notifications: Boolean(document.querySelector('[data-general="notifications"]')),
+          login: Boolean(document.querySelector('[data-general="launchAtLogin"]')),
+          retries: Boolean(document.querySelector('[data-general="retries"]')),
+        };
+      });
+      truthy("Completeness", "General capabilities have controls", "notifications, login, retries", Object.values(general).every(Boolean), JSON.stringify(general));
+      const appearance = await page.evaluate(() => {
+        document.querySelector('[data-fk="nav-appearance"]').click();
+        return ["system", "light", "dark"].every((value) => Boolean(document.querySelector(`[data-appearance="${value}"]`)));
+      });
+      truthy("Completeness", "Appearance has exactly three controls", "System/Light/Dark", appearance === true, String(appearance));
       await page.close();
     }
 
@@ -1102,7 +1280,7 @@ async function noOverflow(page, id) {
 
     {
       const page = await open(browser, live);
-      const names = await page.locator(".storage-row").first().locator(".row-btn").evaluateAll((buttons) =>
+      const names = await page.locator(".storage-row").first().locator(".row-primary, .row-menu-btn").evaluateAll((buttons) =>
         buttons.filter((button) => !button.disabled).map((button) => button.getAttribute("aria-label") || ""),
       );
       truthy(

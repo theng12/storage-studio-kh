@@ -3,6 +3,11 @@
 ## 0.1.10 — 2026-11-13
 
 - Only the installed app adds a Login Items entry, once: a development copy or a rebuild no longer registers a second "Storage Studio KH".
+- Storage can be shown as cards or a table, and the choice is remembered. Cards are equal height with labelled values; the table keeps its first column pinned in a narrow window.
+- Each storage has one primary action (Mount now or Open in Finder); Test, Edit and Unmount are in its menu.
+- Warnings are grouped by kind with counts instead of repeating a line, and duplicate entries are shown once with a count.
+- The neutral ramp is one set of tokens with measured contrast for body, muted and status text in light and dark.
+- Edit can forget a saved password; the password field is disabled while that is chosen.
 - The same share or disk can't be added twice: Save says which existing storage already uses it.
 - The helper-stopped banner now has a Restart helper button, and the Storage line says the helper isn't running.
 - Keyboard focus stays on the switch or appearance choice you just changed.

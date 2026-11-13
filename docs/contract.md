@@ -60,6 +60,7 @@ interface Snapshot {
   appName: string;                 // "Storage Studio KH"
   version: string;                 // "0.1.0"
   appearance: "system" | "light" | "dark";
+  listView: "cards" | "table";      // remembered per app
   general: General;
   storages: StorageView[];
   volumes: VolumeCandidate[];
@@ -91,6 +92,7 @@ interface Snapshot {
 | `reveal_storage` | `{ id }` | `null` |
 | `set_credentials` | `{ id, username, password }` | `null` |
 | `set_appearance` | `{ mode: "system" \| "light" \| "dark" }` | `Snapshot` |
+| `set_list_view` | `{ mode: "cards" \| "table" }` | `Snapshot` |
 | `set_general` | `{ notifications, launchAtLogin, retries }` | `Snapshot` |
 | `check_updates` | — | `UpdateState` (a `snapshot` event follows) |
 | `open_updater` | — | `null` (opens Studio Launcher KH) |

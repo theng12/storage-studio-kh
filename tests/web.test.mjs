@@ -18,6 +18,8 @@ import {
   updateWording,
   validateStorageDraft,
   duplicateStorageReason,
+  dedupeStorages,
+  warningGroups,
 } from "../ui/src/model.ts";
 
 const mainSource = readFileSync(new URL("../ui/src/main.ts", import.meta.url), "utf8");
@@ -124,8 +126,9 @@ test("the command wiring in main.ts is present and unique", () => {
   assert.match(mainSource, /action === "check-updates"\) void checkUpdates\(\)/);
   assert.match(mainSource, /data-action="download-update"/);
   assert.match(mainSource, /action === "download-update"\) void openUpdater\(\)/);
-  assert.match(mainSource, /data-fk="row-\$\{esc\(storage\.id\)\}-mount"/);
-  assert.match(mainSource, /data-fk="row-\$\{esc\(storage\.id\)\}-test"/);
+  assert.match(mainSource, /data-fk="row-\$\{id\}-mount"/);
+  assert.match(mainSource, /data-fk="row-\$\{id\}-\$\{action\}"/);
+  assert.match(mainSource, /data-row-menu/);
   assert.match(mainSource, /title="Dismiss" aria-label="Dismiss"/);
   assert.match(mainSource, /data-action="retry-boot"/);
 });
@@ -165,6 +168,34 @@ test("a share or disk can only be added once", () => {
   assert.equal(
     duplicateStorageReason({ name: "Other", kind: "smb", target: "smb://nas.local/other", volumeUUID: null }, existing),
     null,
+  );
+});
+
+test("rows are deduped by real identity and keep a count", () => {
+  const rows = dedupeStorages([
+    { id: "a", kind: "smb", target: "smb://nas.local/studio", volumeUUID: null, name: "One" },
+    { id: "b", kind: "smb", target: "smb://nas.local/studio", volumeUUID: null, name: "One old" },
+    { id: "c", kind: "smb", target: "smb://nas.local/other", volumeUUID: null, name: "Two" },
+    { id: "d", kind: "volume", target: "disk4s1", volumeUUID: "UUID-1", name: "Disk" },
+    { id: "e", kind: "volume", target: "disk4s1", volumeUUID: "UUID-1", name: "Disk old" },
+  ]);
+  assert.deepEqual(
+    rows.map((row) => [row.storage.name, row.count]),
+    [["One", 2], ["Two", 1], ["Disk", 2]],
+  );
+});
+
+test("warnings are grouped by kind with a count", () => {
+  const groups = warningGroups([
+    { id: "a", status: "needs_attention", detail: "Sign in to this share to continue." },
+    { id: "b", status: "needs_attention", detail: "The device refused the user name or password." },
+    { id: "c", status: "unreachable", detail: "Can't reach the host." },
+    { id: "d", status: "unreachable", detail: "Can't reach the host." },
+    { id: "e", status: "mounted", detail: null },
+  ]);
+  assert.deepEqual(
+    groups.map((group) => [group.label, group.count, group.firstId]),
+    [["Needs a password", 2, "a"], ["Can't be reached", 2, "c"]],
   );
 });
 
