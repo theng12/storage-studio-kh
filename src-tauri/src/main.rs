@@ -601,7 +601,8 @@ fn login_item_needs_change(status: i64, enabled: bool) -> bool {
     if enabled {
         status != 1
     } else {
-        status != 0
+        // 3 means "not found": there is nothing to unregister for this copy.
+        status == 1 || status == 2
     }
 }
 
@@ -794,52 +795,118 @@ fn save_storage(app: AppHandle, state: State<'_, AppState>, input: StorageInput)
         reconnect_after_wake: input.reconnect_after_wake,
         username: input.username.clone().filter(|v| !v.trim().is_empty()),
     };
+    let password = input.password.clone().unwrap_or_default();
 
     {
         let mut settings = state.settings.lock().unwrap();
+        let previous = settings.storages.iter().find(|s| s.id == id).cloned();
+        let is_new = previous.is_none();
+        // A changed user name leaves the old key behind unless it is forgotten before the
+        // helper is reconfigured with the new identity.
+        let old_username = previous.and_then(|old| {
+            (old.kind == "smb" && old.username != storage.username).then_some(old.username.unwrap_or_default())
+        });
         if let Some(existing) = settings.storages.iter_mut().find(|s| s.id == id) {
             *existing = storage.clone();
         } else {
             settings.storages.push(storage.clone());
         }
         save_settings(&settings)?;
-        let _ = send_to_helper(&state, &helper_config(&settings));
-    }
 
-    let username_now = storage.username.clone().unwrap_or_default();
-    let clears_credentials = input.remove_credentials
-        // A saved password with no user name can never be used; do not keep it.
-        || (storage.kind == "smb" && username_now.trim().is_empty() && input.password.as_deref().unwrap_or("").is_empty());
-    if clears_credentials || input.password.as_deref().map(|p| !p.is_empty()).unwrap_or(false) {
-        let message = if clears_credentials {
-            serde_json::json!({ "type": "forget_credentials", "id": id })
-        } else {
-            serde_json::json!({
+        if let Some(username) = old_username {
+            let _ = send_to_helper(
+                &state,
+                &serde_json::json!({ "type": "forget_credentials", "id": id, "username": username }),
+            );
+        }
+
+        let credentials = if input.remove_credentials {
+            Some(serde_json::json!({ "type": "forget_credentials", "id": id }))
+        } else if !password.is_empty() {
+            Some(serde_json::json!({
                 "type": "credentials",
                 "id": id,
                 "username": storage.username.clone().unwrap_or_default(),
-                "password": input.password.clone().unwrap_or_default(),
-            })
+                "password": password,
+            }))
+        } else {
+            None
         };
-        // The settings are already saved; a helper that is down is reported by the banner.
-        if let Err(error) = send_to_helper(&state, &message) {
-            log(&format!("credentials: {error}"));
+
+        if is_new && !input.remove_credentials && !password.is_empty() {
+            // Configure the new share without reconnect flags so it cannot mount (and ask for a
+            // password) before the credentials line behind it is read; then restore the flags.
+            let mut quiet = settings.clone();
+            for item in quiet.storages.iter_mut() {
+                if item.id == id {
+                    item.reconnect_at_login = false;
+                    item.reconnect_after_wake = false;
+                }
+            }
+            let _ = send_to_helper(&state, &helper_config(&quiet));
+            if let Some(message) = &credentials {
+                let _ = send_to_helper(&state, message);
+            }
+            let _ = send_to_helper(&state, &helper_config(&settings));
+        } else {
+            let _ = send_to_helper(&state, &helper_config(&settings));
+            if let Some(message) = &credentials {
+                // The settings are already saved; a helper that is down is reported by the banner.
+                if let Err(error) = send_to_helper(&state, message) {
+                    log(&format!("credentials: {error}"));
+                }
+            }
         }
     }
     emit_snapshot(&app);
     Ok(snapshot(&app))
 }
 
+/// The same share is one mount whether or not a user name is written in front of the host.
+fn same_storage(a: &Storage, b: &Storage) -> bool {
+    if a.kind != b.kind {
+        return false;
+    }
+    if a.kind == "smb" {
+        fn key(target: &str) -> String {
+            let lower = target.trim().to_lowercase();
+            let rest = lower.strip_prefix("smb://").unwrap_or(&lower).to_string();
+            match rest.split_once('@') {
+                Some((_, host)) => host.to_string(),
+                None => rest,
+            }
+        }
+        key(&a.target) == key(&b.target)
+    } else {
+        match (&a.volume_uuid, &b.volume_uuid) {
+            (Some(left), Some(right)) => left == right,
+            _ => a.id == b.id,
+        }
+    }
+}
+
 #[tauri::command]
 fn remove_storage(app: AppHandle, state: State<'_, AppState>, id: String) -> Result<Snapshot, String> {
+    let mut removed_ids = vec![id.clone()];
     {
         let mut settings = state.settings.lock().unwrap();
-        settings.storages.retain(|s| s.id != id);
+        let Some(removed) = settings.storages.iter().find(|s| s.id == id).cloned() else {
+            return Ok(snapshot(&app));
+        };
+        // The helper must still know the storage when it is told to forget the password.
+        let _ = send_to_helper(&state, &serde_json::json!({ "type": "forget_credentials", "id": id }));
+        // One visible row may stand for several legacy entries; removing it removes them all.
+        removed_ids = settings.storages.iter().filter(|s| same_storage(s, &removed)).map(|s| s.id.clone()).collect();
+        settings.storages.retain(|s| !same_storage(s, &removed));
         save_settings(&settings)?;
         let _ = send_to_helper(&state, &helper_config(&settings));
-        let _ = send_to_helper(&state, &serde_json::json!({ "type": "forget_credentials", "id": id }));
     }
-    state.statuses.lock().unwrap().remove(&id);
+    {
+        let mut statuses = state.statuses.lock().unwrap();
+        for removed in &removed_ids {
+            statuses.remove(removed);
+        }
+    }
     emit_snapshot(&app);
     Ok(snapshot(&app))
 }
@@ -1204,6 +1271,29 @@ mod tests {
         assert!(super::login_item_needs_change(0, true));
         assert!(super::login_item_needs_change(1, false));
         assert!(super::login_item_needs_change(2, true));
+        assert!(super::login_item_needs_change(2, false));
+        // 3 = not found: a copy with no registration has nothing to unregister.
+        assert!(!super::login_item_needs_change(3, false));
+    }
+
+    #[test]
+    fn one_share_is_one_storage_with_or_without_a_user() {
+        let storage = |id: &str, target: &str, user: Option<&str>| super::Storage {
+            id: id.into(),
+            name: id.into(),
+            kind: "smb".into(),
+            target: target.into(),
+            mount_point: String::new(),
+            volume_uuid: None,
+            reconnect_at_login: true,
+            reconnect_after_wake: true,
+            username: user.map(str::to_string),
+        };
+        let with_user = storage("a", "smb://studio@nas.local/studio", Some("studio"));
+        let without_user = storage("b", "SMB://NAS.local/studio", None);
+        let other = storage("c", "smb://nas.local/other", None);
+        assert!(super::same_storage(&with_user, &without_user));
+        assert!(!super::same_storage(&with_user, &other));
     }
 
     #[test]

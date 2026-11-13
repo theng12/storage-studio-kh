@@ -1265,6 +1265,33 @@ async function noOverflow(page, id) {
       await page.close();
     }
 
+    {
+      const page = await open(browser, live);
+      await page.locator('[data-fk="add-storage"]').click();
+      await page.locator('input[name="name"]').fill("Upper scheme");
+      await page.locator('input[name="target"]').fill("SMB://nas.local/studio");
+      await page.waitForTimeout(150);
+      truthy(
+        "Add",
+        "an uppercase scheme is refused with the same message",
+        "Use an smb:// address",
+        (await page.locator("#save-reason").innerText()).includes("Use an smb:// address"),
+        null,
+      );
+      await closeEditorDiscarding(page);
+
+      const first = live.storages[0].id;
+      const second = live.storages[1].id;
+      await page.locator(`[data-storage="${first}"] [data-row-menu]`).click();
+      await page.waitForTimeout(120);
+      await page.locator(`[data-storage="${second}"] [data-row-menu]`).click();
+      await page.waitForTimeout(120);
+      const stale = await page.locator(`[data-storage="${first}"] [data-row-menu]`).getAttribute("aria-expanded");
+      truthy("Storage", "opening another row's menu resets the first", "aria-expanded false", stale === "false", String(stale));
+      await page.keyboard.press("Escape");
+      await page.close();
+    }
+
     /* ------------------------------------ Long names, geometry, accessible names */
     {
       const longName = variant((snapshot) => {

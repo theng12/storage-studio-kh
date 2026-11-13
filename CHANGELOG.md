@@ -9,6 +9,7 @@
 - The neutral ramp is one set of tokens with measured contrast for body, muted and status text in light and dark.
 - Edit can forget a saved password; the password field is disabled while that is chosen.
 - The same share or disk can't be added twice: Save says which existing storage already uses it.
+- A second Test on the same share always answers, even when nothing changed. Removing a storage forgets its saved password and clears any duplicate entries; the confirmation says so.
 - The helper-stopped banner now has a Restart helper button, and the Storage line says the helper isn't running.
 - Keyboard focus stays on the switch or appearance choice you just changed.
 - Saving a storage says what happened, scrolls the new row clear of the toast and offers Mount now; removing one offers Undo.

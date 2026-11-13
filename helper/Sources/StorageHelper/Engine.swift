@@ -106,7 +106,8 @@ public final class Engine {
         case "forget_credentials":
             if let id = command.id, let storage = storage(id) {
                 if let host = Reachability.smbHost(storage.target) {
-                    Secrets.forget(host: host, username: storage.username)
+                    // An explicit user name lets the app forget the previous identity on a change.
+                    Secrets.forget(host: host, username: command.username ?? storage.username)
                 }
                 announce()
             }
@@ -272,30 +273,35 @@ public final class Engine {
     }
 
     private func test(_ storage: Storage) {
+        // A Test always answers, even when the result is identical to the last one.
+        func report(_ status: StorageStatus, detail: String, path: String? = nil) {
+            set(storage, status, detail: detail, path: path)
+            announce()
+        }
         if let entry = mountedEntry(storage, in: MountTable.current()) {
-            set(storage, .mounted, detail: "Connected at \(entry.mountPoint).", path: entry.mountPoint)
+            report(.mounted, detail: "Connected at \(entry.mountPoint).", path: entry.mountPoint)
             return
         }
         switch storage.kind {
         case "smb":
             guard let host = Reachability.smbHost(storage.target) else {
-                set(storage, .unreachable, detail: "The share address isn't valid.")
+                report(.unreachable, detail: "The share address isn't valid.")
                 return
             }
             if Reachability.tcp(host: host, port: 445) {
-                set(storage, .notMounted, detail: "\(host) is reachable and ready to mount.")
+                report(.notMounted, detail: "\(host) is reachable and ready to mount.")
             } else {
-                set(storage, .unreachable, detail: "Can't reach \(host) right now.")
+                report(.unreachable, detail: "Can't reach \(host) right now.")
             }
         default:
             guard let uuid = storage.volumeUUID else {
-                set(storage, .unreachable, detail: "This disk has no saved identity; choose it again in Settings.")
+                report(.unreachable, detail: "This disk has no saved identity; choose it again in Settings.")
                 return
             }
             if Volumes.device(forUUID: uuid) != nil {
-                set(storage, .notMounted, detail: "The disk is connected and ready to mount.")
+                report(.notMounted, detail: "The disk is connected and ready to mount.")
             } else {
-                set(storage, .unreachable, detail: "The disk isn't connected.")
+                report(.unreachable, detail: "The disk isn't connected.")
             }
         }
     }

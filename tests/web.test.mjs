@@ -49,6 +49,7 @@ test("SMB validation names the required shape", () => {
   assert.equal(validateStorageDraft({ name: "Studio NAS", kind: "smb", target: "smb://nas.local/studio", volumeUUID: null }), null);
   assert.equal(validateStorageDraft({ name: "Studio NAS", kind: "smb", target: "nas.local/studio", volumeUUID: null }), "Use an smb:// address, like smb://nas.local/studio.");
   assert.equal(validateStorageDraft({ name: "Studio NAS", kind: "smb", target: "http://nas/x", volumeUUID: null }), "Use an smb:// address, like smb://nas.local/studio.");
+  assert.equal(validateStorageDraft({ name: "Studio NAS", kind: "smb", target: "SMB://nas.local/studio", volumeUUID: null }), "Use an smb:// address, like smb://nas.local/studio.");
   assert.equal(validateStorageDraft({ name: "Studio NAS", kind: "smb", target: "smb://nas.local", volumeUUID: null }), "Use a share address like smb://nas.local/studio.");
   assert.equal(validateStorageDraft({ name: "  ", kind: "smb", target: "smb://nas.local/studio", volumeUUID: null }), "Give the storage a name.");
 });

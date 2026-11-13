@@ -200,10 +200,10 @@ function dismissToast(id: number): void {
   renderToasts();
 }
 
-function clearToasts(): void {
-  for (const item of toasts) window.clearTimeout(item.timer);
-  toasts.splice(0, toasts.length);
-  renderToasts();
+function dismissToastsMatching(prefix: string): void {
+  for (const item of [...toasts]) {
+    if (item.message.startsWith(prefix)) dismissToast(item.id);
+  }
 }
 
 function renderToasts(): void {
@@ -531,6 +531,11 @@ function renderRowMenu(storage: StorageView): void {
 function openRowMenu(id: string, anchor: HTMLElement): void {
   const storage = snapshot?.storages.find((item) => item.id === id);
   if (!storage) return;
+  if (openMenuFor && openMenuFor !== id) {
+    document
+      .querySelector<HTMLElement>(`[data-row-menu][data-id="${openMenuFor.replace(/["\\]/g, "")}"]`)
+      ?.setAttribute("aria-expanded", "false");
+  }
   openMenuFor = id;
   menuOpenedAt = performance.now();
   renderRowMenu(storage);
@@ -869,7 +874,7 @@ function renderEditor(): void {
       </div>
       <div class="sheet-body">
         ${editor.error ? `<p class="form-error" role="alert">${esc(editor.error)}</p>` : ""}
-        <p class="confirm-text">This only removes the storage from Storage Studio KH. Nothing is deleted from the share or disk.</p>
+        <p class="confirm-text">This removes the storage from Storage Studio KH and forgets its saved password. Nothing is deleted from the share or disk.</p>
       </div>
       <div class="sheet-actions">
         <button type="button" class="btn btn-danger" data-editor-action="confirm-remove" data-fk="editor-confirm-remove"${
@@ -1376,7 +1381,7 @@ async function removeFromEditor(): Promise<void> {
   }
 }
 
-/** Undo puts the same entry back; a saved password lives outside the storage record. */
+/** Undo puts the entry back; the saved password was forgotten when it was removed. */
 async function restoreStorage(draft: Draft): Promise<void> {
   if (!snapshot) return;
   const input: StorageInput = {
@@ -1463,7 +1468,7 @@ function restoreFocus(fk: string | undefined): boolean {
   const target = document.querySelector<HTMLElement>(`[data-fk="${fk.replace(/["\\]/g, "")}"]`);
   if (!target) return false;
   target.focus({ preventScroll: true });
-  return true;
+  return document.activeElement === target;
 }
 
 async function setGeneral(patch: Partial<General>): Promise<void> {
@@ -1539,7 +1544,6 @@ async function restartHelper(): Promise<void> {
   render();
   try {
     await backend.invoke("restart_helper");
-    clearToasts();
     toast("Helper started.");
   } catch (error) {
     toast(errText(error), { error: true });
@@ -1715,8 +1719,8 @@ async function saveCredentials(): Promise<void> {
   try {
     await backend.invoke("set_credentials", { id: credentials.id, username, password });
     closeCredentials();
-    // The helper mounts again as soon as it has the password; clear the stale failure note.
-    clearToasts();
+    // The helper mounts again as soon as it has the password; drop the stale test result only.
+    dismissToastsMatching("Test:");
     const toastId = toast(`Password saved. Trying ${savedName}…`, { seconds: 8 });
     credentialsPending = { storageId: savedId, toastId };
   } catch (error) {
@@ -1761,6 +1765,7 @@ function trapTab(dialog: HTMLDialogElement, event: KeyboardEvent): void {
 }
 
 function applySnapshot(next: Snapshot): void {
+  if (openMenuFor) closeRowMenu();
   snapshot = next;
   for (const id of Object.keys(rowBusy)) delete rowBusy[id];
   if (pendingTest) {
@@ -1785,10 +1790,15 @@ function applySnapshot(next: Snapshot): void {
   if (next.secondInstance) showSecondInstance();
   render();
   if (pendingRowFocus) {
-    const targets = pendingRowFocus;
-    pendingRowFocus = null;
-    // The row's busy buttons cannot take focus; land on the control that replaced them.
-    if (!targets.some(restoreFocus)) mainEl.focus({ preventScroll: true });
+    const ready = pendingRowFocus.some((fk) =>
+      document.querySelector(`[data-fk="${fk.replace(/["\\]/g, "")}"]`),
+    );
+    if (ready) {
+      const targets = pendingRowFocus;
+      pendingRowFocus = null;
+      // The row's busy buttons cannot take focus; land on the control that replaced them.
+      if (!targets.some(restoreFocus)) mainEl.focus({ preventScroll: true });
+    }
   }
 }
 
@@ -1891,7 +1901,7 @@ function wireEvents(): void {
 
   mainEl.addEventListener("scroll", () => {
     // The scroll that brings a row into view happens just before its click; ignore that one.
-    if (openMenuFor && performance.now() - menuOpenedAt > 250) closeRowMenu();
+    if (openMenuFor && performance.now() - menuOpenedAt > 250) closeRowMenu(true);
   }, { passive: true });
 
   navEl.addEventListener("keydown", (event) => {

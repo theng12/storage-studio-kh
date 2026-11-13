@@ -55,10 +55,10 @@ export function validateStorageDraft(draft: DraftValidation): string | null {
   if (!draft.name.trim()) return "Give the storage a name.";
   if (draft.kind === "smb") {
     const target = draft.target.trim();
-    if (!/^smb:\/\//i.test(target)) {
+    if (!/^smb:\/\//.test(target)) {
       return "Use an smb:// address, like smb://nas.local/studio.";
     }
-    if (!/^smb:\/\/[^\s/]+\/\S+$/i.test(target)) {
+    if (!/^smb:\/\/[^\s/]+\/\S+$/.test(target)) {
       return "Use a share address like smb://nas.local/studio.";
     }
     return null;
@@ -96,7 +96,7 @@ export function saveBlockReason(draft: DraftValidation, hasVolumes = true): stri
     const target = draft.target.trim();
     if (!target) return "Enter the device address first, like smb://studio.local/photos.";
     if (!/^smb:\/\//i.test(target)) return "Use an smb:// address, like smb://nas.local/studio.";
-    if (!/^smb:\/\/[^\s/]+\/\S+$/i.test(target)) return "Add the share name to the address, like smb://nas.local/studio.";
+    if (!/^smb:\/\/[^\s/]+\/\S+$/.test(target)) return "Add the share name to the address, like smb://nas.local/studio.";
     return null;
   }
   if (draft.kind === "volume") {

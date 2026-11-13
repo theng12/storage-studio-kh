@@ -9,17 +9,17 @@ the gate on the test Mac).
 
 | Job on the Storage page | Automated end-to-end test (tests/acceptance/run.cjs) |
 | --- | --- |
-| Add an SMB share (name + `smb://` address) | `Save enabled for a full address`, `Return saves a complete form`, `saving names the result`, `Add … clear of the toast` |
+| Add an SMB share (name + `smb://` address) | `Save enabled for a full address`, `Return saves a complete form`, `saving names the result`, `the new row's actions are clear of the toast` |
 | Add an attached disk (connected volume) | `disk Save enabled`, `disk choice shows mount point` |
 | Browse a device and pick a share | `chooser shows real names`, `picked address is encoded`, `chooser names the host` |
 | Reject an invalid address (scheme/share name) | `host-only reason`, `host-only keeps Save off`, `http://` message (web tests) |
-| Mount an unmounted storage | `Mount now invokes`, `a mounting row says Mounting on its button`, fixture → `Mounted` |
-| Unmount a mounted storage | `row Unmount invokes`, fixture → `Not mounted` with `Mount now` |
+| Mount an unmounted storage | `Mount now invokes`, `a mounting row says Mounting on its button` |
+| Unmount a mounted storage | `row Unmount invokes`, `Unmount moves keyboard focus to Mount now` |
 | Test reachability without mounting | `row Test invokes`, `a Test reports without mounting`, `a repeated Test still names its result` |
-| Edit a storage's name and flags | `row Edit opens the editor`, `Return saves a complete form`, `Save changes` |
+| Edit a storage's name and flags | `row Edit opens the editor`, `editing saves the new name` |
 | Reconnect at login / after wake | `reconnect flags are saved` |
 | Remove with recovery | `removal offers Undo`, `Undo puts the storage back`, `Undo leaves focus on the restored row` |
-| Enter credentials when prompted | `saving a password mounts the share in the preview`, `Password saved. Trying`, `the Trying note ends when the share answers` |
+| Enter credentials when prompted | `saved password mounts the share in the preview`, `saving a password says what happens next`, `the Trying note ends when the share answers` |
 | Forget a saved password | `forget the saved password is offered`, `forget sends remove_credentials` |
 | Duplicate protection | `duplicate share keeps Save off`, `duplicate names the existing storage` |
 | Switch Cards / Table and remember it | `switching to Table invokes` (`set_list_view`), `the table's first column is pinned`, `switching back shows cards` |
