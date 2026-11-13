@@ -305,6 +305,11 @@ export function createDevBackend(hash: string): {
           storage.hasCredentials = true;
           // The helper mounts a moment later, so the "Trying…" note has a real end.
           window.setTimeout(() => {
+            if (storage.status === "unreachable") {
+              storage.detail = "Can't reach the host right now.";
+              emit("snapshot", snapshot);
+              return;
+            }
             storage.status = "mounted";
             storage.detail = storage.kind === "smb" ? "Connected." : "The disk is connected.";
             storage.mountedPath = storage.mountPoint || `/Volumes/${storage.name}`;

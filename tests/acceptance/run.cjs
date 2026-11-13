@@ -1292,6 +1292,128 @@ async function noOverflow(page, id) {
       await page.close();
     }
 
+    /* --------------------------------------- Round-5: focus, identity, table, toasts */
+    {
+      const page = await open(browser, live);
+      await rowAction(page, live.storages[0].id, "edit");
+      await page.locator('[data-editor-action="test"]').focus();
+      await page.keyboard.press("Enter");
+      await page.waitForTimeout(350);
+      const focus = await page.evaluate(() => document.activeElement?.getAttribute("data-fk") || document.activeElement?.tagName);
+      truthy("Keys", "the editor's Test keeps focus on its button", "editor-test", focus === "editor-test", String(focus));
+      await closeEditorDiscarding(page);
+
+      await page.locator('[data-fk="add-storage"]').click();
+      await page.locator('input[name="name"]').fill("Slash copy");
+      await page.locator('input[name="target"]').fill("smb://vengtheng@100.69.137.42/Public%20Space-Media%20-%204TB%20-%20Music/");
+      await page.waitForTimeout(150);
+      truthy(
+        "Add",
+        "a trailing slash is the same share",
+        "Save disabled with the duplicate reason",
+        await page.locator('[data-editor-action="save"]').isDisabled() &&
+          (await page.locator("#save-reason").innerText()).includes("already added"),
+        await page.locator("#save-reason").innerText().catch(() => ""),
+      );
+      await page.locator('input[name="target"]').fill("smb://vengtheng@100.69.137.42/Public%20Space-Media%20-%204TB%20-%20M%75sic");
+      await page.waitForTimeout(150);
+      truthy(
+        "Add",
+        "percent escapes are the same share",
+        "Save disabled with the duplicate reason",
+        await page.locator('[data-editor-action="save"]').isDisabled() &&
+          (await page.locator("#save-reason").innerText()).includes("already added"),
+        await page.locator("#save-reason").innerText().catch(() => ""),
+      );
+      await closeEditorDiscarding(page);
+      await page.close();
+    }
+
+    {
+      const page = await open(browser, live, { width: 820, height: 640 });
+      await page.locator('[data-list-view="table"]').check();
+      await page.waitForTimeout(300);
+      const visible = await page.evaluate(() => {
+        const wrap = document.querySelector(".storage-table-wrap").getBoundingClientRect();
+        const cell = document.querySelector(".storage-table .cell-actions");
+        const button = cell?.querySelector("[data-row-menu]");
+        return {
+          wrapRight: Math.round(wrap.right),
+          buttonRight: button ? Math.round(button.getBoundingClientRect().right) : null,
+        };
+      });
+      truthy("View", "the table keeps Actions visible at 820", "menu inside the wrap", visible.buttonRight !== null && visible.buttonRight <= visible.wrapRight, JSON.stringify(visible));
+      await page.locator(".storage-table [data-row-menu]").first().click();
+      await page.waitForTimeout(150);
+      truthy("View", "a table row's menu opens", "menu items", (await page.locator("#row-menu [role=menuitem]").count()) > 0, null);
+      await page.locator("#row-menu [role=menuitem]").first().focus();
+      const beforeArrow = await page.evaluate(() => document.activeElement?.getAttribute("data-action"));
+      await page.keyboard.press("ArrowDown");
+      const moved = await page.evaluate(() => document.activeElement?.getAttribute("data-action"));
+      truthy("View", "arrow keys move inside the row menu", "a different item", Boolean(moved) && moved !== beforeArrow, `${beforeArrow} -> ${moved}`);
+      await page.keyboard.press("Escape");
+      await page.close();
+    }
+
+    {
+      const page = await open(browser, live, { width: 375, height: 812 });
+      await page.locator('[data-fk="add-storage"]').click();
+      await page.locator('input[name="name"]').fill("Toast room");
+      await page.locator('input[name="target"]').fill("smb://nas.local/toastroom");
+      await page.locator('input[name="target"]').press("Enter");
+      await page.waitForTimeout(350);
+      const clear = await page.evaluate(() => {
+        const toast = document.querySelector(".toast")?.getBoundingClientRect();
+        const foot = document.querySelector("#foot").getBoundingClientRect();
+        const pill = document.querySelector('[data-fk="pill"]');
+        const rect = pill.getBoundingClientRect();
+        const top = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
+        return {
+          toastBottom: toast ? Math.round(toast.bottom) : null,
+          footTop: Math.round(foot.top),
+          pillHittable: top === pill || pill.contains(top),
+        };
+      });
+      truthy("Add", "at 375 the toast clears the footer", "toast above the footer", clear.toastBottom !== null && clear.toastBottom <= clear.footTop, JSON.stringify(clear));
+      truthy("Add", "at 375 the version pill stays clickable", "pill is the topmost control", clear.pillHittable, JSON.stringify(clear));
+      await page.close();
+    }
+
+    {
+      // Boot rest points at Retry and offers no dead navigation.
+      const page = await open(browser, live, { extra: "&fail-boot=1" });
+      await page.waitForSelector('[data-action="retry-boot"]');
+      const boot = await page.evaluate(() => ({
+        focus: document.activeElement?.getAttribute("data-fk"),
+        nav: document.querySelectorAll(".nav-item").length,
+      }));
+      truthy("Boot", "the boot error focuses Retry", "retry-boot", boot.focus === "retry-boot", JSON.stringify(boot));
+      eq("Boot", "the boot error hides navigation", 0, boot.nav);
+      await page.locator('[data-action="retry-boot"]').click();
+      await page.waitForTimeout(300);
+      eq("Boot", "the navigation comes back after Retry", 3, await page.locator(".nav-item").count());
+      await page.close();
+    }
+
+    {
+      // A focused Undo toast that times out leaves focus on the page, not BODY.
+      const page = await open(browser, live);
+      await rowAction(page, live.storages[0].id, "edit");
+      await page.locator('[data-editor-action="remove"]').click();
+      await page.locator('[data-editor-action="confirm-remove"]').click();
+      await page.waitForTimeout(200);
+      await page.locator("[data-toast-action]").focus();
+      await page.waitForTimeout(12500);
+      truthy(
+        "Remove",
+        "a timed-out Undo leaves focus on the page",
+        "main",
+        (await page.evaluate(() => document.activeElement?.id)) === "main",
+        await page.evaluate(() => document.activeElement?.id || document.activeElement?.tagName),
+      );
+      await page.close();
+    }
+
     /* ------------------------------------ Long names, geometry, accessible names */
     {
       const longName = variant((snapshot) => {

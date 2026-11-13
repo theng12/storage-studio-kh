@@ -127,9 +127,15 @@ export function storageSummary(storages: { status: string }[]): string {
   return `${parts.join(", ")}.`;
 }
 
-/** A share is the same mount whether or not a user name is in front of the host. */
+/** A share is the same mount with or without a user name, a trailing slash or escapes. */
 function shareKey(target: string): string {
-  return target.trim().toLowerCase().replace(/^smb:\/\/([^/@]*@)?/, "smb://");
+  let key = target.trim().toLowerCase().replace(/^smb:\/\/([^/@]*@)?/, "smb://");
+  try {
+    key = decodeURIComponent(key);
+  } catch {
+    // A malformed escape stays as typed; the form reports the real address problem.
+  }
+  return key.replace(/\/+$/, "");
 }
 
 /** A share or disk may exist once: the same address would give two rows for one mount. */

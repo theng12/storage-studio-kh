@@ -862,21 +862,41 @@ fn save_storage(app: AppHandle, state: State<'_, AppState>, input: StorageInput)
     Ok(snapshot(&app))
 }
 
+/// Case, a leading user name, a trailing slash and %-escapes do not make a new share.
+fn share_key(target: &str) -> String {
+    let lower = target.trim().to_lowercase();
+    let rest = lower.strip_prefix("smb://").unwrap_or(&lower);
+    let after_user = match rest.split_once('@') {
+        Some((_, host)) => host,
+        None => rest,
+    };
+    let mut decoded = String::new();
+    let mut chars = after_user.chars();
+    while let Some(character) = chars.next() {
+        if character == '%' {
+            let hex: String = chars.by_ref().take(2).collect();
+            if hex.len() == 2 {
+                if let Ok(byte) = u8::from_str_radix(&hex, 16) {
+                    decoded.push(byte as char);
+                    continue;
+                }
+            }
+            decoded.push('%');
+            decoded.push_str(&hex);
+        } else {
+            decoded.push(character);
+        }
+    }
+    decoded.trim_end_matches('/').to_string()
+}
+
 /// The same share is one mount whether or not a user name is written in front of the host.
 fn same_storage(a: &Storage, b: &Storage) -> bool {
     if a.kind != b.kind {
         return false;
     }
     if a.kind == "smb" {
-        fn key(target: &str) -> String {
-            let lower = target.trim().to_lowercase();
-            let rest = lower.strip_prefix("smb://").unwrap_or(&lower).to_string();
-            match rest.split_once('@') {
-                Some((_, host)) => host.to_string(),
-                None => rest,
-            }
-        }
-        key(&a.target) == key(&b.target)
+        share_key(&a.target) == share_key(&b.target)
     } else {
         match (&a.volume_uuid, &b.volume_uuid) {
             (Some(left), Some(right)) => left == right,
@@ -1292,7 +1312,11 @@ mod tests {
         let with_user = storage("a", "smb://studio@nas.local/studio", Some("studio"));
         let without_user = storage("b", "SMB://NAS.local/studio", None);
         let other = storage("c", "smb://nas.local/other", None);
+        let trailing = storage("d", "smb://nas.local/studio/", None);
+        let escaped = storage("e", "smb://nas.local/st%75dio", None);
         assert!(super::same_storage(&with_user, &without_user));
+        assert!(super::same_storage(&with_user, &trailing));
+        assert!(super::same_storage(&with_user, &escaped));
         assert!(!super::same_storage(&with_user, &other));
     }
 

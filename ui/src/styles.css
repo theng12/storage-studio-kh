@@ -1012,7 +1012,21 @@ h3 {
   overflow-wrap: anywhere;
 }
 
+.storage-table .cell-address {
+  min-width: 180px;
+}
+
+.storage-table .cell-reconnects {
+  min-width: 120px;
+  white-space: nowrap;
+}
+
 .storage-table .cell-actions {
+  position: sticky;
+  right: 0;
+  z-index: 1;
+  border-left: 1px solid var(--line);
+  background: var(--raised);
   text-align: right;
 }
 
@@ -1658,6 +1672,11 @@ dialog.sheet::backdrop {
   .update-line {
     flex-basis: 100%;
     padding: 0;
+  }
+
+  /* The footer owns the bottom edge on a narrow window; toasts sit above it. */
+  .toasts {
+    bottom: 104px;
   }
 
   .storage-path {

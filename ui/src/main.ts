@@ -195,9 +195,11 @@ function toast(
 function dismissToast(id: number): void {
   const index = toasts.findIndex((item) => item.id === id);
   if (index < 0) return;
+  const hadFocus = Boolean(document.activeElement && toastsEl.contains(document.activeElement));
   window.clearTimeout(toasts[index].timer);
   toasts.splice(index, 1);
   renderToasts();
+  if (hadFocus) mainEl.focus({ preventScroll: true });
 }
 
 function dismissToastsMatching(prefix: string): void {
@@ -253,7 +255,8 @@ function focusTopDialog(): void {
 
 function renderBootError(error: unknown): void {
   snapshot = null;
-  renderNav();
+  // Nothing but Retry works until the app can read its state, so no dead navigation.
+  navEl.innerHTML = "";
   footEl.innerHTML = "";
   mainEl.innerHTML = `
     <header class="page-head">
@@ -268,6 +271,7 @@ function renderBootError(error: unknown): void {
       <p class="empty-text">${esc(errText(error))}</p>
       <button type="button" class="btn btn-primary" data-action="retry-boot" data-fk="retry-boot">Retry</button>
     </div>`;
+  mainEl.querySelector<HTMLElement>('[data-action="retry-boot"]')?.focus();
 }
 
 function renderNav(): void {
@@ -466,7 +470,7 @@ function renderStorageCards(groups: { storage: StorageView; count: number }[]): 
           <div class="storage-id">
             <h3>${esc(storage.name)}${
               count > 1 ? `<span class="dup-count" title="${count} entries for this one storage">×${count}</span>` : ""
-            }<span class="storage-kind">${kind}</span></h3>
+            }<span class="storage-kind" aria-hidden="true">${kind}</span><span class="sr-only">, ${kind}</span></h3>
           </div>
           <span class="chip chip-${tone}">${statusLabel(storage.status)}</span>
         </div>
@@ -500,13 +504,13 @@ function renderStorageTable(groups: { storage: StorageView; count: number }[]): 
         return `<tr class="storage-table-row" data-storage="${esc(storage.id)}">
           <td class="cell-name"><span class="table-name">${esc(storage.name)}${
             count > 1 ? ` <span class="dup-count">×${count}</span>` : ""
-          }</span><span class="storage-kind">${kind}</span></td>
+          }</span><span class="storage-kind" aria-hidden="true">${kind}</span><span class="sr-only">, ${kind}</span></td>
           <td class="cell-status"><span class="chip chip-${tone}">${statusLabel(storage.status)}</span>${
             storage.detail ? `<p class="table-detail">${esc(storage.detail)}</p>` : ""
           }</td>
-          <td class="path-text">${storage.kind === "smb" ? esc(readableTarget(storage.target)) : "—"}</td>
+          <td class="path-text cell-address">${storage.kind === "smb" ? esc(readableTarget(storage.target)) : "—"}</td>
           <td class="path-text">${storage.mountedPath ? esc(storage.mountedPath) : "—"}</td>
-          <td>${storage.reconnectAtLogin ? "Login" : "—"} · ${storage.reconnectAfterWake ? "Wake" : "—"}</td>
+          <td class="cell-reconnects">${storage.reconnectAtLogin ? "Login" : "—"} · ${storage.reconnectAfterWake ? "Wake" : "—"}</td>
           <td class="cell-actions">${renderRowActions(storage)}</td>
         </tr>`;
       })
@@ -874,7 +878,7 @@ function renderEditor(): void {
       </div>
       <div class="sheet-body">
         ${editor.error ? `<p class="form-error" role="alert">${esc(editor.error)}</p>` : ""}
-        <p class="confirm-text">This removes the storage from Storage Studio KH and forgets its saved password. Nothing is deleted from the share or disk.</p>
+        <p class="confirm-text">This removes the storage from Storage Studio KH, forgets its saved password and clears any duplicate entries. Nothing is deleted from the share or disk.</p>
       </div>
       <div class="sheet-actions">
         <button type="button" class="btn btn-danger" data-editor-action="confirm-remove" data-fk="editor-confirm-remove"${
@@ -1354,6 +1358,7 @@ async function testEditor(): Promise<void> {
       editor.busy = null;
       editor.error = errText(error);
       renderEditor();
+      if (!restoreFocus("editor-test")) focusTopDialog();
     }
   }
 }
@@ -1779,6 +1784,7 @@ function applySnapshot(next: Snapshot): void {
   if (editor?.busy === "test") {
     editor.busy = null;
     renderEditor();
+    if (!restoreFocus("editor-test")) focusTopDialog();
   }
   if (credentialsPending) {
     const storage = next.storages.find((item) => item.id === credentialsPending?.storageId);
@@ -1897,6 +1903,20 @@ function wireEvents(): void {
       event.preventDefault();
       closeRowMenu(true);
     }
+  });
+
+  rowMenuEl.addEventListener("keydown", (event) => {
+    if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) return;
+    const items = Array.from(rowMenuEl.querySelectorAll<HTMLElement>('[role="menuitem"]:not([disabled])'));
+    if (!items.length) return;
+    event.preventDefault();
+    const index = items.indexOf(document.activeElement as HTMLElement);
+    let next = index;
+    if (event.key === "Home") next = 0;
+    else if (event.key === "End") next = items.length - 1;
+    else if (event.key === "ArrowDown") next = (index + 1 + items.length) % items.length;
+    else next = (index + items.length - 1) % items.length;
+    items[next]?.focus();
   });
 
   mainEl.addEventListener("scroll", () => {

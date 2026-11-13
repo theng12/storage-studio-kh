@@ -47,7 +47,7 @@ Needs attention; private-file save/forget; launch/quit/force-quit leaving no hel
 a second launch handled plainly; DMG signature and install; launch at login.
 
 UI: every page and dialog is measured at 375/768/820/1440 in light and dark by
-`tests/acceptance/run.cjs` (219 checks), and independent critics re-walked the app until it met the
+`tests/acceptance/run.cjs` (258 checks), and independent critics re-walked the app until it met the
 studio bar; their reports are `tests/acceptance/critic-round*.md`. The window reflow, status line,
 discard prompt, Undo, Restart helper, duplicate blocking, keyboard focus and the 1–8 retries picker
 are covered there. Login items register once, only from the installed `.app`; a development build

@@ -158,6 +158,14 @@ test("a share or disk can only be added once", () => {
     "This share is already added as Studio NAS.",
   );
   assert.equal(
+    duplicateStorageReason({ name: "Again", kind: "smb", target: "smb://nas.local/studio/", volumeUUID: null }, existing),
+    "This share is already added as Studio NAS.",
+  );
+  assert.equal(
+    duplicateStorageReason({ name: "Again", kind: "smb", target: "smb://nas.local/st%75dio", volumeUUID: null }, existing),
+    "This share is already added as Studio NAS.",
+  );
+  assert.equal(
     duplicateStorageReason({ name: "Disk again", kind: "volume", target: "disk4s1", volumeUUID: "5C2A-9F1E" }, existing),
     "This disk is already added as Editing SSD.",
   );
