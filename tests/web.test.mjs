@@ -197,3 +197,18 @@ test("footer keeps Support, pill + updates and the status line on one grid", () 
   assert.match(css, /\.foot-updates \{[^}]*gap: var\(--s-s\)[^}]*padding: 0 var\(--s-s\)/s);
   assert.match(css, /\.update-line \{[^}]*padding: 0 var\(--s-s\)/s);
 });
+
+test("a second launch reopens the window, even after it was hidden", () => {
+  const rust = readFileSync(new URL("../src-tauri/src/main.rs", import.meta.url), "utf8");
+  assert.match(rust, /RunEvent::Reopen \{ \.\. \} => show_settings\(app\)/);
+  assert.match(rust, /size\.width < 700 \|\| size\.height < 520/);
+  assert.match(rust, /SHOW_ONCE:/);
+});
+
+test("no app surface uses the browser confirm, alert or prompt", () => {
+  for (const file of ["../ui/src/main.ts", "../ui/src/dev-fixture.ts"]) {
+    const source = readFileSync(new URL(file, import.meta.url), "utf8");
+    assert.doesNotMatch(source, /\bwindow\.(confirm|alert|prompt)\s*\(/);
+    assert.doesNotMatch(source, /(?<![.\w])(confirm|alert|prompt)\s*\(/);
+  }
+});

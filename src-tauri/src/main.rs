@@ -638,9 +638,23 @@ extern "C" {}
 
 fn show_settings(app: &AppHandle) {
     if let Some(window) = app.get_webview_window("settings") {
+        // A window restored tiny or offscreen gets a sane frame again.
+        if let Ok(size) = window.inner_size() {
+            if size.width < 700 || size.height < 520 {
+                let _ = window.set_size(tauri::LogicalSize::new(820.0, 640.0));
+                let _ = window.center();
+            }
+        }
         let _ = window.show();
         let _ = window.unminimize();
-        let _ = window.set_focus();
+        // show() is asynchronous on the main thread; focus once it has landed.
+        let handle = app.clone();
+        let _ = app.run_on_main_thread(move || {
+            if let Some(window) = handle.get_webview_window("settings") {
+                let _ = window.show();
+                let _ = window.set_focus();
+            }
+        });
         return;
     }
     // The configured window can be gone (destroyed, or failed to create at launch). Build it on
@@ -651,6 +665,7 @@ fn show_settings(app: &AppHandle) {
         .min_inner_size(700.0, 520.0)
         .build()
     {
+        let _ = window.show();
         let _ = window.set_focus();
     }
 }
@@ -1213,6 +1228,8 @@ fn main() {
         std::process::exit(0);
     }
     let dump_snapshot = arguments.iter().any(|a| a == "--dump-snapshot");
+    let start_hidden = arguments.iter().any(|a| a == "--start-hidden");
+    let show_once = arguments.iter().any(|a| a == "--show-once");
 
     // Tests and hidden verification runs use their own data folder.
     if let Ok(dir) = std::env::var("STORAGE_STUDIO_TEST_DATA_DIR") {
@@ -1380,8 +1397,32 @@ fn main() {
 
             // Opening the app always shows its window — the app is useless as an invisible
             // menu-bar item, and "nothing happened" was the owner's report.
-            if !is_test_mode() && !dump_snapshot {
+            if !is_test_mode() && !dump_snapshot && !start_hidden && !show_once {
                 show_settings(&handle);
+            }
+            if show_once {
+                let hook = handle.clone();
+                std::thread::spawn(move || {
+                    std::thread::sleep(std::time::Duration::from_millis(800));
+                    show_settings(&hook);
+                    std::thread::sleep(std::time::Duration::from_millis(800));
+                    let visible = hook
+                        .get_webview_window("settings")
+                        .map(|w| w.is_visible().unwrap_or(false))
+                        .unwrap_or(false);
+                    if let Some(window) = hook.get_webview_window("settings") {
+                        let _ = window.hide();
+                    }
+                    std::thread::sleep(std::time::Duration::from_millis(400));
+                    show_settings(&hook);
+                    std::thread::sleep(std::time::Duration::from_millis(800));
+                    let again = hook
+                        .get_webview_window("settings")
+                        .map(|w| w.is_visible().unwrap_or(false))
+                        .unwrap_or(false);
+                    println!("SHOW_ONCE:shown={visible} after_hide_show={again}");
+                    hook.exit(0);
+                });
             }
 
             Ok(())
@@ -1401,9 +1442,10 @@ fn main() {
         .build(tauri::generate_context!())
         .expect("Storage Studio KH could not start");
 
-    app.run(|app, event| {
-        if let RunEvent::Exit = event {
-            shutdown_helper(app);
-        }
+    app.run(|app, event| match event {
+        RunEvent::Exit => shutdown_helper(app),
+        // A second launch of this LSUIElement app arrives as an activation, not a new process.
+        RunEvent::Reopen { .. } => show_settings(app),
+        _ => {}
     });
 }

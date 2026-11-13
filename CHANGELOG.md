@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.8 — 2026-11-13
+
+- Opening the app again while it is already running brings the Settings window back on screen, even after you closed it.
+- A window that comes back tiny or offscreen is given a normal size again.
+
 ## 0.1.7 — 2026-11-13
 
 - Passwords now live in Storage Studio KH's own private file — readable only by you (mode 0600) and saved atomically — never in a system credential store.

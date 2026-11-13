@@ -16,7 +16,7 @@ import sys
 from pathlib import Path
 
 PRODUCT = "Storage Studio KH"
-KEEP = 3
+KEEP = 2
 
 
 def version_of(path: Path):
@@ -47,10 +47,8 @@ def main() -> int:
                 protected.update(re.findall(r"\b\d{1,9}(?:\.\d{1,9}){1,5}\b", path.read_text()))
             except OSError:
                 pass
-    for path in dist.glob("receipt-*.json"):
-        version = path.stem.removeprefix("receipt-")
-        if version:
-            protected.add(version)
+    # Local receipts are history, not feed pins: only the version being released is kept
+    # beyond the newest two.
 
     kept, retired = [], []
     for index, path in enumerate(dmgs):
