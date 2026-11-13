@@ -54,14 +54,25 @@ async function open(browser, snapshot, options = {}) {
   const width = options.width || 820;
   const height = options.height || 640;
   const theme = options.theme || "light";
+  const view = options.view || "storage";
+  const extra = options.extra || "";
   const page = await browser.newPage({ viewport: { width, height }, deviceScaleFactor: 2, reducedMotion: "reduce" });
   await page.addInitScript((payload) => {
     window.__SS_TEST__ = { snapshot: payload, commands: [] };
   }, clone(snapshot));
-  await page.goto(`${BASE}?acceptance=1#view=storage&theme=${theme}`);
+  await page.goto(`${BASE}?acceptance=1#view=${view}&theme=${theme}${extra}`);
   await page.waitForSelector("h1");
   await page.waitForTimeout(120);
   return page;
+}
+
+async function closeEditorDiscarding(page) {
+  await page.keyboard.press("Escape");
+  await page.waitForTimeout(100);
+  if (await page.locator('[data-editor-action="discard"]').count()) {
+    await page.locator('[data-editor-action="discard"]').click();
+    await page.waitForTimeout(100);
+  }
 }
 
 async function shot(page, name) {
@@ -163,7 +174,10 @@ async function noOverflow(page, id) {
       truthy("Esc", "dismisses Browse results", "chooser gone, dialog open", (await page.locator(".share-picker").count()) === 0 && (await page.locator("dialog[open]").count()) === 1, null);
       await page.keyboard.press("Escape");
       await page.waitForTimeout(100);
-      truthy("Esc", "closes the editor after dismissing results", "dialog closed", (await page.locator("dialog[open]").count()) === 0, null);
+      truthy("Esc", "asks before discarding typed edits", "Discard changes?", (await page.locator("#editor-title").innerText()).includes("Discard changes"), null);
+      await page.locator('[data-editor-action="discard"]').click();
+      await page.waitForTimeout(100);
+      truthy("Esc", "discard closes the editor", "dialog closed", (await page.locator("dialog[open]").count()) === 0, null);
       // Esc returns from a Remove confirmation to the editor.
       const escRow = await open(browser, live);
       await escRow.locator('[data-action="edit"]').first().click();
@@ -217,16 +231,25 @@ async function noOverflow(page, id) {
             const support = document.querySelector(".foot-support");
             const pill = document.querySelector('[data-fk="pill"]');
             const check = document.querySelector('[data-fk="check"]');
+            const foot = document.querySelector("#foot").getBoundingClientRect();
             return {
               supportLeft: support ? Math.round(support.getBoundingClientRect().left + parseFloat(getComputedStyle(support).paddingLeft)) : null,
               rowLeft: left(".foot-updates"),
               lineLeft: left(".update-line"),
               pillCenter: pill ? Math.round(pill.getBoundingClientRect().top + pill.getBoundingClientRect().height / 2) : null,
               checkCenter: check ? Math.round(check.getBoundingClientRect().top + check.getBoundingClientRect().height / 2) : null,
+              footBottom: Math.round(foot.bottom),
+              pillLeft: pill ? Math.round(pill.getBoundingClientRect().left) : null,
+              pillBottom: pill ? Math.round(pill.getBoundingClientRect().bottom) : null,
             };
           });
-          truthy("Footer", `aligned at ${fw} ${tone}`, "support, row and status share one left edge", box.supportLeft === box.rowLeft && box.rowLeft === box.lineLeft, JSON.stringify(box));
-          truthy("Footer", `pill and update icon centred at ${fw} ${tone}`, "same centre line", box.pillCenter === box.checkCenter, JSON.stringify(box));
+          if (fw > 640) {
+            truthy("Footer", `aligned at ${fw} ${tone}`, "support, row and status share one left edge", box.supportLeft === box.rowLeft && box.rowLeft === box.lineLeft, JSON.stringify(box));
+            truthy("Footer", `pill and update icon centred at ${fw} ${tone}`, "same centre line", box.pillCenter === box.checkCenter, JSON.stringify(box));
+          } else {
+            truthy("Footer", `pinned to the bottom at ${fw} ${tone}`, "footer bottom on the window edge", Math.abs(box.footBottom - fh) <= 1, JSON.stringify(box));
+            truthy("Footer", `pill bottom-left at ${fw} ${tone}`, "pill in the left half near the bottom", box.pillLeft < fw / 2 && box.pillBottom > fh - 120, JSON.stringify(box));
+          }
           await shot(footPage, `footer/footer-${tone}-${fw}x${fh}`);
           await footPage.close();
         }
@@ -254,6 +277,8 @@ async function noOverflow(page, id) {
         snapshot.storages[1].status = "needs_attention";
         snapshot.storages[1].detail = "The device refused the user name or password. Address tried: smb://vengtheng@100.69.137.42/Public Space-Media - 6TB - Movies";
         snapshot.storages[1].mountedPath = null;
+        // The reason says the password was refused, so a saved one exists.
+        snapshot.storages[1].hasCredentials = true;
         snapshot.storages[2].status = "unreachable";
         snapshot.storages[2].detail = "Can't reach 100.69.137.42 right now. Address tried: smb://vengtheng@100.69.137.42/Public Space-System pool";
         snapshot.storages[2].mountedPath = null;
@@ -280,19 +305,25 @@ async function noOverflow(page, id) {
       await narrowAttention.close();
       await page.close();
 
-      // Engine down on every view.
+      // Engine down on every view: the banner carries the way out, and the status line says so.
       const down = variant((snapshot) => {
         snapshot.engineRunning = false;
-        snapshot.engineError = "The background helper stopped. Reopen the app to start it again.";
+        snapshot.engineError = "It stopped unexpectedly. Restart it here.";
       });
       const downPage = await open(browser, down);
       const storageText = await downPage.locator("main, .content").first().innerText();
-      truthy("Engine", "banner on Storage", "helper stopped sentence", storageText.includes("background helper stopped"), null);
+      truthy("Engine", "banner on Storage", "helper stopped sentence", storageText.includes("It stopped unexpectedly"), null);
+      truthy("Engine", "status line admits the helper is down", "Helper isn't running", storageText.includes("Helper isn't running"), null);
+      truthy("Engine", "banner offers a way out", "Restart helper button", (await downPage.locator('[data-fk="restart-helper"]').count()) === 1, null);
       await downPage.locator('[data-fk="nav-general"]').click();
-      truthy("Engine", "banner on General", "helper stopped sentence", (await downPage.locator("main, .content").first().innerText()).includes("background helper stopped"), null);
+      truthy("Engine", "banner on General", "helper stopped sentence", (await downPage.locator("main, .content").first().innerText()).includes("It stopped unexpectedly"), null);
       await downPage.locator('[data-fk="nav-appearance"]').click();
-      truthy("Engine", "banner on Appearance", "helper stopped sentence", (await downPage.locator("main, .content").first().innerText()).includes("background helper stopped"), null);
+      truthy("Engine", "banner on Appearance", "helper stopped sentence", (await downPage.locator("main, .content").first().innerText()).includes("It stopped unexpectedly"), null);
       await shot(downPage, "engine/engine-down-appearance-light-820x640");
+      await downPage.locator('[data-fk="restart-helper"]').click();
+      await downPage.waitForTimeout(200);
+      eq("Engine", "restart helper invokes", "restart_helper", (await lastCommand(downPage))?.command);
+      truthy("Engine", "helper comes back", "banner gone", (await downPage.locator(".banner").count()) === 0, null);
       await downPage.close();
     }
 
@@ -305,13 +336,14 @@ async function noOverflow(page, id) {
       truthy("Add", "label says host + share", "Share address (host + share)", dialogText.includes("Share address (host + share)"), null);
       const save = page.locator('[data-editor-action="save"]');
       truthy("Add", "Save disabled with an empty name", "disabled", await save.isDisabled(), null);
-      truthy("Add", "name reason beside Save", "Give this storage a name.", (await page.locator("#save-reason").innerText()).includes("Give this storage a name."), null);
-      truthy("Add", "name field marked invalid", "aria-invalid", (await page.locator('input[name="name"]').getAttribute("aria-invalid")) === "true", null);
-      truthy("Add", "reason linked to Save", "aria-describedby", (await save.getAttribute("aria-describedby")) === "save-reason", null);
+      truthy("Add", "no error before the person types", "no save reason", (await page.locator("#save-reason").count()) === 0, null);
+      truthy("Add", "name field not marked invalid on open", "no aria-invalid", (await page.locator('input[name="name"]').getAttribute("aria-invalid")) === null, null);
+      truthy("Add", "placeholders read as examples", "e.g. Studio NAS", (await page.locator('input[name="name"]').getAttribute("placeholder")) === "e.g. Studio NAS", null);
       await page.locator('input[name="name"]').fill("Studio NAS");
       await page.waitForTimeout(80);
       truthy("Add", "empty address asks for the device", "Enter the device address first", (await page.locator("#save-reason").innerText()).includes("Enter the device address first"), null);
       truthy("Add", "reason is a live region", "role=status", (await page.locator("#save-reason").getAttribute("role")) === "status", null);
+      truthy("Add", "reason linked to Save", "aria-describedby", (await save.getAttribute("aria-describedby")) === "save-reason", null);
       const evidence = await shot(page, "add/add-validation-light-820x640");
 
       // Host-only address keeps Save blocked with the reason.
@@ -372,7 +404,7 @@ async function noOverflow(page, id) {
       truthy("Add", "browse without a host explains", "Enter the device address first", (await page.locator(".field-note-warn").innerText()).includes("Enter the device address first"), null);
 
       // From a connected share: one click fills the form and hides the list.
-      await page.keyboard.press("Escape");
+      await closeEditorDiscarding(page);
       const addable = variant((snapshot) => {
         snapshot.storages = snapshot.storages.filter((item) => !item.name.includes("4TB - Music"));
       });
@@ -390,7 +422,7 @@ async function noOverflow(page, id) {
       eq("Add", "connected pick fills user", "vengtheng", await connPage.locator('input[name="username"]').inputValue());
       truthy("Add", "password field still offered after a connected pick", "password input present with a private-storage hint", (await connPage.locator('input[name="password"]').getAttribute("placeholder").catch(() => "")).includes("privately"), null);
       await shot(connPage, "add/add-connected-picked-light-820x640");
-      await connPage.keyboard.press("Escape");
+      await closeEditorDiscarding(connPage);
       await connPage.close();
 
       // Attached disk flow.
@@ -407,7 +439,7 @@ async function noOverflow(page, id) {
       await page.waitForTimeout(120);
       truthy("Add", "disk choice shows mount point", "/Volumes/", (await page.locator("dialog[open]").innerText()).includes("/Volumes/"), null);
       truthy("Add", "disk Save enabled", "enabled", !(await save.isDisabled()), null);
-      await page.keyboard.press("Escape");
+      await closeEditorDiscarding(page);
       await page.close();
 
       // Dark dialog evidence.
@@ -432,11 +464,15 @@ async function noOverflow(page, id) {
       let last = await lastCommand(page);
       eq("General", "notifications toggle invokes", "set_general", last && last.command);
       truthy("General", "sends all three values", "notifications/launchAtLogin/retries present", ["notifications", "launchAtLogin", "retries"].every((key) => key in (last?.args || {})), evidence);
-      await page.locator('[data-general="retries"]').fill("5");
-      await page.locator('[data-general="retries"]').blur();
+      const toggleFocus = await page.evaluate(() => document.activeElement?.getAttribute("data-fk"));
+      truthy("General", "focus stays on the switch", "general-notifications", toggleFocus === "general-notifications", String(toggleFocus));
+      eq("General", "retries offers 1 to 8", 8, await page.locator('[data-general="retries"] option').count());
+      await page.locator('[data-general="retries"]').selectOption("5");
       await page.waitForTimeout(150);
       last = await lastCommand(page);
       eq("General", "retries saved", 5, last?.args?.retries);
+      const focusAfterToggle = await page.evaluate(() => document.activeElement?.getAttribute("data-fk"));
+      truthy("General", "focus stays on the changed control", "general-...", String(focusAfterToggle || "").startsWith("general-"), String(focusAfterToggle));
       await shot(page, "general/general-dark-820x640", await page.evaluate(() => { document.documentElement.dataset.theme = "dark"; }));
       await page.close();
 
@@ -467,6 +503,12 @@ async function noOverflow(page, id) {
       await page.locator('input[data-appearance="light"]').check();
       await page.waitForTimeout(150);
       eq("Appearance", "light applies live", "light", await page.evaluate(() => document.documentElement.dataset.theme));
+      await page.locator('input[data-appearance="light"]').focus();
+      await page.keyboard.press("ArrowRight");
+      await page.waitForTimeout(200);
+      const arrowFocus = await page.evaluate(() => document.activeElement?.getAttribute("data-fk"));
+      truthy("Appearance", "arrow keys keep focus in the group", "an appearance control", String(arrowFocus || "").startsWith("appearance-"), String(arrowFocus));
+      eq("Appearance", "arrow key selects the next choice", "dark", await page.evaluate(() => document.documentElement.dataset.theme));
       await page.close();
     }
 
@@ -566,6 +608,530 @@ async function noOverflow(page, id) {
       await emit(page, "second-instance", null);
       const noted = await page.locator(".toast").filter({ hasText: "already running" }).count();
       truthy("Dialog", "second instance not repeated", "single note", noted <= 1, null);
+      await page.close();
+    }
+
+    /* -------------------------------------- Measured layout at 375/768/1440 */
+    {
+      for (const [w, h] of [[375, 812], [768, 900], [1440, 900]]) {
+        for (const viewName of ["storage", "general", "appearance", "support"]) {
+          const page = await open(browser, live, { width: w, height: h, view: viewName });
+          const m = await page.evaluate(() => {
+            const rect = (selector) => document.querySelector(selector)?.getBoundingClientRect() ?? null;
+            const nav = document.querySelector("#nav");
+            const main = rect("#main");
+            return {
+              overflow: document.documentElement.scrollWidth - window.innerWidth,
+              viewport: window.innerWidth,
+              mainWidth: Math.round(main.width),
+              footBottom: Math.round(rect("#foot")?.bottom ?? -1),
+              pillLeft: Math.round(rect('[data-fk="pill"]')?.left ?? -1),
+              pillBottom: Math.round(rect('[data-fk="pill"]')?.bottom ?? -1),
+              navItems: nav.querySelectorAll(".nav-item").length,
+              navIcons: nav.querySelectorAll(".nav-item svg").length,
+            };
+          });
+          eq("Layout", `${viewName} at ${w}: no horizontal overflow`, "0", `${m.overflow}`);
+          const floor = w <= 640 ? w - 40 : w - 260;
+          truthy("Layout", `${viewName} at ${w}: content fills the width`, `main at least ${floor}px`, m.mainWidth >= floor, JSON.stringify(m));
+          truthy("Layout", `${viewName} at ${w}: footer on the bottom edge`, "footer within the sidebar inset of the window edge", Math.abs(m.footBottom - h) <= 12, JSON.stringify(m));
+          truthy("Layout", `${viewName} at ${w}: pill bottom-left`, "pill in the left half near the bottom", m.pillLeft >= 0 && m.pillLeft < w / 2 && m.pillBottom > h - 120, JSON.stringify(m));
+          eq("Layout", `${viewName} at ${w}: every nav item has an icon`, m.navItems, m.navIcons);
+          await shot(page, `layout/${viewName}-${w}x${h}`);
+          if (viewName === "storage") {
+            const dialogWidth = w;
+            await page.locator('[data-fk="add-storage"], [data-action="add-storage"]').first().click();
+            await page.waitForTimeout(150);
+            const dialog = await page.evaluate(() => {
+              const rect = document.querySelector("dialog[open]")?.getBoundingClientRect();
+              return rect ? { left: Math.round(rect.left), right: Math.round(rect.right), top: Math.round(rect.top), bottom: Math.round(rect.bottom) } : null;
+            });
+            truthy("Layout", `Add storage fits at ${w}`, "dialog inside the window", Boolean(dialog) && dialog.left >= 0 && dialog.right <= dialogWidth && dialog.top >= 0 && dialog.bottom <= h, JSON.stringify(dialog));
+            await shot(page, `layout/editor-${w}x${h}`);
+            await page.keyboard.press("Escape");
+          }
+          await page.close();
+        }
+      }
+    }
+
+    /* ------------------------------------------ Keyboard and dialog behaviour */
+    {
+      const page = await open(browser, live);
+      await page.locator('[data-fk="add-storage"], [data-action="add-storage"]').first().click();
+      await page.waitForTimeout(120);
+      await page.locator('input[name="name"]').fill("Return test");
+      await page.locator('input[name="target"]').fill("smb://nas.local/studio");
+      await page.locator('input[name="target"]').press("Enter");
+      await page.waitForTimeout(150);
+      truthy("Keys", "Return saves a complete form", "save_storage", (await lastCommand(page))?.command === "save_storage", null);
+
+      await page.locator('[data-fk="add-storage"], [data-action="add-storage"]').first().click().catch(() => {});
+      await page.waitForTimeout(150);
+      await page.locator('input[name="name"]').fill("Backdrop test");
+      await page.mouse.click(8, Math.round(640 / 2));
+      await page.waitForTimeout(120);
+      truthy("Dialog", "a click outside keeps typed input", "editor still open", (await page.locator("dialog[open]").count()) === 1, null);
+      await page.keyboard.press("Escape");
+      await page.waitForTimeout(120);
+      truthy("Dialog", "Escape asks before discarding", "Discard changes?", (await page.locator("#editor-title").innerText()).includes("Discard changes"), null);
+      await page.locator('[data-editor-action="keep-editing"]').click();
+      await page.waitForTimeout(100);
+      truthy("Dialog", "Keep editing returns to the form", "typed name still there", (await page.locator('input[name="name"]').inputValue()) === "Backdrop test", null);
+      await closeEditorDiscarding(page);
+      truthy("Dialog", "Discard closes the editor", "no open dialog", (await page.locator("dialog[open]").count()) === 0, null);
+      await page.close();
+    }
+
+    /* ------------------------------------ Duplicate add, feedback, undo, sign-in */
+    {
+      const page = await open(browser, live);
+      await page.locator('[data-fk="add-storage"], [data-action="add-storage"]').first().click();
+      await page.locator('input[name="name"]').fill("Music again");
+      await page.locator('input[name="target"]').fill("smb://vengtheng@100.69.137.42/Public%20Space-Media%20-%204TB%20-%20Music");
+      await page.waitForTimeout(150);
+      truthy("Add", "duplicate share keeps Save off", "disabled", await page.locator('[data-editor-action="save"]').isDisabled(), null);
+      truthy(
+        "Add",
+        "duplicate names the existing storage",
+        "already added as Public Space-Media - 4TB - Music",
+        (await page.locator("#save-reason").innerText()).includes("already added as Public Space-Media - 4TB - Music"),
+        null,
+      );
+      await closeEditorDiscarding(page);
+      await page.close();
+    }
+
+    {
+      const page = await open(browser, live, { width: 820, height: 640 });
+      await page.locator('[data-fk="add-storage"], [data-action="add-storage"]').first().click();
+      await page.locator('input[name="name"]').fill("New share");
+      await page.locator('input[name="target"]').fill("smb://nas.local/newshare");
+      await page.locator('input[name="target"]').press("Enter");
+      await page.waitForTimeout(250);
+      const toastText = (await page.locator(".toast").allInnerTexts().catch(() => [])).join(" ");
+      truthy("Add", "saving names the result", "Added New share.", toastText.includes("Added New share."), null);
+      const rowBox = await page.evaluate(() => {
+        const rows = [...document.querySelectorAll(".storage-row")];
+        const row = rows.find((el) => el.textContent.includes("New share"));
+        if (!row) return null;
+        const r = row.getBoundingClientRect();
+        const main = document.querySelector("#main").getBoundingClientRect();
+        return {
+          top: Math.round(r.top),
+          bottom: Math.round(r.bottom),
+          mainTop: Math.round(main.top),
+          mainBottom: Math.round(main.bottom),
+          newMark: row.classList.contains("is-new"),
+        };
+      });
+      truthy(
+        "Add",
+        "the new row is brought into view",
+        "row inside the visible list",
+        Boolean(rowBox) && rowBox.top >= rowBox.mainTop && rowBox.bottom <= rowBox.mainBottom,
+        JSON.stringify(rowBox),
+      );
+      truthy("Add", "the new row is marked briefly", "is-new class", Boolean(rowBox?.newMark), JSON.stringify(rowBox));
+      await shot(page, "add/add-saved-feedback-light-820x640");
+      await page.close();
+    }
+
+    {
+      const page = await open(browser, live);
+      const before = await page.locator(".storage-row").count();
+      const removedName = live.storages[0].name;
+      await page.locator('[data-action="edit"]').first().click();
+      await page.locator('[data-editor-action="remove"]').click();
+      await page.locator('[data-editor-action="confirm-remove"]').click();
+      await page.waitForTimeout(200);
+      truthy("Remove", "removal removes the row", "one fewer storage", (await page.locator(".storage-row").count()) === before - 1, null);
+      const undo = page.locator("[data-toast-action]");
+      truthy("Remove", "removal offers Undo", "Undo button", (await undo.count()) === 1, null);
+      truthy(
+        "Remove",
+        "Undo takes keyboard focus after Remove",
+        "the Undo toast button",
+        (await page.evaluate(() => document.activeElement?.hasAttribute("data-toast-action"))) === true,
+        null,
+      );
+      await undo.click();
+      await page.waitForTimeout(250);
+      truthy(
+        "Remove",
+        "Undo puts the storage back",
+        `${removedName} returned`,
+        (await page.locator(".storage-row").filter({ hasText: removedName }).count()) === 1,
+        null,
+      );
+      truthy(
+        "Remove",
+        "Undo leaves focus on the restored row",
+        `row-${live.storages[0].id}-edit`,
+        (await page.evaluate(() => document.activeElement?.getAttribute("data-fk"))) === `row-${live.storages[0].id}-edit`,
+        null,
+      );
+      await page.close();
+    }
+
+    {
+      const page = await open(browser, live);
+      await emit(page, "needs-credentials", { id: "s1794488987703", name: "Public Space-Media - 4TB - Music" });
+      await page.locator('input[name="credential-username"]').fill("vengtheng");
+      await page.locator('input[name="credential-password"]').fill("not-a-real-password");
+      await page.locator('input[name="credential-password"]').press("Enter");
+      await page.waitForTimeout(60);
+      const toastText = (await page.locator(".toast").allInnerTexts().catch(() => [])).join(" ");
+      truthy("Dialog", "saving a password says what happens next", "Password saved. Trying", toastText.includes("Password saved. Trying"), null);
+      await page.waitForTimeout(500);
+      const afterMount = (await page.locator(".toast").allInnerTexts().catch(() => [])).join(" ");
+      truthy("Dialog", "the Trying note ends when the share answers", "no stale Trying toast", !afterMount.includes("Trying"), afterMount);
+      await page.close();
+    }
+
+    /* ------------------------------- Escape ×3, focus after every transition */
+    {
+      const page = await open(browser, live);
+      await page.locator('[data-action="edit"]').first().click();
+      await page.locator('input[name="name"]').fill("Changed name");
+      await page.keyboard.press("Escape");
+      await page.waitForTimeout(120);
+      truthy("Esc", "first Escape asks before discarding", "Discard changes?", (await page.locator("#editor-title").innerText()).includes("Discard changes"), null);
+      await page.keyboard.press("Escape");
+      await page.waitForTimeout(120);
+      const back = await page.evaluate(() => ({
+        title: document.querySelector("#editor-title")?.textContent || "",
+        value: document.querySelector('input[name="name"]')?.value || "",
+        focus: document.activeElement?.getAttribute("data-fk") || "",
+      }));
+      truthy("Esc", "second Escape returns to the form", "edits still there", back.title === "Edit storage" && back.value === "Changed name", JSON.stringify(back));
+      truthy("Esc", "returning from the prompt focuses the name field", "editor-name", back.focus === "editor-name", JSON.stringify(back));
+      await page.keyboard.press("Escape");
+      await page.waitForTimeout(120);
+      truthy("Esc", "third Escape asks again instead of closing", "Discard changes?", (await page.locator("#editor-title").innerText()).includes("Discard changes"), null);
+      truthy("Esc", "no edits were lost", "dialog still open with the typed name", (await page.locator("dialog[open]").count()) === 1, null);
+      await page.locator('[data-editor-action="keep-editing"]').click();
+      await page.waitForTimeout(120);
+      const kept = await page.evaluate(() => ({
+        value: document.querySelector('input[name="name"]')?.value || "",
+        focus: document.activeElement?.getAttribute("data-fk") || "",
+      }));
+      truthy("Esc", "Keep editing keeps the typed name and focus", "Changed name in editor-name", kept.value === "Changed name" && kept.focus === "editor-name", JSON.stringify(kept));
+      await closeEditorDiscarding(page);
+      await page.close();
+    }
+
+    {
+      const page = await open(browser, live);
+      // Dismissing Browse results returns focus to the address field.
+      await page.locator('[data-fk="add-storage"]').click();
+      await page.locator('input[name="target"]').fill("smb://192.168.0.217");
+      await page.locator('[data-editor-action="browse"]').click();
+      await page.waitForTimeout(100);
+      await emit(page, "shares", { host: "192.168.0.217", shares: ["One"], needsCredentials: false, error: null });
+      await page.keyboard.press("Escape");
+      await page.waitForTimeout(120);
+      const dismissed = await page.evaluate(() => document.activeElement?.getAttribute("data-fk") || document.activeElement?.getAttribute("name") || "");
+      truthy("Dialog", "Browse dismissal returns focus to the address", "target field", dismissed === "share-target" || dismissed === "target", String(dismissed));
+      await closeEditorDiscarding(page);
+
+      // Returning from Remove focuses the form again.
+      await page.locator('[data-action="edit"]').first().click();
+      await page.locator('[data-editor-action="remove"]').click();
+      await page.keyboard.press("Escape");
+      await page.waitForTimeout(120);
+      truthy("Dialog", "Remove return focuses the form", "editor-name", (await page.evaluate(() => document.activeElement?.getAttribute("data-fk"))) === "editor-name", null);
+      await page.keyboard.press("Escape");
+      await page.waitForTimeout(120);
+      if (await page.locator('[data-editor-action="discard"]').count()) await page.locator('[data-editor-action="discard"]').click();
+      await page.waitForTimeout(100);
+
+      // Closing the password prompt returns focus to the row's Test control.
+      await page.waitForTimeout(100);
+      await emit(page, "needs-credentials", { id: "s1794488987703", name: "Public Space-Media - 4TB - Music" });
+      await page.keyboard.press("Escape");
+      await page.waitForTimeout(120);
+      truthy("Dialog", "closing the password prompt focuses the row", "row test control", (await page.evaluate(() => document.activeElement?.getAttribute("data-fk"))) === "row-s1794488987703-test", null);
+
+      // Saving Add returns focus to the Add button.
+      await page.locator('[data-fk="add-storage"]').click();
+      await page.locator('input[name="name"]').fill("Focus check");
+      await page.locator('input[name="target"]').fill("smb://nas.local/focus");
+      await page.locator('input[name="target"]').press("Enter");
+      await page.waitForTimeout(250);
+      truthy("Dialog", "saving returns focus to the opener", "add-storage", (await page.evaluate(() => document.activeElement?.getAttribute("data-fk"))) === "add-storage", null);
+
+      // Closing What's New returns focus to the pill.
+      await page.locator('[data-fk="pill"]').click();
+      await page.waitForTimeout(120);
+      await page.keyboard.press("Escape");
+      await page.waitForTimeout(120);
+      truthy("Dialog", "closing What's New focuses the pill", "pill", (await page.evaluate(() => document.activeElement?.getAttribute("data-fk"))) === "pill", null);
+      await page.close();
+    }
+
+    /* ---------------------------------- Tab order, nav arrows, repeat results */
+    {
+      const page = await open(browser, live, { width: 375, height: 812 });
+      const order = await page.evaluate(() => {
+        const nav = document.querySelector("#nav");
+        const main = document.querySelector("#main");
+        const foot = document.querySelector("#foot");
+        const follows = (a, b) => (a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0;
+        return { navBeforeMain: follows(nav, main), mainBeforeFoot: follows(main, foot) };
+      });
+      truthy("Layout", "375 Tab order is nav, content, footer", "DOM order matches the screen", order.navBeforeMain && order.mainBeforeFoot, JSON.stringify(order));
+      await page.close();
+    }
+
+    {
+      const page = await open(browser, live);
+      await page.locator('[data-fk="nav-storage"]').focus();
+      await page.keyboard.press("ArrowDown");
+      await page.waitForTimeout(150);
+      const moved = await page.evaluate(() => ({
+        page: document.querySelector("h1")?.textContent,
+        focus: document.activeElement?.getAttribute("data-fk"),
+      }));
+      truthy("Keys", "arrow keys move between sections", "General focused and shown", moved.page === "General" && moved.focus === "nav-general", JSON.stringify(moved));
+      await page.close();
+    }
+
+    {
+      const page = await open(browser, live);
+      const testButton = page.locator('[data-action="test"]:not([disabled])').first();
+      await testButton.click();
+      await page.waitForTimeout(250);
+      await testButton.click();
+      await page.waitForTimeout(250);
+      const testToasts = await page.locator(".toast").filter({ hasText: "Test:" }).count();
+      truthy("Storage", "a repeated Test still names its result", "two Test toasts", testToasts >= 2, String(testToasts));
+      await page.close();
+    }
+
+    {
+      const mounting = variant((snapshot) => {
+        snapshot.storages[0].status = "mounting";
+        snapshot.storages[0].mountedPath = null;
+      });
+      const page = await open(browser, mounting);
+      const button = await page.locator('[data-fk$="-mount"]').first().innerText();
+      truthy("Storage", "a mounting row says Mounting on its button", "Mounting…", button.includes("Mounting"), button);
+      await page.close();
+    }
+
+    {
+      // The preview must reflect the helper's real transitions.
+      const needsPassword = variant((snapshot) => {
+        snapshot.storages[0].status = "needs_attention";
+        snapshot.storages[0].detail = "Sign in to this share to continue.";
+        snapshot.storages[0].mountedPath = null;
+        snapshot.storages[0].hasCredentials = false;
+      });
+      const page = await open(browser, needsPassword);
+      await emit(page, "needs-credentials", { id: live.storages[0].id, name: live.storages[0].name });
+      await page.locator('input[name="credential-username"]').fill("vengtheng");
+      await page.locator('input[name="credential-password"]').fill("not-a-real-password");
+      await page.locator('input[name="credential-password"]').press("Enter");
+      await page.waitForTimeout(250);
+      const rowText = await page.locator(".storage-row").first().innerText();
+      truthy("Dialog", "saved password mounts the share in the preview", "Mounted chip and no stale sign-in line", rowText.includes("Mounted") && !rowText.includes("Sign in to this share"), rowText.replace(/\n/g, " | "));
+      await page.close();
+    }
+
+    /* ------------------------------------ Round-3: toast clearance, Test, updates, focus */
+    {
+      const page = await open(browser, live, { width: 820, height: 640 });
+      await page.locator('[data-fk="add-storage"]').click();
+      await page.locator('input[name="name"]').fill("Copy of NAS");
+      await page.locator('input[name="target"]').fill("smb://nas.local/copy");
+      await page.locator('input[name="target"]').press("Enter");
+      await page.waitForTimeout(300);
+      const overlap = await page.evaluate(() => {
+        const toast = document.querySelector(".toast")?.getBoundingClientRect();
+        const row = [...document.querySelectorAll(".storage-row")].find((el) => el.textContent.includes("Copy of NAS"));
+        if (!toast || !row) return { toast: Boolean(toast), row: Boolean(row), intersects: null };
+        const intersects = [...row.querySelectorAll(".row-btn")].some((button) => {
+          const r = button.getBoundingClientRect();
+          const x = Math.max(0, Math.min(r.right, toast.right) - Math.max(r.left, toast.left));
+          const y = Math.max(0, Math.min(r.bottom, toast.bottom) - Math.max(r.top, toast.top));
+          return x > 0 && y > 0;
+        });
+        return { toast: true, row: true, intersects };
+      });
+      truthy("Add", "the new row's actions are clear of the toast", "no intersection at 820x640", overlap.intersects === false, JSON.stringify(overlap));
+      await page.close();
+    }
+
+    {
+      const volume = variant((snapshot) => {
+        snapshot.storages[2].kind = "volume";
+        snapshot.storages[2].status = "unreachable";
+        snapshot.storages[2].detail = "The disk isn't connected.";
+        snapshot.storages[2].mountedPath = null;
+      });
+      const id = live.storages[2].id;
+      const page = await open(browser, volume);
+      await page.locator(`[data-storage="${id}"] [data-action="test"]`).click();
+      await page.waitForTimeout(300);
+      const rowText = await page.locator(`[data-storage="${id}"]`).innerText();
+      truthy("Storage", "a Test reports without mounting", "still Unreachable with no mount", rowText.includes("Unreachable") && !rowText.includes("Mounted"), rowText.replace(/\n/g, " | "));
+      truthy("Storage", "a Test never asks for a password", "no credentials sheet", (await page.locator("dialog[open]").count()) === 0, null);
+      await page.close();
+    }
+
+    {
+      const available = variant((snapshot) => {
+        snapshot.update = { state: "available", version: "0.2.0", reason: null };
+      });
+      const page = await open(browser, available);
+      await page.locator('[data-fk="check"]').click();
+      await page.waitForTimeout(1000);
+      truthy(
+        "Updates",
+        "a check keeps an available update",
+        "still offers 0.2.0 with its download control",
+        (await page.locator("body").innerText()).includes("Version 0.2.0 is available") && (await page.locator('[data-fk="download"]').count()) === 1,
+        null,
+      );
+      await page.close();
+    }
+
+    {
+      const page = await open(browser, live, { extra: "&fail-boot=1" });
+      await page.waitForSelector('[data-action="retry-boot"]');
+      await page.locator('[data-action="retry-boot"]').click();
+      await page.waitForTimeout(300);
+      truthy("Boot", "Retry leaves focus on the restored page", "main", (await page.evaluate(() => document.activeElement?.id)) === "main", null);
+      await page.close();
+    }
+
+    {
+      const page = await open(browser, live);
+      await page.locator('[data-fk="add-storage"]').click();
+      await page.waitForTimeout(120);
+      await page.locator('[data-editor-action="cancel"]').focus();
+      await page.keyboard.press("Tab");
+      const trapped = await page.evaluate(() => ({
+        inside: document.querySelector("#editor").contains(document.activeElement),
+        name: document.activeElement?.getAttribute("name"),
+      }));
+      truthy("Dialog", "Tab wraps inside the editor", "focus stays in the sheet", trapped.inside, JSON.stringify(trapped));
+      await closeEditorDiscarding(page);
+      await page.locator('[data-fk="pill"]').click();
+      await page.waitForTimeout(120);
+      truthy("Updates", "What's New opens with Close focused", "close button", (await page.evaluate(() => document.activeElement?.getAttribute("data-whatsnew-action"))) === "close", null);
+      await page.keyboard.press("Escape");
+      await page.waitForTimeout(120);
+      truthy("Updates", "closing What's New restores the pill", "pill", (await page.evaluate(() => document.activeElement?.getAttribute("data-fk"))) === "pill", null);
+      await page.close();
+    }
+
+    /* ------------------------------- Keyboard focus after row/footer transitions */
+    {
+      const page = await open(browser, live);
+      const testButton = page.locator('[data-action="test"]:not([disabled])').first();
+      await testButton.focus();
+      await page.keyboard.press("Enter");
+      await page.waitForTimeout(300);
+      const afterTest = await page.evaluate(() => document.activeElement?.getAttribute("data-fk") || document.activeElement?.tagName);
+      truthy("Keys", "Test keeps keyboard focus on its button", "the row's Test control", String(afterTest).endsWith("-test"), String(afterTest));
+
+      const unmount = page.locator('[data-action="unmount"]:not([disabled])').first();
+      const rowId = await unmount.getAttribute("data-id");
+      await unmount.focus();
+      await page.keyboard.press("Enter");
+      await page.waitForTimeout(300);
+      const afterUnmount = await page.evaluate(() => document.activeElement?.getAttribute("data-fk") || document.activeElement?.tagName);
+      truthy("Keys", "Unmount moves keyboard focus to Mount now", `row-${rowId}-mount`, afterUnmount === `row-${rowId}-mount`, String(afterUnmount));
+
+      await page.locator('[data-fk="check"]').focus();
+      await page.keyboard.press("Enter");
+      await page.waitForTimeout(1000);
+      const afterCheck = await page.evaluate(() => document.activeElement?.getAttribute("data-fk") || document.activeElement?.tagName);
+      truthy("Keys", "Check for Updates keeps keyboard focus", "check", afterCheck === "check", String(afterCheck));
+      await page.close();
+    }
+
+    {
+      const down = variant((snapshot) => {
+        snapshot.engineRunning = false;
+        snapshot.engineError = "It stopped unexpectedly. Restart it here.";
+      });
+      const page = await open(browser, down);
+      await page.locator('[data-fk="restart-helper"]').focus();
+      await page.keyboard.press("Enter");
+      await page.waitForTimeout(250);
+      const afterRestart = await page.evaluate(() => document.activeElement?.getAttribute("data-fk") || document.activeElement?.tagName);
+      truthy("Keys", "Restart helper lands on a control, not BODY", "nav-storage", afterRestart === "nav-storage", String(afterRestart));
+      await page.close();
+    }
+
+    /* ------------------------------------ Long names, geometry, accessible names */
+    {
+      const longName = variant((snapshot) => {
+        snapshot.storages[0].name = "StudioNASArchiveShareWithoutAnySpacesAtAll2026";
+      });
+      const page = await open(browser, longName, { width: 375, height: 812 });
+      const overflow = await page.evaluate(() => {
+        const list = document.querySelector(".storage-list");
+        return { list: list.scrollWidth - list.clientWidth, doc: document.documentElement.scrollWidth - innerWidth };
+      });
+      eq("Layout", "long name wraps instead of clipping", 0, overflow.list);
+      eq("Layout", "long name adds no page overflow at 375", 0, overflow.doc);
+      await shot(page, "stress/long-name-375x812");
+      await page.close();
+    }
+
+    {
+      const withUpdate = variant((snapshot) => {
+        snapshot.update = { state: "available", version: "9.9.9", reason: null };
+      });
+      for (const [w, h] of [[768, 900], [1440, 900]]) {
+        const page = await open(browser, withUpdate, { width: w, height: h });
+        await page.waitForSelector('[data-fk="download"]', { timeout: 3000 });
+        const gap = await page.evaluate(() => {
+          const dl = document.querySelector('[data-fk="download"]').getBoundingClientRect();
+          const edge = window.innerWidth > 640 ? document.querySelector("#nav").getBoundingClientRect().right : window.innerWidth;
+          return { right: Math.round(dl.right), edge: Math.round(edge) };
+        });
+        truthy("Footer", `download control stays inside at ${w}`, "right edge within the window", gap.right <= gap.edge, JSON.stringify(gap));
+        await page.close();
+      }
+    }
+
+    {
+      const page = await open(browser, live);
+      const names = await page.locator(".storage-row").first().locator(".row-btn").evaluateAll((buttons) =>
+        buttons.filter((button) => !button.disabled).map((button) => button.getAttribute("aria-label") || ""),
+      );
+      truthy(
+        "Storage",
+        "row controls name their storage",
+        "each accessible name includes the share name",
+        names.length > 0 && names.every((name) => name.includes("Public Space-Media - 4TB - Music")),
+        JSON.stringify(names),
+      );
+      await page.close();
+    }
+
+    /* --------------------------------------------- Status line and appearance */
+    {
+      const page = await open(browser, live);
+      truthy("Storage", "status line summarises the list", "4 storages, all mounted.", (await page.locator(".page-head .lede").innerText()) === "4 storages, all mounted.", null);
+      await page.locator('[data-fk="nav-appearance"]').click();
+      const control = await page.evaluate(() => {
+        const segmented = document.querySelector(".appearance-block .segmented");
+        return {
+          width: Math.round(segmented.getBoundingClientRect().width),
+          nested: document.querySelectorAll(".group .segmented").length,
+          segments: [...segmented.querySelectorAll("label")].map((el) => Math.round(el.getBoundingClientRect().width)),
+        };
+      });
+      truthy("Appearance", "segmented control is content-sized", "narrower than 400", control.width < 400, JSON.stringify(control));
+      eq("Appearance", "three equal segments", 3, new Set(control.segments).size);
+      eq("Appearance", "no nested card around the control", 0, control.nested);
+      await shot(page, "appearance/appearance-light-820x640");
       await page.close();
     }
   } finally {

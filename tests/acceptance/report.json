@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-11-12T19:03:28.793Z",
-  "appVersion": "0.1.7",
+  "generatedAt": "2026-11-13T13:07:08.820Z",
+  "appVersion": "0.1.10",
   "checks": [
     {
       "page": "Storage",
@@ -45,7 +45,7 @@
     {
       "page": "Storage",
       "id": "footer pill",
-      "expected": "Storage Studio KH v0.1.7",
+      "expected": "Storage Studio KH v0.1.10",
       "actual": "true",
       "pass": true,
       "evidence": null
@@ -84,7 +84,15 @@
     },
     {
       "page": "Esc",
-      "id": "closes the editor after dismissing results",
+      "id": "asks before discarding typed edits",
+      "expected": "Discard changes?",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Esc",
+      "id": "discard closes the editor",
       "expected": "dialog closed",
       "actual": "true",
       "pass": true,
@@ -144,7 +152,7 @@
       "expected": "support, row and status share one left edge",
       "actual": "true",
       "pass": true,
-      "evidence": "{\"supportLeft\":14,\"rowLeft\":14,\"lineLeft\":14,\"pillCenter\":856,\"checkCenter\":856}"
+      "evidence": "{\"supportLeft\":14,\"rowLeft\":14,\"lineLeft\":14,\"pillCenter\":856,\"checkCenter\":856,\"footBottom\":900,\"pillLeft\":14,\"pillBottom\":869}"
     },
     {
       "page": "Footer",
@@ -152,7 +160,7 @@
       "expected": "same centre line",
       "actual": "true",
       "pass": true,
-      "evidence": "{\"supportLeft\":14,\"rowLeft\":14,\"lineLeft\":14,\"pillCenter\":856,\"checkCenter\":856}"
+      "evidence": "{\"supportLeft\":14,\"rowLeft\":14,\"lineLeft\":14,\"pillCenter\":856,\"checkCenter\":856,\"footBottom\":900,\"pillLeft\":14,\"pillBottom\":869}"
     },
     {
       "page": "Footer",
@@ -160,7 +168,7 @@
       "expected": "support, row and status share one left edge",
       "actual": "true",
       "pass": true,
-      "evidence": "{\"supportLeft\":14,\"rowLeft\":14,\"lineLeft\":14,\"pillCenter\":856,\"checkCenter\":856}"
+      "evidence": "{\"supportLeft\":14,\"rowLeft\":14,\"lineLeft\":14,\"pillCenter\":856,\"checkCenter\":856,\"footBottom\":900,\"pillLeft\":14,\"pillBottom\":869}"
     },
     {
       "page": "Footer",
@@ -168,39 +176,39 @@
       "expected": "same centre line",
       "actual": "true",
       "pass": true,
-      "evidence": "{\"supportLeft\":14,\"rowLeft\":14,\"lineLeft\":14,\"pillCenter\":856,\"checkCenter\":856}"
+      "evidence": "{\"supportLeft\":14,\"rowLeft\":14,\"lineLeft\":14,\"pillCenter\":856,\"checkCenter\":856,\"footBottom\":900,\"pillLeft\":14,\"pillBottom\":869}"
     },
     {
       "page": "Footer",
-      "id": "aligned at 375 light",
-      "expected": "support, row and status share one left edge",
+      "id": "pinned to the bottom at 375 light",
+      "expected": "footer bottom on the window edge",
       "actual": "true",
       "pass": true,
-      "evidence": "{\"supportLeft\":14,\"rowLeft\":14,\"lineLeft\":14,\"pillCenter\":768,\"checkCenter\":768}"
+      "evidence": "{\"supportLeft\":20,\"rowLeft\":160,\"lineLeft\":12,\"pillCenter\":766,\"checkCenter\":766,\"footBottom\":812,\"pillLeft\":160,\"pillBottom\":779}"
     },
     {
       "page": "Footer",
-      "id": "pill and update icon centred at 375 light",
-      "expected": "same centre line",
+      "id": "pill bottom-left at 375 light",
+      "expected": "pill in the left half near the bottom",
       "actual": "true",
       "pass": true,
-      "evidence": "{\"supportLeft\":14,\"rowLeft\":14,\"lineLeft\":14,\"pillCenter\":768,\"checkCenter\":768}"
+      "evidence": "{\"supportLeft\":20,\"rowLeft\":160,\"lineLeft\":12,\"pillCenter\":766,\"checkCenter\":766,\"footBottom\":812,\"pillLeft\":160,\"pillBottom\":779}"
     },
     {
       "page": "Footer",
-      "id": "aligned at 375 dark",
-      "expected": "support, row and status share one left edge",
+      "id": "pinned to the bottom at 375 dark",
+      "expected": "footer bottom on the window edge",
       "actual": "true",
       "pass": true,
-      "evidence": "{\"supportLeft\":14,\"rowLeft\":14,\"lineLeft\":14,\"pillCenter\":768,\"checkCenter\":768}"
+      "evidence": "{\"supportLeft\":20,\"rowLeft\":160,\"lineLeft\":12,\"pillCenter\":766,\"checkCenter\":766,\"footBottom\":812,\"pillLeft\":160,\"pillBottom\":779}"
     },
     {
       "page": "Footer",
-      "id": "pill and update icon centred at 375 dark",
-      "expected": "same centre line",
+      "id": "pill bottom-left at 375 dark",
+      "expected": "pill in the left half near the bottom",
       "actual": "true",
       "pass": true,
-      "evidence": "{\"supportLeft\":14,\"rowLeft\":14,\"lineLeft\":14,\"pillCenter\":768,\"checkCenter\":768}"
+      "evidence": "{\"supportLeft\":20,\"rowLeft\":160,\"lineLeft\":12,\"pillCenter\":766,\"checkCenter\":766,\"footBottom\":812,\"pillLeft\":160,\"pillBottom\":779}"
     },
     {
       "page": "Storage",
@@ -268,6 +276,22 @@
     },
     {
       "page": "Engine",
+      "id": "status line admits the helper is down",
+      "expected": "Helper isn't running",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Engine",
+      "id": "banner offers a way out",
+      "expected": "Restart helper button",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Engine",
       "id": "banner on General",
       "expected": "helper stopped sentence",
       "actual": "true",
@@ -278,6 +302,22 @@
       "page": "Engine",
       "id": "banner on Appearance",
       "expected": "helper stopped sentence",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Engine",
+      "id": "restart helper invokes",
+      "expected": "restart_helper",
+      "actual": "\"restart_helper\"",
+      "pass": "\"restart_helper\"",
+      "evidence": true
+    },
+    {
+      "page": "Engine",
+      "id": "helper comes back",
+      "expected": "banner gone",
       "actual": "true",
       "pass": true,
       "evidence": null
@@ -300,24 +340,24 @@
     },
     {
       "page": "Add",
-      "id": "name reason beside Save",
-      "expected": "Give this storage a name.",
+      "id": "no error before the person types",
+      "expected": "no save reason",
       "actual": "true",
       "pass": true,
       "evidence": null
     },
     {
       "page": "Add",
-      "id": "name field marked invalid",
-      "expected": "aria-invalid",
+      "id": "name field not marked invalid on open",
+      "expected": "no aria-invalid",
       "actual": "true",
       "pass": true,
       "evidence": null
     },
     {
       "page": "Add",
-      "id": "reason linked to Save",
-      "expected": "aria-describedby",
+      "id": "placeholders read as examples",
+      "expected": "e.g. Studio NAS",
       "actual": "true",
       "pass": true,
       "evidence": null
@@ -334,6 +374,14 @@
       "page": "Add",
       "id": "reason is a live region",
       "expected": "role=status",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Add",
+      "id": "reason linked to Save",
+      "expected": "aria-describedby",
       "actual": "true",
       "pass": true,
       "evidence": null
@@ -575,11 +623,35 @@
     },
     {
       "page": "General",
+      "id": "focus stays on the switch",
+      "expected": "general-notifications",
+      "actual": "true",
+      "pass": true,
+      "evidence": "general-notifications"
+    },
+    {
+      "page": "General",
+      "id": "retries offers 1 to 8",
+      "expected": 8,
+      "actual": "8",
+      "pass": "8",
+      "evidence": true
+    },
+    {
+      "page": "General",
       "id": "retries saved",
       "expected": 5,
       "actual": "5",
       "pass": "5",
       "evidence": true
+    },
+    {
+      "page": "General",
+      "id": "focus stays on the changed control",
+      "expected": "general-...",
+      "actual": "true",
+      "pass": true,
+      "evidence": "general-notifications"
     },
     {
       "page": "General",
@@ -619,6 +691,22 @@
       "expected": "light",
       "actual": "\"light\"",
       "pass": "\"light\"",
+      "evidence": true
+    },
+    {
+      "page": "Appearance",
+      "id": "arrow keys keep focus in the group",
+      "expected": "an appearance control",
+      "actual": "true",
+      "pass": true,
+      "evidence": "appearance-dark"
+    },
+    {
+      "page": "Appearance",
+      "id": "arrow key selects the next choice",
+      "expected": "dark",
+      "actual": "\"dark\"",
+      "pass": "\"dark\"",
       "evidence": true
     },
     {
@@ -772,6 +860,942 @@
       "actual": "true",
       "pass": true,
       "evidence": null
+    },
+    {
+      "page": "Layout",
+      "id": "storage at 375: no horizontal overflow",
+      "expected": "0",
+      "actual": "\"0\"",
+      "pass": "\"0\"",
+      "evidence": true
+    },
+    {
+      "page": "Layout",
+      "id": "storage at 375: content fills the width",
+      "expected": "main at least 335px",
+      "actual": "true",
+      "pass": true,
+      "evidence": "{\"overflow\":0,\"viewport\":375,\"mainWidth\":375,\"footBottom\":812,\"pillLeft\":160,\"pillBottom\":779,\"navItems\":3,\"navIcons\":3}"
+    },
+    {
+      "page": "Layout",
+      "id": "storage at 375: footer on the bottom edge",
+      "expected": "footer within the sidebar inset of the window edge",
+      "actual": "true",
+      "pass": true,
+      "evidence": "{\"overflow\":0,\"viewport\":375,\"mainWidth\":375,\"footBottom\":812,\"pillLeft\":160,\"pillBottom\":779,\"navItems\":3,\"navIcons\":3}"
+    },
+    {
+      "page": "Layout",
+      "id": "storage at 375: pill bottom-left",
+      "expected": "pill in the left half near the bottom",
+      "actual": "true",
+      "pass": true,
+      "evidence": "{\"overflow\":0,\"viewport\":375,\"mainWidth\":375,\"footBottom\":812,\"pillLeft\":160,\"pillBottom\":779,\"navItems\":3,\"navIcons\":3}"
+    },
+    {
+      "page": "Layout",
+      "id": "storage at 375: every nav item has an icon",
+      "expected": 3,
+      "actual": "3",
+      "pass": "3",
+      "evidence": true
+    },
+    {
+      "page": "Layout",
+      "id": "Add storage fits at 375",
+      "expected": "dialog inside the window",
+      "actual": "true",
+      "pass": true,
+      "evidence": "{\"left\":24,\"right\":351,\"top\":108,\"bottom\":704}"
+    },
+    {
+      "page": "Layout",
+      "id": "general at 375: no horizontal overflow",
+      "expected": "0",
+      "actual": "\"0\"",
+      "pass": "\"0\"",
+      "evidence": true
+    },
+    {
+      "page": "Layout",
+      "id": "general at 375: content fills the width",
+      "expected": "main at least 335px",
+      "actual": "true",
+      "pass": true,
+      "evidence": "{\"overflow\":0,\"viewport\":375,\"mainWidth\":375,\"footBottom\":812,\"pillLeft\":160,\"pillBottom\":779,\"navItems\":3,\"navIcons\":3}"
+    },
+    {
+      "page": "Layout",
+      "id": "general at 375: footer on the bottom edge",
+      "expected": "footer within the sidebar inset of the window edge",
+      "actual": "true",
+      "pass": true,
+      "evidence": "{\"overflow\":0,\"viewport\":375,\"mainWidth\":375,\"footBottom\":812,\"pillLeft\":160,\"pillBottom\":779,\"navItems\":3,\"navIcons\":3}"
+    },
+    {
+      "page": "Layout",
+      "id": "general at 375: pill bottom-left",
+      "expected": "pill in the left half near the bottom",
+      "actual": "true",
+      "pass": true,
+      "evidence": "{\"overflow\":0,\"viewport\":375,\"mainWidth\":375,\"footBottom\":812,\"pillLeft\":160,\"pillBottom\":779,\"navItems\":3,\"navIcons\":3}"
+    },
+    {
+      "page": "Layout",
+      "id": "general at 375: every nav item has an icon",
+      "expected": 3,
+      "actual": "3",
+      "pass": "3",
+      "evidence": true
+    },
+    {
+      "page": "Layout",
+      "id": "appearance at 375: no horizontal overflow",
+      "expected": "0",
+      "actual": "\"0\"",
+      "pass": "\"0\"",
+      "evidence": true
+    },
+    {
+      "page": "Layout",
+      "id": "appearance at 375: content fills the width",
+      "expected": "main at least 335px",
+      "actual": "true",
+      "pass": true,
+      "evidence": "{\"overflow\":0,\"viewport\":375,\"mainWidth\":375,\"footBottom\":812,\"pillLeft\":160,\"pillBottom\":779,\"navItems\":3,\"navIcons\":3}"
+    },
+    {
+      "page": "Layout",
+      "id": "appearance at 375: footer on the bottom edge",
+      "expected": "footer within the sidebar inset of the window edge",
+      "actual": "true",
+      "pass": true,
+      "evidence": "{\"overflow\":0,\"viewport\":375,\"mainWidth\":375,\"footBottom\":812,\"pillLeft\":160,\"pillBottom\":779,\"navItems\":3,\"navIcons\":3}"
+    },
+    {
+      "page": "Layout",
+      "id": "appearance at 375: pill bottom-left",
+      "expected": "pill in the left half near the bottom",
+      "actual": "true",
+      "pass": true,
+      "evidence": "{\"overflow\":0,\"viewport\":375,\"mainWidth\":375,\"footBottom\":812,\"pillLeft\":160,\"pillBottom\":779,\"navItems\":3,\"navIcons\":3}"
+    },
+    {
+      "page": "Layout",
+      "id": "appearance at 375: every nav item has an icon",
+      "expected": 3,
+      "actual": "3",
+      "pass": "3",
+      "evidence": true
+    },
+    {
+      "page": "Layout",
+      "id": "support at 375: no horizontal overflow",
+      "expected": "0",
+      "actual": "\"0\"",
+      "pass": "\"0\"",
+      "evidence": true
+    },
+    {
+      "page": "Layout",
+      "id": "support at 375: content fills the width",
+      "expected": "main at least 335px",
+      "actual": "true",
+      "pass": true,
+      "evidence": "{\"overflow\":0,\"viewport\":375,\"mainWidth\":375,\"footBottom\":812,\"pillLeft\":162,\"pillBottom\":779,\"navItems\":3,\"navIcons\":3}"
+    },
+    {
+      "page": "Layout",
+      "id": "support at 375: footer on the bottom edge",
+      "expected": "footer within the sidebar inset of the window edge",
+      "actual": "true",
+      "pass": true,
+      "evidence": "{\"overflow\":0,\"viewport\":375,\"mainWidth\":375,\"footBottom\":812,\"pillLeft\":162,\"pillBottom\":779,\"navItems\":3,\"navIcons\":3}"
+    },
+    {
+      "page": "Layout",
+      "id": "support at 375: pill bottom-left",
+      "expected": "pill in the left half near the bottom",
+      "actual": "true",
+      "pass": true,
+      "evidence": "{\"overflow\":0,\"viewport\":375,\"mainWidth\":375,\"footBottom\":812,\"pillLeft\":162,\"pillBottom\":779,\"navItems\":3,\"navIcons\":3}"
+    },
+    {
+      "page": "Layout",
+      "id": "support at 375: every nav item has an icon",
+      "expected": 3,
+      "actual": "3",
+      "pass": "3",
+      "evidence": true
+    },
+    {
+      "page": "Layout",
+      "id": "storage at 768: no horizontal overflow",
+      "expected": "0",
+      "actual": "\"0\"",
+      "pass": "\"0\"",
+      "evidence": true
+    },
+    {
+      "page": "Layout",
+      "id": "storage at 768: content fills the width",
+      "expected": "main at least 508px",
+      "actual": "true",
+      "pass": true,
+      "evidence": "{\"overflow\":0,\"viewport\":768,\"mainWidth\":532,\"footBottom\":900,\"pillLeft\":14,\"pillBottom\":869,\"navItems\":3,\"navIcons\":3}"
+    },
+    {
+      "page": "Layout",
+      "id": "storage at 768: footer on the bottom edge",
+      "expected": "footer within the sidebar inset of the window edge",
+      "actual": "true",
+      "pass": true,
+      "evidence": "{\"overflow\":0,\"viewport\":768,\"mainWidth\":532,\"footBottom\":900,\"pillLeft\":14,\"pillBottom\":869,\"navItems\":3,\"navIcons\":3}"
+    },
+    {
+      "page": "Layout",
+      "id": "storage at 768: pill bottom-left",
+      "expected": "pill in the left half near the bottom",
+      "actual": "true",
+      "pass": true,
+      "evidence": "{\"overflow\":0,\"viewport\":768,\"mainWidth\":532,\"footBottom\":900,\"pillLeft\":14,\"pillBottom\":869,\"navItems\":3,\"navIcons\":3}"
+    },
+    {
+      "page": "Layout",
+      "id": "storage at 768: every nav item has an icon",
+      "expected": 3,
+      "actual": "3",
+      "pass": "3",
+      "evidence": true
+    },
+    {
+      "page": "Layout",
+      "id": "Add storage fits at 768",
+      "expected": "dialog inside the window",
+      "actual": "true",
+      "pass": true,
+      "evidence": "{\"left\":144,\"right\":624,\"top\":177,\"bottom\":723}"
+    },
+    {
+      "page": "Layout",
+      "id": "general at 768: no horizontal overflow",
+      "expected": "0",
+      "actual": "\"0\"",
+      "pass": "\"0\"",
+      "evidence": true
+    },
+    {
+      "page": "Layout",
+      "id": "general at 768: content fills the width",
+      "expected": "main at least 508px",
+      "actual": "true",
+      "pass": true,
+      "evidence": "{\"overflow\":0,\"viewport\":768,\"mainWidth\":532,\"footBottom\":900,\"pillLeft\":14,\"pillBottom\":869,\"navItems\":3,\"navIcons\":3}"
+    },
+    {
+      "page": "Layout",
+      "id": "general at 768: footer on the bottom edge",
+      "expected": "footer within the sidebar inset of the window edge",
+      "actual": "true",
+      "pass": true,
+      "evidence": "{\"overflow\":0,\"viewport\":768,\"mainWidth\":532,\"footBottom\":900,\"pillLeft\":14,\"pillBottom\":869,\"navItems\":3,\"navIcons\":3}"
+    },
+    {
+      "page": "Layout",
+      "id": "general at 768: pill bottom-left",
+      "expected": "pill in the left half near the bottom",
+      "actual": "true",
+      "pass": true,
+      "evidence": "{\"overflow\":0,\"viewport\":768,\"mainWidth\":532,\"footBottom\":900,\"pillLeft\":14,\"pillBottom\":869,\"navItems\":3,\"navIcons\":3}"
+    },
+    {
+      "page": "Layout",
+      "id": "general at 768: every nav item has an icon",
+      "expected": 3,
+      "actual": "3",
+      "pass": "3",
+      "evidence": true
+    },
+    {
+      "page": "Layout",
+      "id": "appearance at 768: no horizontal overflow",
+      "expected": "0",
+      "actual": "\"0\"",
+      "pass": "\"0\"",
+      "evidence": true
+    },
+    {
+      "page": "Layout",
+      "id": "appearance at 768: content fills the width",
+      "expected": "main at least 508px",
+      "actual": "true",
+      "pass": true,
+      "evidence": "{\"overflow\":0,\"viewport\":768,\"mainWidth\":532,\"footBottom\":900,\"pillLeft\":14,\"pillBottom\":869,\"navItems\":3,\"navIcons\":3}"
+    },
+    {
+      "page": "Layout",
+      "id": "appearance at 768: footer on the bottom edge",
+      "expected": "footer within the sidebar inset of the window edge",
+      "actual": "true",
+      "pass": true,
+      "evidence": "{\"overflow\":0,\"viewport\":768,\"mainWidth\":532,\"footBottom\":900,\"pillLeft\":14,\"pillBottom\":869,\"navItems\":3,\"navIcons\":3}"
+    },
+    {
+      "page": "Layout",
+      "id": "appearance at 768: pill bottom-left",
+      "expected": "pill in the left half near the bottom",
+      "actual": "true",
+      "pass": true,
+      "evidence": "{\"overflow\":0,\"viewport\":768,\"mainWidth\":532,\"footBottom\":900,\"pillLeft\":14,\"pillBottom\":869,\"navItems\":3,\"navIcons\":3}"
+    },
+    {
+      "page": "Layout",
+      "id": "appearance at 768: every nav item has an icon",
+      "expected": 3,
+      "actual": "3",
+      "pass": "3",
+      "evidence": true
+    },
+    {
+      "page": "Layout",
+      "id": "support at 768: no horizontal overflow",
+      "expected": "0",
+      "actual": "\"0\"",
+      "pass": "\"0\"",
+      "evidence": true
+    },
+    {
+      "page": "Layout",
+      "id": "support at 768: content fills the width",
+      "expected": "main at least 508px",
+      "actual": "true",
+      "pass": true,
+      "evidence": "{\"overflow\":0,\"viewport\":768,\"mainWidth\":532,\"footBottom\":900,\"pillLeft\":14,\"pillBottom\":869,\"navItems\":3,\"navIcons\":3}"
+    },
+    {
+      "page": "Layout",
+      "id": "support at 768: footer on the bottom edge",
+      "expected": "footer within the sidebar inset of the window edge",
+      "actual": "true",
+      "pass": true,
+      "evidence": "{\"overflow\":0,\"viewport\":768,\"mainWidth\":532,\"footBottom\":900,\"pillLeft\":14,\"pillBottom\":869,\"navItems\":3,\"navIcons\":3}"
+    },
+    {
+      "page": "Layout",
+      "id": "support at 768: pill bottom-left",
+      "expected": "pill in the left half near the bottom",
+      "actual": "true",
+      "pass": true,
+      "evidence": "{\"overflow\":0,\"viewport\":768,\"mainWidth\":532,\"footBottom\":900,\"pillLeft\":14,\"pillBottom\":869,\"navItems\":3,\"navIcons\":3}"
+    },
+    {
+      "page": "Layout",
+      "id": "support at 768: every nav item has an icon",
+      "expected": 3,
+      "actual": "3",
+      "pass": "3",
+      "evidence": true
+    },
+    {
+      "page": "Layout",
+      "id": "storage at 1440: no horizontal overflow",
+      "expected": "0",
+      "actual": "\"0\"",
+      "pass": "\"0\"",
+      "evidence": true
+    },
+    {
+      "page": "Layout",
+      "id": "storage at 1440: content fills the width",
+      "expected": "main at least 1180px",
+      "actual": "true",
+      "pass": true,
+      "evidence": "{\"overflow\":0,\"viewport\":1440,\"mainWidth\":1204,\"footBottom\":900,\"pillLeft\":14,\"pillBottom\":869,\"navItems\":3,\"navIcons\":3}"
+    },
+    {
+      "page": "Layout",
+      "id": "storage at 1440: footer on the bottom edge",
+      "expected": "footer within the sidebar inset of the window edge",
+      "actual": "true",
+      "pass": true,
+      "evidence": "{\"overflow\":0,\"viewport\":1440,\"mainWidth\":1204,\"footBottom\":900,\"pillLeft\":14,\"pillBottom\":869,\"navItems\":3,\"navIcons\":3}"
+    },
+    {
+      "page": "Layout",
+      "id": "storage at 1440: pill bottom-left",
+      "expected": "pill in the left half near the bottom",
+      "actual": "true",
+      "pass": true,
+      "evidence": "{\"overflow\":0,\"viewport\":1440,\"mainWidth\":1204,\"footBottom\":900,\"pillLeft\":14,\"pillBottom\":869,\"navItems\":3,\"navIcons\":3}"
+    },
+    {
+      "page": "Layout",
+      "id": "storage at 1440: every nav item has an icon",
+      "expected": 3,
+      "actual": "3",
+      "pass": "3",
+      "evidence": true
+    },
+    {
+      "page": "Layout",
+      "id": "Add storage fits at 1440",
+      "expected": "dialog inside the window",
+      "actual": "true",
+      "pass": true,
+      "evidence": "{\"left\":480,\"right\":960,\"top\":177,\"bottom\":723}"
+    },
+    {
+      "page": "Layout",
+      "id": "general at 1440: no horizontal overflow",
+      "expected": "0",
+      "actual": "\"0\"",
+      "pass": "\"0\"",
+      "evidence": true
+    },
+    {
+      "page": "Layout",
+      "id": "general at 1440: content fills the width",
+      "expected": "main at least 1180px",
+      "actual": "true",
+      "pass": true,
+      "evidence": "{\"overflow\":0,\"viewport\":1440,\"mainWidth\":1204,\"footBottom\":900,\"pillLeft\":14,\"pillBottom\":869,\"navItems\":3,\"navIcons\":3}"
+    },
+    {
+      "page": "Layout",
+      "id": "general at 1440: footer on the bottom edge",
+      "expected": "footer within the sidebar inset of the window edge",
+      "actual": "true",
+      "pass": true,
+      "evidence": "{\"overflow\":0,\"viewport\":1440,\"mainWidth\":1204,\"footBottom\":900,\"pillLeft\":14,\"pillBottom\":869,\"navItems\":3,\"navIcons\":3}"
+    },
+    {
+      "page": "Layout",
+      "id": "general at 1440: pill bottom-left",
+      "expected": "pill in the left half near the bottom",
+      "actual": "true",
+      "pass": true,
+      "evidence": "{\"overflow\":0,\"viewport\":1440,\"mainWidth\":1204,\"footBottom\":900,\"pillLeft\":14,\"pillBottom\":869,\"navItems\":3,\"navIcons\":3}"
+    },
+    {
+      "page": "Layout",
+      "id": "general at 1440: every nav item has an icon",
+      "expected": 3,
+      "actual": "3",
+      "pass": "3",
+      "evidence": true
+    },
+    {
+      "page": "Layout",
+      "id": "appearance at 1440: no horizontal overflow",
+      "expected": "0",
+      "actual": "\"0\"",
+      "pass": "\"0\"",
+      "evidence": true
+    },
+    {
+      "page": "Layout",
+      "id": "appearance at 1440: content fills the width",
+      "expected": "main at least 1180px",
+      "actual": "true",
+      "pass": true,
+      "evidence": "{\"overflow\":0,\"viewport\":1440,\"mainWidth\":1204,\"footBottom\":900,\"pillLeft\":14,\"pillBottom\":869,\"navItems\":3,\"navIcons\":3}"
+    },
+    {
+      "page": "Layout",
+      "id": "appearance at 1440: footer on the bottom edge",
+      "expected": "footer within the sidebar inset of the window edge",
+      "actual": "true",
+      "pass": true,
+      "evidence": "{\"overflow\":0,\"viewport\":1440,\"mainWidth\":1204,\"footBottom\":900,\"pillLeft\":14,\"pillBottom\":869,\"navItems\":3,\"navIcons\":3}"
+    },
+    {
+      "page": "Layout",
+      "id": "appearance at 1440: pill bottom-left",
+      "expected": "pill in the left half near the bottom",
+      "actual": "true",
+      "pass": true,
+      "evidence": "{\"overflow\":0,\"viewport\":1440,\"mainWidth\":1204,\"footBottom\":900,\"pillLeft\":14,\"pillBottom\":869,\"navItems\":3,\"navIcons\":3}"
+    },
+    {
+      "page": "Layout",
+      "id": "appearance at 1440: every nav item has an icon",
+      "expected": 3,
+      "actual": "3",
+      "pass": "3",
+      "evidence": true
+    },
+    {
+      "page": "Layout",
+      "id": "support at 1440: no horizontal overflow",
+      "expected": "0",
+      "actual": "\"0\"",
+      "pass": "\"0\"",
+      "evidence": true
+    },
+    {
+      "page": "Layout",
+      "id": "support at 1440: content fills the width",
+      "expected": "main at least 1180px",
+      "actual": "true",
+      "pass": true,
+      "evidence": "{\"overflow\":0,\"viewport\":1440,\"mainWidth\":1204,\"footBottom\":900,\"pillLeft\":14,\"pillBottom\":869,\"navItems\":3,\"navIcons\":3}"
+    },
+    {
+      "page": "Layout",
+      "id": "support at 1440: footer on the bottom edge",
+      "expected": "footer within the sidebar inset of the window edge",
+      "actual": "true",
+      "pass": true,
+      "evidence": "{\"overflow\":0,\"viewport\":1440,\"mainWidth\":1204,\"footBottom\":900,\"pillLeft\":14,\"pillBottom\":869,\"navItems\":3,\"navIcons\":3}"
+    },
+    {
+      "page": "Layout",
+      "id": "support at 1440: pill bottom-left",
+      "expected": "pill in the left half near the bottom",
+      "actual": "true",
+      "pass": true,
+      "evidence": "{\"overflow\":0,\"viewport\":1440,\"mainWidth\":1204,\"footBottom\":900,\"pillLeft\":14,\"pillBottom\":869,\"navItems\":3,\"navIcons\":3}"
+    },
+    {
+      "page": "Layout",
+      "id": "support at 1440: every nav item has an icon",
+      "expected": 3,
+      "actual": "3",
+      "pass": "3",
+      "evidence": true
+    },
+    {
+      "page": "Keys",
+      "id": "Return saves a complete form",
+      "expected": "save_storage",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Dialog",
+      "id": "a click outside keeps typed input",
+      "expected": "editor still open",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Dialog",
+      "id": "Escape asks before discarding",
+      "expected": "Discard changes?",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Dialog",
+      "id": "Keep editing returns to the form",
+      "expected": "typed name still there",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Dialog",
+      "id": "Discard closes the editor",
+      "expected": "no open dialog",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Add",
+      "id": "duplicate share keeps Save off",
+      "expected": "disabled",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Add",
+      "id": "duplicate names the existing storage",
+      "expected": "already added as Public Space-Media - 4TB - Music",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Add",
+      "id": "saving names the result",
+      "expected": "Added New share.",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Add",
+      "id": "the new row is brought into view",
+      "expected": "row inside the visible list",
+      "actual": "true",
+      "pass": true,
+      "evidence": "{\"top\":441,\"bottom\":544,\"mainTop\":0,\"mainBottom\":640,\"newMark\":true}"
+    },
+    {
+      "page": "Add",
+      "id": "the new row is marked briefly",
+      "expected": "is-new class",
+      "actual": "true",
+      "pass": true,
+      "evidence": "{\"top\":441,\"bottom\":544,\"mainTop\":0,\"mainBottom\":640,\"newMark\":true}"
+    },
+    {
+      "page": "Remove",
+      "id": "removal removes the row",
+      "expected": "one fewer storage",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Remove",
+      "id": "removal offers Undo",
+      "expected": "Undo button",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Remove",
+      "id": "Undo takes keyboard focus after Remove",
+      "expected": "the Undo toast button",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Remove",
+      "id": "Undo puts the storage back",
+      "expected": "Public Space-Media - 4TB - Music returned",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Remove",
+      "id": "Undo leaves focus on the restored row",
+      "expected": "row-s1794488987703-edit",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Dialog",
+      "id": "saving a password says what happens next",
+      "expected": "Password saved. Trying",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Dialog",
+      "id": "the Trying note ends when the share answers",
+      "expected": "no stale Trying toast",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Esc",
+      "id": "first Escape asks before discarding",
+      "expected": "Discard changes?",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Esc",
+      "id": "second Escape returns to the form",
+      "expected": "edits still there",
+      "actual": "true",
+      "pass": true,
+      "evidence": "{\"title\":\"Edit storage\",\"value\":\"Changed name\",\"focus\":\"editor-name\"}"
+    },
+    {
+      "page": "Esc",
+      "id": "returning from the prompt focuses the name field",
+      "expected": "editor-name",
+      "actual": "true",
+      "pass": true,
+      "evidence": "{\"title\":\"Edit storage\",\"value\":\"Changed name\",\"focus\":\"editor-name\"}"
+    },
+    {
+      "page": "Esc",
+      "id": "third Escape asks again instead of closing",
+      "expected": "Discard changes?",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Esc",
+      "id": "no edits were lost",
+      "expected": "dialog still open with the typed name",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Esc",
+      "id": "Keep editing keeps the typed name and focus",
+      "expected": "Changed name in editor-name",
+      "actual": "true",
+      "pass": true,
+      "evidence": "{\"value\":\"Changed name\",\"focus\":\"editor-name\"}"
+    },
+    {
+      "page": "Dialog",
+      "id": "Browse dismissal returns focus to the address",
+      "expected": "target field",
+      "actual": "true",
+      "pass": true,
+      "evidence": "target"
+    },
+    {
+      "page": "Dialog",
+      "id": "Remove return focuses the form",
+      "expected": "editor-name",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Dialog",
+      "id": "closing the password prompt focuses the row",
+      "expected": "row test control",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Dialog",
+      "id": "saving returns focus to the opener",
+      "expected": "add-storage",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Dialog",
+      "id": "closing What's New focuses the pill",
+      "expected": "pill",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Layout",
+      "id": "375 Tab order is nav, content, footer",
+      "expected": "DOM order matches the screen",
+      "actual": "true",
+      "pass": true,
+      "evidence": "{\"navBeforeMain\":true,\"mainBeforeFoot\":true}"
+    },
+    {
+      "page": "Keys",
+      "id": "arrow keys move between sections",
+      "expected": "General focused and shown",
+      "actual": "true",
+      "pass": true,
+      "evidence": "{\"page\":\"General\",\"focus\":\"nav-general\"}"
+    },
+    {
+      "page": "Storage",
+      "id": "a repeated Test still names its result",
+      "expected": "two Test toasts",
+      "actual": "true",
+      "pass": true,
+      "evidence": "2"
+    },
+    {
+      "page": "Storage",
+      "id": "a mounting row says Mounting on its button",
+      "expected": "Mounting…",
+      "actual": "true",
+      "pass": true,
+      "evidence": "Mounting…"
+    },
+    {
+      "page": "Dialog",
+      "id": "saved password mounts the share in the preview",
+      "expected": "Mounted chip and no stale sign-in line",
+      "actual": "true",
+      "pass": true,
+      "evidence": "Public Space-Media - 4TB - MusicSMB share | Mounted |  | Connected. |  | Mounted at | /Volumes/Public Space-Media - 4TB - Music |  | Reconnects at login | Reconnects after wake |  | Unmount | Open in Finder | Test | Edit"
+    },
+    {
+      "page": "Add",
+      "id": "the new row's actions are clear of the toast",
+      "expected": "no intersection at 820x640",
+      "actual": "true",
+      "pass": true,
+      "evidence": "{\"toast\":true,\"row\":true,\"intersects\":false}"
+    },
+    {
+      "page": "Storage",
+      "id": "a Test reports without mounting",
+      "expected": "still Unreachable with no mount",
+      "actual": "true",
+      "pass": true,
+      "evidence": "Public Space-System poolAttached disk | Unreachable |  | The disk isn't connected. |  | Reconnects at login | Reconnects after wake |  | Mount now | Open in Finder | Test | Edit"
+    },
+    {
+      "page": "Storage",
+      "id": "a Test never asks for a password",
+      "expected": "no credentials sheet",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Updates",
+      "id": "a check keeps an available update",
+      "expected": "still offers 0.2.0 with its download control",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Boot",
+      "id": "Retry leaves focus on the restored page",
+      "expected": "main",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Dialog",
+      "id": "Tab wraps inside the editor",
+      "expected": "focus stays in the sheet",
+      "actual": "true",
+      "pass": true,
+      "evidence": "{\"inside\":true,\"name\":\"name\"}"
+    },
+    {
+      "page": "Updates",
+      "id": "What's New opens with Close focused",
+      "expected": "close button",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Updates",
+      "id": "closing What's New restores the pill",
+      "expected": "pill",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Keys",
+      "id": "Test keeps keyboard focus on its button",
+      "expected": "the row's Test control",
+      "actual": "true",
+      "pass": true,
+      "evidence": "row-s1794488987703-test"
+    },
+    {
+      "page": "Keys",
+      "id": "Unmount moves keyboard focus to Mount now",
+      "expected": "row-s1794488987703-mount",
+      "actual": "true",
+      "pass": true,
+      "evidence": "row-s1794488987703-mount"
+    },
+    {
+      "page": "Keys",
+      "id": "Check for Updates keeps keyboard focus",
+      "expected": "check",
+      "actual": "true",
+      "pass": true,
+      "evidence": "check"
+    },
+    {
+      "page": "Keys",
+      "id": "Restart helper lands on a control, not BODY",
+      "expected": "nav-storage",
+      "actual": "true",
+      "pass": true,
+      "evidence": "nav-storage"
+    },
+    {
+      "page": "Layout",
+      "id": "long name wraps instead of clipping",
+      "expected": 0,
+      "actual": "0",
+      "pass": "0",
+      "evidence": true
+    },
+    {
+      "page": "Layout",
+      "id": "long name adds no page overflow at 375",
+      "expected": 0,
+      "actual": "0",
+      "pass": "0",
+      "evidence": true
+    },
+    {
+      "page": "Footer",
+      "id": "download control stays inside at 768",
+      "expected": "right edge within the window",
+      "actual": "true",
+      "pass": true,
+      "evidence": "{\"right\":219,\"edge\":236}"
+    },
+    {
+      "page": "Footer",
+      "id": "download control stays inside at 1440",
+      "expected": "right edge within the window",
+      "actual": "true",
+      "pass": true,
+      "evidence": "{\"right\":219,\"edge\":236}"
+    },
+    {
+      "page": "Storage",
+      "id": "row controls name their storage",
+      "expected": "each accessible name includes the share name",
+      "actual": "true",
+      "pass": true,
+      "evidence": "[\"Unmount Public Space-Media - 4TB - Music\",\"Open Public Space-Media - 4TB - Music in Finder\",\"Test Public Space-Media - 4TB - Music\",\"Edit Public Space-Media - 4TB - Music\"]"
+    },
+    {
+      "page": "Storage",
+      "id": "status line summarises the list",
+      "expected": "4 storages, all mounted.",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Appearance",
+      "id": "segmented control is content-sized",
+      "expected": "narrower than 400",
+      "actual": "true",
+      "pass": true,
+      "evidence": "{\"width\":330,\"nested\":0,\"segments\":[104,104,104]}"
+    },
+    {
+      "page": "Appearance",
+      "id": "three equal segments",
+      "expected": 3,
+      "actual": "3",
+      "pass": "1",
+      "evidence": null
+    },
+    {
+      "page": "Appearance",
+      "id": "no nested card around the control",
+      "expected": 0,
+      "actual": "0",
+      "pass": "0",
+      "evidence": true
     }
   ],
   "screenshots": [
@@ -805,11 +1829,29 @@
     "tests/acceptance/screenshots/updates/update-failed-light-820x640.png",
     "tests/acceptance/screenshots/support/support-light-820x640.png",
     "tests/acceptance/screenshots/empty/empty-light-820x640.png",
-    "tests/acceptance/screenshots/dialog/credentials-light-820x640.png"
+    "tests/acceptance/screenshots/dialog/credentials-light-820x640.png",
+    "tests/acceptance/screenshots/layout/storage-375x812.png",
+    "tests/acceptance/screenshots/layout/editor-375x812.png",
+    "tests/acceptance/screenshots/layout/general-375x812.png",
+    "tests/acceptance/screenshots/layout/appearance-375x812.png",
+    "tests/acceptance/screenshots/layout/support-375x812.png",
+    "tests/acceptance/screenshots/layout/storage-768x900.png",
+    "tests/acceptance/screenshots/layout/editor-768x900.png",
+    "tests/acceptance/screenshots/layout/general-768x900.png",
+    "tests/acceptance/screenshots/layout/appearance-768x900.png",
+    "tests/acceptance/screenshots/layout/support-768x900.png",
+    "tests/acceptance/screenshots/layout/storage-1440x900.png",
+    "tests/acceptance/screenshots/layout/editor-1440x900.png",
+    "tests/acceptance/screenshots/layout/general-1440x900.png",
+    "tests/acceptance/screenshots/layout/appearance-1440x900.png",
+    "tests/acceptance/screenshots/layout/support-1440x900.png",
+    "tests/acceptance/screenshots/add/add-saved-feedback-light-820x640.png",
+    "tests/acceptance/screenshots/stress/long-name-375x812.png",
+    "tests/acceptance/screenshots/appearance/appearance-light-820x640.png"
   ],
   "summary": {
-    "total": 96,
-    "passed": 96,
+    "total": 224,
+    "passed": 224,
     "failed": 0
   }
 }

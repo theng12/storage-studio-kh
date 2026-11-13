@@ -6,12 +6,13 @@ import {
   parseShareHost,
   shareNameFromTarget,
   saveBlockReason,
+  duplicateStorageReason,
   esc,
   orderWhatsNew,
   retrySentence,
   statusLabel,
   statusTone,
-  testResultChanged,
+  storageSummary,
   updateIsAvailable,
   updateWording,
   validateStorageDraft,
@@ -57,6 +58,10 @@ interface EditorState {
   error: string | null;
   busy: "save" | "test" | "browse" | null;
   confirmRemove: boolean;
+  confirmDiscard: boolean;
+  touched: boolean;
+  dirty: boolean;
+  focusField: string | null;
   connectedChosen: boolean;
 }
 
@@ -80,6 +85,7 @@ interface ToastItem {
   id: number;
   message: string;
   error: boolean;
+  action?: { label: string; run: () => void };
   timer: number;
 }
 
@@ -110,6 +116,11 @@ let afterSharesRendered = false;
 let refreshingStorage = false;
 let secondInstanceShown = false;
 let pendingTest: PendingTest | null = null;
+let editorOpener: string | undefined;
+let whatsnewOpener: string | undefined;
+let credentialsOpener: string | undefined;
+let credentialsPending: { storageId: string; toastId: number } | null = null;
+let pendingRowFocus: string[] | null = null;
 let booting = false;
 let devPrepared = false;
 let eventsWired = false;
@@ -142,11 +153,20 @@ function applyTheme(): void {
 
 /* Toasts -------------------------------------------------------------- */
 
-function toast(message: string, options: { error?: boolean; seconds?: number } = {}): void {
+function toast(
+  message: string,
+  options: {
+    error?: boolean;
+    seconds?: number;
+    action?: { label: string; run: () => void };
+    focusAction?: boolean;
+  } = {},
+): number {
   const item: ToastItem = {
     id: (toastSeq += 1),
     message,
     error: options.error ?? false,
+    action: options.action,
     timer: 0,
   };
   toasts.unshift(item);
@@ -158,6 +178,11 @@ function toast(message: string, options: { error?: boolean; seconds?: number } =
     item.timer = window.setTimeout(() => dismissToast(item.id), (options.seconds ?? 6) * 1000);
   }
   renderToasts();
+  if (item.action && options.focusAction) {
+    // The recovery step is the next thing to do; put the keyboard there, not on BODY.
+    toastsEl.querySelector<HTMLElement>(`[data-toast-action="${item.id}"]`)?.focus();
+  }
+  return item.id;
 }
 
 function dismissToast(id: number): void {
@@ -168,12 +193,23 @@ function dismissToast(id: number): void {
   renderToasts();
 }
 
+function clearToasts(): void {
+  for (const item of toasts) window.clearTimeout(item.timer);
+  toasts.splice(0, toasts.length);
+  renderToasts();
+}
+
 function renderToasts(): void {
   toastsEl.innerHTML = toasts
     .map(
       (item) => `
       <div class="toast${item.error ? " toast-error" : ""}">
         <span class="toast-text">${esc(item.message)}</span>
+        ${
+          item.action
+            ? `<button type="button" class="toast-action" data-toast-action="${item.id}">${esc(item.action.label)}</button>`
+            : ""
+        }
         ${
           item.error
             ? `<button type="button" class="toast-close" data-toast="${item.id}" title="Dismiss" aria-label="Dismiss">${icons.close}</button>`
@@ -295,6 +331,12 @@ function renderEngineBannerIfNeeded(): string {
   return snapshot && !snapshot.engineRunning ? renderEngineBanner(snapshot) : "";
 }
 
+function storageStatusLine(s: Snapshot): string {
+  if (!s.storages.length) return "Shares and disks reconnect after login, after wake, and when the network changes.";
+  const summary = storageSummary(s.storages);
+  return s.engineRunning ? summary : `Helper isn't running. ${summary}`;
+}
+
 function renderStorage(): string {
   if (!snapshot) return "";
   const s = snapshot;
@@ -302,7 +344,9 @@ function renderStorage(): string {
     <header class="page-head">
       <div>
         <h1>Storage</h1>
-        <p class="lede">Shares and disks reconnect after login, after wake, and when the network changes.</p>
+        <p class="lede" title="${
+          s.storages.length ? "Press ⌘R to re-read the mount table." : ""
+        }">${esc(storageStatusLine(s))}</p>
       </div>
       ${
         s.storages.length
@@ -323,6 +367,9 @@ function renderEngineBanner(s: Snapshot): string {
         <p class="banner-title">The background helper isn't running</p>
         <p class="banner-text">${esc(reason)}</p>
       </div>
+      <button type="button" class="btn banner-btn" data-action="restart-helper" data-fk="restart-helper"${
+        busy.helper ? " disabled" : ""
+      }>${busy.helper ? "Starting…" : "Restart helper"}</button>
     </div>`;
 }
 
@@ -344,23 +391,28 @@ function renderStorageRow(storage: StorageView): string {
   const helperTitle = engine ? "" : ' title="The background helper isn\'t running."';
   const disabled = busyAction ? " disabled" : "";
 
+  const mounting = busyAction === "mount" || storage.status === "mounting";
   const mountLabel = mounted
     ? ""
-    : `<button type="button" class="row-btn row-btn-accent" data-action="mount" data-id="${esc(storage.id)}" data-fk="row-${esc(storage.id)}-mount"${
+    : `<button type="button" class="row-btn row-btn-accent" data-action="mount" data-id="${esc(storage.id)}" data-fk="row-${esc(storage.id)}-mount" aria-label="${
+        mounting ? "Mounting" : "Mount now"
+      } ${esc(storage.name)}"${
         disabled || !engine || storage.status === "mounting" ? " disabled" : ""
-      }${helperTitle}>${busyAction === "mount" ? "Mounting…" : "Mount now"}</button>`;
+      }${helperTitle}>${mounting ? "Mounting…" : "Mount now"}</button>`;
   const unmountLabel = mounted
-    ? `<button type="button" class="row-btn" data-action="unmount" data-id="${esc(storage.id)}" data-fk="row-${esc(storage.id)}-unmount"${disabled || !engine ? " disabled" : ""}${helperTitle}>${
-        busyAction === "unmount" ? "Unmounting…" : "Unmount"
-      }</button>`
+    ? `<button type="button" class="row-btn" data-action="unmount" data-id="${esc(storage.id)}" data-fk="row-${esc(storage.id)}-unmount" aria-label="Unmount ${esc(storage.name)}"${
+        disabled || !engine ? " disabled" : ""
+      }${helperTitle}>${busyAction === "unmount" ? "Unmounting…" : "Unmount"}</button>`
     : "";
-  const finderLabel = `<button type="button" class="row-btn" data-action="reveal" data-id="${esc(storage.id)}" data-fk="row-${esc(storage.id)}-reveal"${
-    storage.mountedPath ? "" : ' disabled title="Mount the storage to open it in Finder."'
-  }>Open in Finder</button>`;
-  const testLabel = `<button type="button" class="row-btn" data-action="test" data-id="${esc(storage.id)}" data-fk="row-${esc(storage.id)}-test"${disabled || !engine ? " disabled" : ""}${helperTitle}>${
-    busyAction === "test" ? "Testing…" : "Test"
-  }</button>`;
-  const editLabel = `<button type="button" class="row-btn" data-action="edit" data-id="${esc(storage.id)}" data-fk="row-${esc(storage.id)}-edit">Edit</button>`;
+  const finderLabel = `<button type="button" class="row-btn" data-action="reveal" data-id="${esc(storage.id)}" data-fk="row-${esc(storage.id)}-reveal" aria-label="Open ${esc(
+    storage.name,
+  )} in Finder"${storage.mountedPath ? "" : ' disabled title="Mount the storage to open it in Finder."'}>Open in Finder</button>`;
+  const testLabel = `<button type="button" class="row-btn" data-action="test" data-id="${esc(storage.id)}" data-fk="row-${esc(storage.id)}-test" aria-label="${
+    busyAction === "test" ? "Testing" : "Test"
+  } ${esc(storage.name)}"${disabled || !engine ? " disabled" : ""}${helperTitle}>${busyAction === "test" ? "Testing…" : "Test"}</button>`;
+  const editLabel = `<button type="button" class="row-btn" data-action="edit" data-id="${esc(storage.id)}" data-fk="row-${esc(storage.id)}-edit" aria-label="Edit ${esc(
+    storage.name,
+  )}">Edit</button>`;
 
   const facts = [
     storage.reconnectAtLogin ? "Reconnects at login" : "No reconnect at login",
@@ -371,8 +423,7 @@ function renderStorageRow(storage: StorageView): string {
     <li class="storage-row" data-storage="${esc(storage.id)}">
       <div class="storage-head">
         <div class="storage-id">
-          <h3>${esc(storage.name)}</h3>
-          <p class="storage-kind">${storage.kind === "smb" ? "SMB share" : "Attached disk"}</p>
+          <h3>${esc(storage.name)}<span class="storage-kind">${storage.kind === "smb" ? "SMB share" : "Attached disk"}</span></h3>
         </div>
         <span class="chip chip-${tone}">${statusLabel(storage.status)}</span>
       </div>
@@ -402,7 +453,7 @@ function renderGeneral(): string {
   const loginNote = s.launchAtLoginError
     ? `<p class="inline-note inline-note-warn" role="status">${esc(s.launchAtLoginError)} Launch at login is currently ${
         s.launchAtLoginEnabled ? "on" : "off"
-      }.</p>`
+      }. Check System Settings › General › Login Items & Extensions, then try again.</p>`
     : general.launchAtLogin !== s.launchAtLoginEnabled
       ? `<p class="inline-note inline-note-warn" role="status">The login item didn't change. Launch at login is currently ${
           s.launchAtLoginEnabled ? "on" : "off"
@@ -447,9 +498,13 @@ function renderGeneral(): string {
           <span class="setting-title" id="retries-title">Retries before it stops</span>
           <p class="setting-hint" id="retries-hint">Choose from 1 to 8. The default is 3.</p>
         </div>
-        <input class="number-input" type="number" min="1" max="8" step="1" value="${general.retries}" data-general="retries" data-fk="general-retries" aria-labelledby="retries-title" aria-describedby="retries-hint"${
+        <select class="number-input" data-general="retries" data-fk="general-retries" aria-labelledby="retries-title" aria-describedby="retries-hint"${
           generalBusy ? " disabled" : ""
-        } />
+        }>
+          ${[1, 2, 3, 4, 5, 6, 7, 8]
+            .map((n) => `<option value="${n}"${n === general.retries ? " selected" : ""}>${n}</option>`)
+            .join("")}
+        </select>
       </div>
     </section>
     <p class="note">${esc(retrySentence(general.retries))}</p>`;
@@ -478,7 +533,7 @@ function renderAppearance(): string {
       </div>
     </header>
     ${renderEngineBannerIfNeeded()}
-    <section class="group appearance-block" aria-label="Appearance">
+    <section class="appearance-block" aria-label="Appearance">
       <div class="segmented" role="radiogroup" aria-label="Appearance">
         ${options
           .map(
@@ -512,8 +567,9 @@ function renderSupport(): string {
 
 /* Storage actions ----------------------------------------------------- */
 
-function openEditor(storage?: StorageView): void {
+function openEditor(storage?: StorageView, openerFk?: string): void {
   if (!snapshot) return;
+  editorOpener = openerFk ?? focusedKey() ?? "add-storage";
   const draft: Draft = storage
     ? {
         id: storage.id,
@@ -544,6 +600,10 @@ function openEditor(storage?: StorageView): void {
     error: null,
     busy: null,
     confirmRemove: false,
+    confirmDiscard: false,
+    touched: false,
+    dirty: false,
+    focusField: null,
     connectedChosen: false,
     shareChoices: null,
     shareNote: null,
@@ -560,6 +620,54 @@ function openEditor(storage?: StorageView): void {
 function closeEditor(): void {
   editor = null;
   if (editorEl.open) editorEl.close();
+  const opener = editorOpener ?? "add-storage";
+  editorOpener = undefined;
+  restoreFocus(opener);
+  if (document.activeElement === document.body) mainEl.focus({ preventScroll: true });
+}
+
+/** Save stays blocked by the first real problem, including a share that is already added. */
+function editorBlockReason(): string | null {
+  if (!editor) return null;
+  const base = saveBlockReason(editor.draft, (snapshot?.volumes ?? []).length > 0);
+  if (base) return base;
+  return duplicateStorageReason(editor.draft, snapshot?.storages ?? []);
+}
+
+function requestCloseEditor(): void {
+  if (!editor || editor.busy) return;
+  if (editor.dirty) {
+    editor.confirmDiscard = true;
+    renderEditor();
+    return;
+  }
+  closeEditor();
+}
+
+/** One Escape path: results → confirmation → form → close prompt, never a silent close. */
+function handleEditorEscape(): void {
+  if (!editor || editor.busy) return;
+  if (editor.shareChoices) {
+    editor.shareChoices = null;
+    editor.shareNote = null;
+    editor.focusField = "target";
+    renderEditor();
+    return;
+  }
+  if (editor.confirmRemove) {
+    editor.confirmRemove = false;
+    editor.error = null;
+    editor.focusField = "name";
+    renderEditor();
+    return;
+  }
+  if (editor.confirmDiscard) {
+    editor.confirmDiscard = false;
+    editor.focusField = "name";
+    renderEditor();
+    return;
+  }
+  requestCloseEditor();
 }
 
 function shareLine(d: Draft): string {
@@ -596,6 +704,24 @@ function renderEditor(): void {
   const focusName = focused?.name;
   const focusValue = focused?.type === "radio" ? focused.value : "";
 
+  if (editor.confirmDiscard) {
+    editorEl.innerHTML = `
+      <div class="sheet-head">
+        <h2 id="editor-title">Discard changes?</h2>
+        <p class="sheet-sub">Your edits to this storage haven't been saved.</p>
+      </div>
+      <div class="sheet-body">
+        <p class="confirm-text">Closing now loses them. Keep editing to go back.</p>
+      </div>
+      <div class="sheet-actions">
+        <button type="button" class="btn btn-danger" data-editor-action="discard" data-fk="editor-discard">Discard changes</button>
+        <span class="spacer"></span>
+        <button type="button" class="btn btn-primary" data-editor-action="keep-editing" data-fk="editor-keep-editing">Keep editing</button>
+      </div>`;
+    editorEl.querySelector<HTMLElement>('[data-editor-action="keep-editing"]')?.focus();
+    return;
+  }
+
   if (editor.confirmRemove) {
     const name = editor.originalName ?? "this storage";
     editorEl.innerHTML = `
@@ -623,7 +749,8 @@ function renderEditor(): void {
   const isEdit = Boolean(d.id);
   const volumes = snapshot?.volumes ?? [];
   const savedVolumeMissing = d.kind === "volume" && d.volumeUUID && !volumes.some((volume) => volume.uuid === d.volumeUUID);
-  const blockReason = saveBlockReason(d, volumes.length > 0);
+  const blockReason = editorBlockReason();
+  const showReason = editor.touched && blockReason;
   const connectedShares =
     d.kind === "smb" && !editor.connectedChosen
       ? (snapshot?.mountedShares ?? []).filter(
@@ -660,7 +787,7 @@ function renderEditor(): void {
         <div class="field">
           <label class="field-label" for="share-target">Share address (host + share)</label>
           <div class="browse-row">
-            <input id="share-target" type="text" name="target" value="${esc(d.target)}" placeholder="smb://studio.local/photos" spellcheck="false" autocomplete="off"${
+            <input id="share-target" type="text" name="target" value="${esc(d.target)}" placeholder="e.g. smb://nas/studio" spellcheck="false" autocomplete="off"${
               editor.busy ? " disabled" : ""
             } />
             <button type="button" class="btn" data-editor-action="browse" data-fk="editor-browse"${
@@ -678,13 +805,13 @@ function renderEditor(): void {
         </label>
         <label class="field">
           <span class="field-label">Password (optional)</span>
-          <input type="password" name="password" value="${esc(d.password)}" placeholder="${isEdit ? "Stored privately by Storage Studio KH; leave blank to keep the saved one" : "Stored privately by Storage Studio KH"}" autocomplete="off"${
+          <input type="password" name="password" value="${esc(d.password)}" placeholder="${isEdit ? "Leave blank to keep the saved one" : "Stored privately by Storage Studio KH"}" autocomplete="off"${
             editor.busy ? " disabled" : ""
           } />
         </label>
         <label class="field">
           <span class="field-label">Mount point (optional)</span>
-          <input type="text" name="mountPoint" value="${esc(d.mountPoint)}" placeholder="/Volumes/studio" spellcheck="false" autocomplete="off"${
+          <input type="text" name="mountPoint" value="${esc(d.mountPoint)}" placeholder="e.g. /Volumes/studio" spellcheck="false" autocomplete="off"${
             editor.busy ? " disabled" : ""
           }${d.kind === "smb" ? "" : " readonly"} />
           <span class="field-hint">Leave blank and macOS chooses a folder in /Volumes.</span>
@@ -729,7 +856,7 @@ function renderEditor(): void {
       ${editor.error ? `<p class="form-error" role="alert">${esc(editor.error)}</p>` : ""}
       <label class="field">
         <span class="field-label">Name</span>
-        <input type="text" name="name" value="${esc(d.name)}" placeholder="Studio NAS" autocomplete="off" data-autofocus data-fk="editor-name"${
+        <input type="text" name="name" value="${esc(d.name)}" placeholder="e.g. Studio NAS" autocomplete="off" data-autofocus data-fk="editor-name"${
           editor.busy ? " disabled" : ""
         } />
       </label>
@@ -765,7 +892,7 @@ function renderEditor(): void {
       }
       <span class="spacer"></span>
       ${
-        blockReason
+        showReason
           ? `<span class="save-reason" id="save-reason" role="status" aria-live="polite">${esc(blockReason)}</span>`
           : ""
       }
@@ -777,7 +904,7 @@ function renderEditor(): void {
       }</button>
       <button type="button" class="btn btn-primary" data-editor-action="save" data-fk="editor-save"${
         editor.busy || blockReason ? " disabled" : ""
-      }${blockReason ? ' aria-describedby="save-reason"' : ""}>${
+      }${showReason ? ' aria-describedby="save-reason"' : ""}>${
         editor.busy === "save" ? "Saving…" : "Save"
       }</button>
     </div>`;
@@ -786,7 +913,10 @@ function renderEditor(): void {
   if (focusName) {
     const selector = focusValue ? `input[name="${focusName}"][value="${focusValue}"]` : `[name="${focusName}"]`;
     editorEl.querySelector<HTMLElement>(selector)?.focus();
+  } else if (editor.focusField) {
+    editorEl.querySelector<HTMLElement>(`[name="${editor.focusField}"]`)?.focus();
   }
+  editor.focusField = null;
   if (afterSharesRendered) {
     afterSharesRendered = false;
     editorEl.querySelector<HTMLElement>('[data-editor-action="pick-share"]')?.focus();
@@ -795,6 +925,8 @@ function renderEditor(): void {
 
 function syncEditorField(target: HTMLInputElement | HTMLSelectElement): void {
   if (!editor) return;
+  editor.touched = true;
+  editor.dirty = true;
   const draft = editor.draft;
   switch (target.name) {
     case "name":
@@ -848,11 +980,12 @@ function syncEditorField(target: HTMLInputElement | HTMLSelectElement): void {
 /// Keeps the reason beside Save and the Save button in step with what is typed.
 function updateEditorBlockState(): void {
   if (!editor) return;
-  const blockReason = saveBlockReason(editor.draft, (snapshot?.volumes ?? []).length > 0);
+  const blockReason = editorBlockReason();
+  const showReason = editor.touched && blockReason;
   const save = editorEl.querySelector<HTMLButtonElement>('[data-editor-action="save"]');
   if (save) {
     save.disabled = Boolean(editor.busy || blockReason);
-    if (blockReason) save.setAttribute("aria-describedby", "save-reason");
+    if (showReason) save.setAttribute("aria-describedby", "save-reason");
     else save.removeAttribute("aria-describedby");
   }
   const markInvalid = (name: string): void => {
@@ -860,13 +993,17 @@ function updateEditorBlockState(): void {
     const target = editorEl.querySelector<HTMLElement>(`[name="${name}"]`);
     target?.setAttribute("aria-invalid", "true");
   };
-  if (blockReason) {
+  for (const field of editorEl.querySelectorAll<HTMLElement>("[aria-invalid]")) field.removeAttribute("aria-invalid");
+  if (showReason) {
     if (blockReason.startsWith("Give this storage a name")) markInvalid("name");
-    else if (blockReason.startsWith("Enter the device address") || blockReason.startsWith("Add the share name")) markInvalid("target");
-    else if (blockReason.startsWith("Choose a disk") || blockReason.startsWith("No disks")) markInvalid("volumeUUID");
+    else if (blockReason.startsWith("Enter the device address") || blockReason.startsWith("Add the share name") || blockReason.startsWith("Use an smb://"))
+      markInvalid("target");
+    else if (blockReason.startsWith("This share")) markInvalid("target");
+    else if (blockReason.startsWith("Choose a disk") || blockReason.startsWith("No disks") || blockReason.startsWith("This disk"))
+      markInvalid("volumeUUID");
   }
   let reason = editorEl.querySelector<HTMLElement>("#save-reason");
-  if (!blockReason) {
+  if (!showReason) {
     reason?.remove();
     return;
   }
@@ -952,6 +1089,8 @@ function pickShare(share: string): void {
   editor.shareChoices = null;
   editor.shareNote = null;
   editor.error = null;
+  editor.touched = true;
+  editor.dirty = true;
   renderEditor();
   editorEl.querySelector<HTMLElement>('[name="target"]')?.focus();
 }
@@ -959,12 +1098,13 @@ function pickShare(share: string): void {
 async function saveEditor(): Promise<void> {
   if (!editor || editor.busy) return;
   const d = editor.draft;
-  const validationError = validateStorageDraft(d);
+  editor.touched = true;
+  const validationError = validateStorageDraft(d) ?? duplicateStorageReason(d, snapshot?.storages ?? []);
   if (validationError) {
-    editor.error = validationError;
     renderEditor();
     return;
   }
+  const isEdit = Boolean(d.id);
   editor.busy = "save";
   editor.error = null;
   renderEditor();
@@ -983,9 +1123,21 @@ async function saveEditor(): Promise<void> {
     if (d.password) input.password = d.password;
   }
   try {
-    snapshot = await backend.invoke<Snapshot>("save_storage", { input });
+    const saved = await backend.invoke<Snapshot>("save_storage", { input });
+    snapshot = saved;
     closeEditor();
     render();
+    const row =
+      saved.storages.find((item) => d.id && item.id === d.id) ??
+      saved.storages.find((item) => item.name === input.name && item.target === input.target && item.kind === input.kind);
+    flashRow(row?.id);
+    if (isEdit) {
+      toast(`Saved ${input.name}.`);
+    } else {
+      toast(`Added ${input.name}.`, {
+        action: row ? { label: "Mount now", run: () => void runRowAction(row.id, "mount") } : undefined,
+      });
+    }
   } catch (error) {
     if (editor) {
       editor.busy = null;
@@ -993,6 +1145,21 @@ async function saveEditor(): Promise<void> {
       renderEditor();
     }
   }
+}
+
+/** The new or edited row may sit below the fold; bring it into view and mark it briefly. */
+function flashRow(id: string | undefined): void {
+  if (!id) return;
+  const row = mainEl.querySelector<HTMLElement>(`[data-storage="${id.replace(/["\\]/g, "")}"]`);
+  if (!row) return;
+  row.scrollIntoView({ block: "nearest" });
+  // Leave the toast its corner: a row whose actions sit under it is not really visible.
+  const rowRect = row.getBoundingClientRect();
+  const mainRect = mainEl.getBoundingClientRect();
+  const clearBottom = mainRect.bottom - 96;
+  if (rowRect.bottom > clearBottom) mainEl.scrollTop += rowRect.bottom - clearBottom;
+  row.classList.add("is-new");
+  window.setTimeout(() => row.classList.remove("is-new"), 1600);
 }
 
 function beginTest(id: string): void {
@@ -1035,18 +1202,49 @@ async function testEditor(): Promise<void> {
 
 async function removeFromEditor(): Promise<void> {
   if (!editor?.draft.id || editor.busy) return;
+  const removed = { ...editor.draft };
   editor.busy = "save";
   renderEditor();
   try {
-    snapshot = await backend.invoke<Snapshot>("remove_storage", { id: editor.draft.id });
+    snapshot = await backend.invoke<Snapshot>("remove_storage", { id: removed.id });
     closeEditor();
     render();
+    toast(`Removed ${removed.name}.`, {
+      seconds: 12,
+      action: { label: "Undo", run: () => void restoreStorage(removed) },
+      focusAction: true,
+    });
   } catch (error) {
     if (editor) {
       editor.busy = null;
       editor.error = errText(error);
       renderEditor();
     }
+  }
+}
+
+/** Undo puts the same entry back; a saved password lives outside the storage record. */
+async function restoreStorage(draft: Draft): Promise<void> {
+  if (!snapshot) return;
+  const input: StorageInput = {
+    id: draft.id,
+    name: draft.name,
+    kind: draft.kind,
+    target: draft.target,
+    mountPoint: draft.mountPoint,
+    volumeUUID: draft.volumeUUID,
+    reconnectAtLogin: draft.reconnectAtLogin,
+    reconnectAfterWake: draft.reconnectAfterWake,
+  };
+  if (draft.kind === "smb") input.username = draft.username.trim();
+  try {
+    snapshot = await backend.invoke<Snapshot>("save_storage", { input });
+    render();
+    flashRow(draft.id);
+    if (!restoreFocus(`row-${draft.id}-edit`)) mainEl.focus({ preventScroll: true });
+    toast(`Restored ${draft.name}.`);
+  } catch (error) {
+    toast(errText(error), { error: true });
   }
 }
 
@@ -1062,6 +1260,8 @@ async function runRowAction(id: string, action: string): Promise<void> {
   if (!snapshot || rowBusy[id]) return;
   const command = ROW_COMMANDS[action];
   if (!command) return;
+  pendingRowFocus =
+    action === "unmount" ? [`row-${id}-mount`, `row-${id}-test`] : [`row-${id}-${action}`, `row-${id}-edit`];
   rowBusy[id] = action;
   if (action === "test") beginTest(id);
   render();
@@ -1071,10 +1271,16 @@ async function runRowAction(id: string, action: string): Promise<void> {
       if (rowBusy[id] === action) {
         delete rowBusy[id];
         render();
+        if (pendingRowFocus) {
+          const targets = pendingRowFocus;
+          pendingRowFocus = null;
+          if (!targets.some(restoreFocus)) mainEl.focus({ preventScroll: true });
+        }
       }
     }, 15000);
   } catch (error) {
     delete rowBusy[id];
+    pendingRowFocus = null;
     if (action === "test") clearPendingTest();
     toast(errText(error), { error: true });
     render();
@@ -1091,8 +1297,21 @@ async function revealStorage(id: string): Promise<void> {
 
 /* General and appearance ---------------------------------------------- */
 
+function focusedKey(): string | undefined {
+  return document.activeElement instanceof HTMLElement ? document.activeElement.dataset.fk : undefined;
+}
+
+function restoreFocus(fk: string | undefined): boolean {
+  if (!fk) return false;
+  const target = document.querySelector<HTMLElement>(`[data-fk="${fk.replace(/["\\]/g, "")}"]`);
+  if (!target) return false;
+  target.focus({ preventScroll: true });
+  return true;
+}
+
 async function setGeneral(patch: Partial<General>): Promise<void> {
   if (!snapshot || busy.general) return;
+  const fk = focusedKey();
   const current = snapshot.general;
   let retries = patch.retries ?? current.retries;
   if (!Number.isFinite(retries) || retries < 1 || retries > 8) retries = current.retries;
@@ -1110,11 +1329,13 @@ async function setGeneral(patch: Partial<General>): Promise<void> {
   } finally {
     delete busy.general;
     render();
+    restoreFocus(fk);
   }
 }
 
 async function setAppearance(mode: ThemeChoice): Promise<void> {
   if (!snapshot || busy.appearance) return;
+  const fk = focusedKey();
   busy.appearance = true;
   render();
   try {
@@ -1124,6 +1345,7 @@ async function setAppearance(mode: ThemeChoice): Promise<void> {
   } finally {
     delete busy.appearance;
     render();
+    restoreFocus(fk);
   }
 }
 
@@ -1131,6 +1353,7 @@ async function setAppearance(mode: ThemeChoice): Promise<void> {
 
 async function checkUpdates(): Promise<void> {
   if (!snapshot || checkingUpdates) return;
+  const fk = focusedKey();
   checkingUpdates = true;
   render();
   try {
@@ -1148,6 +1371,25 @@ async function checkUpdates(): Promise<void> {
   } finally {
     checkingUpdates = false;
     render();
+    if (!restoreFocus(fk ?? "check")) mainEl.focus({ preventScroll: true });
+  }
+}
+
+async function restartHelper(): Promise<void> {
+  if (busy.helper) return;
+  const fk = focusedKey();
+  busy.helper = true;
+  render();
+  try {
+    await backend.invoke("restart_helper");
+    clearToasts();
+    toast("Helper started.");
+  } catch (error) {
+    toast(errText(error), { error: true });
+  } finally {
+    delete busy.helper;
+    render();
+    if (!restoreFocus(fk) && !restoreFocus("nav-storage")) mainEl.focus({ preventScroll: true });
   }
 }
 
@@ -1183,8 +1425,11 @@ async function openSupport(): Promise<void> {
 
 function openWhatsNew(): void {
   if (!snapshot) return;
+  if (!whatsnewEl.open) whatsnewOpener = focusedKey() ?? "pill";
   renderWhatsNew();
   if (!whatsnewEl.open) whatsnewEl.showModal();
+  // showModal() moves focus itself; put it on Close so the ring is inside the sheet.
+  whatsnewEl.querySelector<HTMLElement>('[data-whatsnew-action="close"]')?.focus();
 }
 
 function renderWhatsNew(): void {
@@ -1224,12 +1469,13 @@ function renderWhatsNew(): void {
       <span class="spacer"></span>
       <button type="button" class="btn btn-primary" data-whatsnew-action="close">Close</button>
     </div>`;
-  whatsnewEl.querySelector<HTMLElement>('[data-whatsnew-action="close"]')?.focus();
 }
 
 /* Credentials --------------------------------------------------------- */
 
 function openCredentials(id: string, name: string): void {
+  // The prompt arrives from the helper, not a click; the row's Test control is the way back.
+  credentialsOpener = `row-${id}-test`;
   const storage = snapshot?.storages.find((item) => item.id === id);
   credentials = {
     id,
@@ -1250,12 +1496,18 @@ function openCredentials(id: string, name: string): void {
 function closeCredentials(): void {
   credentials = null;
   if (credentialsEl.open) credentialsEl.close();
-  focusTopDialog();
+  const opener = credentialsOpener ?? "pill";
+  credentialsOpener = undefined;
+  if (document.querySelector("dialog[open]")) focusTopDialog();
+  else if (!restoreFocus(opener)) mainEl.focus({ preventScroll: true });
 }
 
 function closeWhatsNew(): void {
   if (whatsnewEl.open) whatsnewEl.close();
-  focusTopDialog();
+  const opener = whatsnewOpener ?? "pill";
+  whatsnewOpener = undefined;
+  if (document.querySelector("dialog[open]")) focusTopDialog();
+  else restoreFocus(opener);
 }
 
 function renderCredentials(): void {
@@ -1299,11 +1551,17 @@ async function saveCredentials(): Promise<void> {
   }
   credentials.username = username;
   credentials.busy = true;
+  const savedName = credentials.name;
+  const savedId = credentials.id;
   credentials.error = null;
   renderCredentials();
   try {
     await backend.invoke("set_credentials", { id: credentials.id, username, password });
     closeCredentials();
+    // The helper mounts again as soon as it has the password; clear the stale failure note.
+    clearToasts();
+    const toastId = toast(`Password saved. Trying ${savedName}…`, { seconds: 8 });
+    credentialsPending = { storageId: savedId, toastId };
   } catch (error) {
     if (credentials) {
       credentials.busy = false;
@@ -1322,16 +1580,36 @@ function showSecondInstance(): void {
   toast("Storage Studio KH is already running. This window is the running copy.", { seconds: 10 });
 }
 
+/** Tab stays inside an open sheet instead of escaping to the page or the browser chrome. */
+function trapTab(dialog: HTMLDialogElement, event: KeyboardEvent): void {
+  if (event.key !== "Tab") return;
+  const focusables = Array.from(
+    dialog.querySelectorAll<HTMLElement>(
+      'button:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])',
+    ),
+  ).filter((element) => element.offsetParent !== null);
+  if (!focusables.length) return;
+  const first = focusables[0];
+  const last = focusables[focusables.length - 1];
+  if (event.shiftKey && document.activeElement === first) {
+    event.preventDefault();
+    last.focus();
+  } else if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault();
+    first.focus();
+  } else if (!dialog.contains(document.activeElement)) {
+    event.preventDefault();
+    first.focus();
+  }
+}
+
 function applySnapshot(next: Snapshot): void {
   snapshot = next;
   for (const id of Object.keys(rowBusy)) delete rowBusy[id];
   if (pendingTest) {
     const storage = next.storages.find((item) => item.id === pendingTest?.id);
-    if (
-      storage &&
-      pendingTest &&
-      testResultChanged({ detail: pendingTest.detail, status: pendingTest.status }, storage)
-    ) {
+    if (storage) {
+      // Every Test must end in a named result, even when it says the same thing as last time.
       toast(`Test: ${storage.detail ?? statusLabel(storage.status)}`);
       clearPendingTest();
     }
@@ -1340,8 +1618,21 @@ function applySnapshot(next: Snapshot): void {
     editor.busy = null;
     renderEditor();
   }
+  if (credentialsPending) {
+    const storage = next.storages.find((item) => item.id === credentialsPending?.storageId);
+    if (!storage || (storage.status !== "mounting" && storage.status !== "retrying")) {
+      dismissToast(credentialsPending.toastId);
+      credentialsPending = null;
+    }
+  }
   if (next.secondInstance) showSecondInstance();
   render();
+  if (pendingRowFocus) {
+    const targets = pendingRowFocus;
+    pendingRowFocus = null;
+    // The row's busy buttons cannot take focus; land on the control that replaced them.
+    if (!targets.some(restoreFocus)) mainEl.focus({ preventScroll: true });
+  }
 }
 
 function applyDevLocation(): void {
@@ -1382,15 +1673,24 @@ function wireEvents(): void {
       if (action === "whats-new") openWhatsNew();
       else if (action === "check-updates") void checkUpdates();
       else if (action === "download-update") void openUpdater();
-      else if (action === "add-storage") openEditor();
+      else if (action === "add-storage") openEditor(undefined, actionButton.dataset.fk);
       else if (action === "open-support") void openSupport();
       else if (action === "retry-boot") void boot();
+      else if (action === "restart-helper") void restartHelper();
       else if (action === "mount" || action === "unmount" || action === "test") void runRowAction(id, action);
       else if (action === "reveal") void revealStorage(id);
       else if (action === "edit") {
         const storage = snapshot?.storages.find((item) => item.id === id);
-        if (storage) openEditor(storage);
+        if (storage) openEditor(storage, actionButton.dataset.fk);
       }
+      return;
+    }
+
+    const toastAction = target.closest<HTMLElement>("[data-toast-action]");
+    if (toastAction?.dataset.toastAction) {
+      const item = toasts.find((entry) => entry.id === Number(toastAction.dataset.toastAction));
+      dismissToast(Number(toastAction.dataset.toastAction));
+      item?.action?.run();
       return;
     }
 
@@ -1409,8 +1709,20 @@ function wireEvents(): void {
   document.addEventListener("keydown", (event) => {
     if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "r") {
       event.preventDefault();
-      void refreshStorage();
+      if (!document.querySelector("dialog[open]")) void refreshStorage();
     }
+  });
+
+  navEl.addEventListener("keydown", (event) => {
+    if (!["ArrowDown", "ArrowRight", "ArrowUp", "ArrowLeft"].includes(event.key)) return;
+    const items = Array.from(navEl.querySelectorAll<HTMLElement>(".nav-item"));
+    const index = items.indexOf(document.activeElement as HTMLElement);
+    if (index < 0) return;
+    event.preventDefault();
+    const step = event.key === "ArrowDown" || event.key === "ArrowRight" ? 1 : -1;
+    const next = items[(index + step + items.length) % items.length];
+    next.focus();
+    next.click();
   });
 
   darkQuery.addEventListener("change", () => {
@@ -1432,7 +1744,17 @@ function wireEvents(): void {
     if (!button) return;
     switch (button.dataset.editorAction) {
       case "cancel":
+        requestCloseEditor();
+        break;
+      case "discard":
         closeEditor();
+        break;
+      case "keep-editing":
+        if (editor) {
+          editor.confirmDiscard = false;
+          editor.focusField = "name";
+          renderEditor();
+        }
         break;
       case "remove":
         if (editor) {
@@ -1445,6 +1767,7 @@ function wireEvents(): void {
         if (editor) {
           editor.confirmRemove = false;
           editor.error = null;
+          editor.focusField = "name";
           renderEditor();
         }
         break;
@@ -1467,6 +1790,7 @@ function wireEvents(): void {
         if (editor) {
           editor.shareChoices = null;
           editor.shareNote = null;
+          editor.focusField = "target";
           renderEditor();
         }
         break;
@@ -1483,6 +1807,8 @@ function wireEvents(): void {
           draft.mountPoint = "";
           editor.error = null;
           editor.shareChoices = null;
+          editor.touched = true;
+          editor.dirty = true;
           // The choice is made; hide the list so a second click cannot swap the address
           // under the name that was already filled in.
           editor.connectedChosen = true;
@@ -1520,35 +1846,37 @@ function wireEvents(): void {
     }
   });
 
+  // Escape is routed here so every step (results, confirmations, close) is ours and
+  // a prevented cancel can never fall through to the dialog's native close.
+  editorEl.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape") return;
+    event.preventDefault();
+    event.stopPropagation();
+    handleEditorEscape();
+  });
+
+  editorEl.addEventListener("keydown", (event) => {
+    if (event.key !== "Enter" || !editor || editor.busy || editor.confirmRemove) return;
+    if (!(event.target instanceof HTMLInputElement) || event.target.type === "checkbox") return;
+    if (editor.shareChoices) return;
+    if (editorBlockReason()) return;
+    event.preventDefault();
+    void saveEditor();
+  });
+
   for (const dialog of [editorEl, whatsnewEl, credentialsEl]) {
+    dialog.addEventListener("keydown", (event) => trapTab(dialog, event));
     dialog.addEventListener("click", (event) => {
       if (event.target !== dialog) return;
-      if (dialog === editorEl && editor?.confirmRemove) return;
-      if (dialog === editorEl) closeEditor();
-      else if (dialog === whatsnewEl) closeWhatsNew();
-      else closeCredentials();
+      // A click outside a sheet must never throw away typed input; Escape or Cancel closes it.
+      if (dialog === editorEl || dialog === credentialsEl) return;
+      closeWhatsNew();
     });
     dialog.addEventListener("cancel", (event) => {
       event.preventDefault();
-      if (dialog === editorEl) {
-        if (editor?.shareChoices) {
-          editor.shareChoices = null;
-          editor.shareNote = null;
-          renderEditor();
-          return;
-        }
-        if (editor?.confirmRemove) {
-          editor.confirmRemove = false;
-          editor.error = null;
-          renderEditor();
-        } else {
-          closeEditor();
-        }
-      } else if (dialog === whatsnewEl) {
-        closeWhatsNew();
-      } else {
-        closeCredentials();
-      }
+      if (dialog === editorEl) handleEditorEscape();
+      else if (dialog === whatsnewEl) closeWhatsNew();
+      else closeCredentials();
     });
   }
 }
@@ -1602,6 +1930,7 @@ async function boot(): Promise<void> {
     if (snapshot.secondInstance) showSecondInstance();
     render();
     applyDevLocation();
+    if (document.activeElement === document.body) mainEl.focus({ preventScroll: true });
   } catch (error) {
     renderBootError(error);
   } finally {

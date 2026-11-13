@@ -12,10 +12,12 @@ import {
   orderWhatsNew,
   statusLabel,
   statusTone,
+  storageSummary,
   testResultChanged,
   updateIsAvailable,
   updateWording,
   validateStorageDraft,
+  duplicateStorageReason,
 } from "../ui/src/model.ts";
 
 const mainSource = readFileSync(new URL("../ui/src/main.ts", import.meta.url), "utf8");
@@ -43,7 +45,8 @@ test("status tones never read a failure as fine", () => {
 
 test("SMB validation names the required shape", () => {
   assert.equal(validateStorageDraft({ name: "Studio NAS", kind: "smb", target: "smb://nas.local/studio", volumeUUID: null }), null);
-  assert.equal(validateStorageDraft({ name: "Studio NAS", kind: "smb", target: "nas.local/studio", volumeUUID: null }), "Use a share address like smb://nas.local/studio.");
+  assert.equal(validateStorageDraft({ name: "Studio NAS", kind: "smb", target: "nas.local/studio", volumeUUID: null }), "Use an smb:// address, like smb://nas.local/studio.");
+  assert.equal(validateStorageDraft({ name: "Studio NAS", kind: "smb", target: "http://nas/x", volumeUUID: null }), "Use an smb:// address, like smb://nas.local/studio.");
   assert.equal(validateStorageDraft({ name: "Studio NAS", kind: "smb", target: "smb://nas.local", volumeUUID: null }), "Use a share address like smb://nas.local/studio.");
   assert.equal(validateStorageDraft({ name: "  ", kind: "smb", target: "smb://nas.local/studio", volumeUUID: null }), "Give the storage a name.");
 });
@@ -127,6 +130,44 @@ test("the command wiring in main.ts is present and unique", () => {
   assert.match(mainSource, /data-action="retry-boot"/);
 });
 
+test("the Storage status line summarises what is true, in the chips' words", () => {
+  assert.equal(storageSummary([]), "No storages yet.");
+  assert.equal(storageSummary([{ status: "mounted" }]), "1 storage, all mounted.");
+  assert.equal(storageSummary([{ status: "mounted" }, { status: "mounted" }]), "2 storages, all mounted.");
+  assert.equal(storageSummary([{ status: "mounted" }, { status: "needs_attention" }]), "1 of 2 storages mounted, 1 needs attention.");
+  assert.equal(storageSummary([{ status: "unreachable" }, { status: "mounting" }]), "2 storages, none mounted, 1 unreachable, 1 mounting.");
+  assert.equal(storageSummary([{ status: "not_mounted" }, { status: "mounted" }]), "1 of 2 storages mounted, 1 not mounted.");
+  assert.equal(storageSummary([{ status: "retrying" }]), "1 storage, none mounted, 1 retrying.");
+});
+
+test("a share or disk can only be added once", () => {
+  const existing = [
+    { id: "a", name: "Studio NAS", kind: "smb", target: "smb://nas.local/studio", volumeUUID: null },
+    { id: "b", name: "Editing SSD", kind: "volume", target: "disk4s1", volumeUUID: "5C2A-9F1E" },
+  ];
+  assert.equal(
+    duplicateStorageReason({ name: "Again", kind: "smb", target: "SMB://NAS.local/studio", volumeUUID: null }, existing),
+    "This share is already added as Studio NAS.",
+  );
+  assert.equal(
+    duplicateStorageReason({ name: "Again", kind: "smb", target: "smb://someone@nas.local/studio", volumeUUID: null }, existing),
+    "This share is already added as Studio NAS.",
+  );
+  assert.equal(
+    duplicateStorageReason({ name: "Disk again", kind: "volume", target: "disk4s1", volumeUUID: "5C2A-9F1E" }, existing),
+    "This disk is already added as Editing SSD.",
+  );
+  // Editing the same entry is not a duplicate of itself.
+  assert.equal(
+    duplicateStorageReason({ id: "a", name: "Studio NAS", kind: "smb", target: "smb://nas.local/studio", volumeUUID: null }, existing),
+    null,
+  );
+  assert.equal(
+    duplicateStorageReason({ name: "Other", kind: "smb", target: "smb://nas.local/other", volumeUUID: null }, existing),
+    null,
+  );
+});
+
 test("the second-instance note is shown once", () => {
   assert.match(mainSource, /function showSecondInstance[\s\S]{0,220}if \(secondInstanceShown\) return/);
   assert.match(mainSource, /Storage Studio KH is already running\. This window is the running copy\./);
@@ -194,8 +235,27 @@ test("Settings opens from launch, the app menu and the tray, rebuilding if missi
 
 test("footer keeps Support, pill + updates and the status line on one grid", () => {
   const css = readFileSync(new URL("../ui/src/styles.css", import.meta.url), "utf8");
-  assert.match(css, /\.foot-updates \{[^}]*gap: var\(--s-s\)[^}]*padding: 0 var\(--s-s\)/s);
+  assert.match(css, /\.foot-updates \{[^}]*gap: var\(--s-xs\)[^}]*padding: 0 var\(--s-s\)/s);
   assert.match(css, /\.update-line \{[^}]*padding: 0 var\(--s-s\)/s);
+});
+
+test("Return saves and a click outside never discards typed input", () => {
+  assert.match(mainSource, /event\.key !== "Enter"[\s\S]{0,420}saveEditor\(\)/);
+  assert.match(mainSource, /A click outside a sheet must never throw away typed input/);
+  assert.match(mainSource, /dialog === editorEl \|\| dialog === credentialsEl\) return/);
+});
+
+test("the app menu offers Close Window with the standard shortcut", () => {
+  const rust = readFileSync(new URL("../src-tauri/src/main.rs", import.meta.url), "utf8");
+  assert.match(rust, /PredefinedMenuItem::close_window\(app, Some\("Close Window"\)\)/);
+});
+
+test("only the installed app may register a login item, once", () => {
+  const rust = readFileSync(new URL("../src-tauri/src/main.rs", import.meta.url), "utf8");
+  assert.match(rust, /fn is_app_bundle_path/);
+  assert.match(rust, /\.app\/Contents\/MacOS\//);
+  assert.match(rust, /fn login_item_needs_change/);
+  assert.match(rust, /login_item::can_register\(\)/);
 });
 
 test("a second launch reopens the window, even after it was hidden", () => {

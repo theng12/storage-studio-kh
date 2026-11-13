@@ -1,6 +1,6 @@
 #!/bin/bash
 set -uo pipefail
-DMG="${1:-/tmp/Storage Studio KH-0.1.8.dmg}"
+DMG="${1:-/tmp/Storage Studio KH-0.1.10.dmg}"
 APP="/Applications/Storage Studio KH.app"
 BIN="$APP/Contents/MacOS/Storage Studio KH"
 pass=0; fail=0

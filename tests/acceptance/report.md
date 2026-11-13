@@ -1,6 +1,6 @@
 # Storage Studio KH — page acceptance
 
-Run: 2026-11-12T19:03:28.793Z · app 0.1.7 · 96/96 checks passed
+Run: 2026-11-13T13:07:08.820Z · app 0.1.10 · 224/224 checks passed
 
 | Page | Check | Expected | Actual | Result |
 | --- | --- | --- | --- | --- |
@@ -9,12 +9,13 @@ Run: 2026-11-12T19:03:28.793Z · app 0.1.7 · 96/96 checks passed
 | Storage | real shares visible | Public Space-System pool in list | true | PASS |
 | Storage | mounted state visible | Mounted chip | true | PASS |
 | Storage | mounted path visible | real /Volumes path | true | PASS |
-| Storage | footer pill | Storage Studio KH v0.1.7 | true | PASS |
+| Storage | footer pill | Storage Studio KH v0.1.10 | true | PASS |
 | Audit | storage controls named |  | [] | PASS |
 | Audit | storage no overflow | no horizontal overflow | 0 | PASS |
 | Esc | closes the add dialog | no open dialog | true | PASS |
 | Esc | dismisses Browse results | chooser gone, dialog open | true | PASS |
-| Esc | closes the editor after dismissing results | dialog closed | true | PASS |
+| Esc | asks before discarding typed edits | Discard changes? | true | PASS |
+| Esc | discard closes the editor | dialog closed | true | PASS |
 | Esc | Remove confirmation returns to the editor | editor still open without confirm | true | PASS |
 | Storage | row Unmount invokes | unmount_storage | true | PASS |
 | Storage | row Test invokes | test_storage | true | PASS |
@@ -25,10 +26,10 @@ Run: 2026-11-12T19:03:28.793Z · app 0.1.7 · 96/96 checks passed
 | Footer | pill and update icon centred at 1440 light | same centre line | true | PASS |
 | Footer | aligned at 1440 dark | support, row and status share one left edge | true | PASS |
 | Footer | pill and update icon centred at 1440 dark | same centre line | true | PASS |
-| Footer | aligned at 375 light | support, row and status share one left edge | true | PASS |
-| Footer | pill and update icon centred at 375 light | same centre line | true | PASS |
-| Footer | aligned at 375 dark | support, row and status share one left edge | true | PASS |
-| Footer | pill and update icon centred at 375 dark | same centre line | true | PASS |
+| Footer | pinned to the bottom at 375 light | footer bottom on the window edge | true | PASS |
+| Footer | pill bottom-left at 375 light | pill in the left half near the bottom | true | PASS |
+| Footer | pinned to the bottom at 375 dark | footer bottom on the window edge | true | PASS |
+| Footer | pill bottom-left at 375 dark | pill in the left half near the bottom | true | PASS |
 | Storage | dark theme applied | dark background and a different image | true | PASS |
 | Attention | chip | Needs attention | true | PASS |
 | Attention | address in reason | Address tried: smb:// | true | PASS |
@@ -37,15 +38,20 @@ Run: 2026-11-12T19:03:28.793Z · app 0.1.7 · 96/96 checks passed
 | Attention | test result toasted | a Test: toast | true | PASS |
 | Audit | attention no overflow at 700x520 | no horizontal overflow | 0 | PASS |
 | Engine | banner on Storage | helper stopped sentence | true | PASS |
+| Engine | status line admits the helper is down | Helper isn't running | true | PASS |
+| Engine | banner offers a way out | Restart helper button | true | PASS |
 | Engine | banner on General | helper stopped sentence | true | PASS |
 | Engine | banner on Appearance | helper stopped sentence | true | PASS |
+| Engine | restart helper invokes | restart_helper | "restart_helper" | PASS |
+| Engine | helper comes back | banner gone | true | PASS |
 | Add | label says host + share | Share address (host + share) | true | PASS |
 | Add | Save disabled with an empty name | disabled | true | PASS |
-| Add | name reason beside Save | Give this storage a name. | true | PASS |
-| Add | name field marked invalid | aria-invalid | true | PASS |
-| Add | reason linked to Save | aria-describedby | true | PASS |
+| Add | no error before the person types | no save reason | true | PASS |
+| Add | name field not marked invalid on open | no aria-invalid | true | PASS |
+| Add | placeholders read as examples | e.g. Studio NAS | true | PASS |
 | Add | empty address asks for the device | Enter the device address first | true | PASS |
 | Add | reason is a live region | role=status | true | PASS |
+| Add | reason linked to Save | aria-describedby | true | PASS |
 | Add | host-only keeps Save off | disabled | true | PASS |
 | Add | host-only reason | Add the share name | true | PASS |
 | Add | address marked invalid | aria-invalid | true | PASS |
@@ -75,12 +81,17 @@ Run: 2026-11-12T19:03:28.793Z · app 0.1.7 · 96/96 checks passed
 | General | three settings rows | 3 | 3 | PASS |
 | General | notifications toggle invokes | set_general | "set_general" | PASS |
 | General | sends all three values | notifications/launchAtLogin/retries present | true | PASS |
+| General | focus stays on the switch | general-notifications | true | PASS |
+| General | retries offers 1 to 8 | 8 | 8 | PASS |
 | General | retries saved | 5 | 5 | PASS |
+| General | focus stays on the changed control | general-... | true | PASS |
 | General | login item error shown | Move the app to Applications | true | PASS |
 | Appearance | three choices | System, Light, Dark | true | PASS |
 | Appearance | dark applies live | dark | "dark" | PASS |
 | Appearance | invokes set_appearance | set_appearance | "set_appearance" | PASS |
 | Appearance | light applies live | light | "light" | PASS |
+| Appearance | arrow keys keep focus in the group | an appearance control | true | PASS |
+| Appearance | arrow key selects the next choice | dark | "dark" | PASS |
 | Updates | What's New opens | title | true | PASS |
 | Updates | current version marked | Current version | true | PASS |
 | Updates | pending update explained in What's New | notes appear after install | true | PASS |
@@ -100,6 +111,123 @@ Run: 2026-11-12T19:03:28.793Z · app 0.1.7 · 96/96 checks passed
 | Dialog | Esc closes only the prompt | dialog closed | true | PASS |
 | Dialog | second instance noted once | already running | true | PASS |
 | Dialog | second instance not repeated | single note | true | PASS |
+| Layout | storage at 375: no horizontal overflow | 0 | "0" | PASS |
+| Layout | storage at 375: content fills the width | main at least 335px | true | PASS |
+| Layout | storage at 375: footer on the bottom edge | footer within the sidebar inset of the window edge | true | PASS |
+| Layout | storage at 375: pill bottom-left | pill in the left half near the bottom | true | PASS |
+| Layout | storage at 375: every nav item has an icon | 3 | 3 | PASS |
+| Layout | Add storage fits at 375 | dialog inside the window | true | PASS |
+| Layout | general at 375: no horizontal overflow | 0 | "0" | PASS |
+| Layout | general at 375: content fills the width | main at least 335px | true | PASS |
+| Layout | general at 375: footer on the bottom edge | footer within the sidebar inset of the window edge | true | PASS |
+| Layout | general at 375: pill bottom-left | pill in the left half near the bottom | true | PASS |
+| Layout | general at 375: every nav item has an icon | 3 | 3 | PASS |
+| Layout | appearance at 375: no horizontal overflow | 0 | "0" | PASS |
+| Layout | appearance at 375: content fills the width | main at least 335px | true | PASS |
+| Layout | appearance at 375: footer on the bottom edge | footer within the sidebar inset of the window edge | true | PASS |
+| Layout | appearance at 375: pill bottom-left | pill in the left half near the bottom | true | PASS |
+| Layout | appearance at 375: every nav item has an icon | 3 | 3 | PASS |
+| Layout | support at 375: no horizontal overflow | 0 | "0" | PASS |
+| Layout | support at 375: content fills the width | main at least 335px | true | PASS |
+| Layout | support at 375: footer on the bottom edge | footer within the sidebar inset of the window edge | true | PASS |
+| Layout | support at 375: pill bottom-left | pill in the left half near the bottom | true | PASS |
+| Layout | support at 375: every nav item has an icon | 3 | 3 | PASS |
+| Layout | storage at 768: no horizontal overflow | 0 | "0" | PASS |
+| Layout | storage at 768: content fills the width | main at least 508px | true | PASS |
+| Layout | storage at 768: footer on the bottom edge | footer within the sidebar inset of the window edge | true | PASS |
+| Layout | storage at 768: pill bottom-left | pill in the left half near the bottom | true | PASS |
+| Layout | storage at 768: every nav item has an icon | 3 | 3 | PASS |
+| Layout | Add storage fits at 768 | dialog inside the window | true | PASS |
+| Layout | general at 768: no horizontal overflow | 0 | "0" | PASS |
+| Layout | general at 768: content fills the width | main at least 508px | true | PASS |
+| Layout | general at 768: footer on the bottom edge | footer within the sidebar inset of the window edge | true | PASS |
+| Layout | general at 768: pill bottom-left | pill in the left half near the bottom | true | PASS |
+| Layout | general at 768: every nav item has an icon | 3 | 3 | PASS |
+| Layout | appearance at 768: no horizontal overflow | 0 | "0" | PASS |
+| Layout | appearance at 768: content fills the width | main at least 508px | true | PASS |
+| Layout | appearance at 768: footer on the bottom edge | footer within the sidebar inset of the window edge | true | PASS |
+| Layout | appearance at 768: pill bottom-left | pill in the left half near the bottom | true | PASS |
+| Layout | appearance at 768: every nav item has an icon | 3 | 3 | PASS |
+| Layout | support at 768: no horizontal overflow | 0 | "0" | PASS |
+| Layout | support at 768: content fills the width | main at least 508px | true | PASS |
+| Layout | support at 768: footer on the bottom edge | footer within the sidebar inset of the window edge | true | PASS |
+| Layout | support at 768: pill bottom-left | pill in the left half near the bottom | true | PASS |
+| Layout | support at 768: every nav item has an icon | 3 | 3 | PASS |
+| Layout | storage at 1440: no horizontal overflow | 0 | "0" | PASS |
+| Layout | storage at 1440: content fills the width | main at least 1180px | true | PASS |
+| Layout | storage at 1440: footer on the bottom edge | footer within the sidebar inset of the window edge | true | PASS |
+| Layout | storage at 1440: pill bottom-left | pill in the left half near the bottom | true | PASS |
+| Layout | storage at 1440: every nav item has an icon | 3 | 3 | PASS |
+| Layout | Add storage fits at 1440 | dialog inside the window | true | PASS |
+| Layout | general at 1440: no horizontal overflow | 0 | "0" | PASS |
+| Layout | general at 1440: content fills the width | main at least 1180px | true | PASS |
+| Layout | general at 1440: footer on the bottom edge | footer within the sidebar inset of the window edge | true | PASS |
+| Layout | general at 1440: pill bottom-left | pill in the left half near the bottom | true | PASS |
+| Layout | general at 1440: every nav item has an icon | 3 | 3 | PASS |
+| Layout | appearance at 1440: no horizontal overflow | 0 | "0" | PASS |
+| Layout | appearance at 1440: content fills the width | main at least 1180px | true | PASS |
+| Layout | appearance at 1440: footer on the bottom edge | footer within the sidebar inset of the window edge | true | PASS |
+| Layout | appearance at 1440: pill bottom-left | pill in the left half near the bottom | true | PASS |
+| Layout | appearance at 1440: every nav item has an icon | 3 | 3 | PASS |
+| Layout | support at 1440: no horizontal overflow | 0 | "0" | PASS |
+| Layout | support at 1440: content fills the width | main at least 1180px | true | PASS |
+| Layout | support at 1440: footer on the bottom edge | footer within the sidebar inset of the window edge | true | PASS |
+| Layout | support at 1440: pill bottom-left | pill in the left half near the bottom | true | PASS |
+| Layout | support at 1440: every nav item has an icon | 3 | 3 | PASS |
+| Keys | Return saves a complete form | save_storage | true | PASS |
+| Dialog | a click outside keeps typed input | editor still open | true | PASS |
+| Dialog | Escape asks before discarding | Discard changes? | true | PASS |
+| Dialog | Keep editing returns to the form | typed name still there | true | PASS |
+| Dialog | Discard closes the editor | no open dialog | true | PASS |
+| Add | duplicate share keeps Save off | disabled | true | PASS |
+| Add | duplicate names the existing storage | already added as Public Space-Media - 4TB - Music | true | PASS |
+| Add | saving names the result | Added New share. | true | PASS |
+| Add | the new row is brought into view | row inside the visible list | true | PASS |
+| Add | the new row is marked briefly | is-new class | true | PASS |
+| Remove | removal removes the row | one fewer storage | true | PASS |
+| Remove | removal offers Undo | Undo button | true | PASS |
+| Remove | Undo takes keyboard focus after Remove | the Undo toast button | true | PASS |
+| Remove | Undo puts the storage back | Public Space-Media - 4TB - Music returned | true | PASS |
+| Remove | Undo leaves focus on the restored row | row-s1794488987703-edit | true | PASS |
+| Dialog | saving a password says what happens next | Password saved. Trying | true | PASS |
+| Dialog | the Trying note ends when the share answers | no stale Trying toast | true | PASS |
+| Esc | first Escape asks before discarding | Discard changes? | true | PASS |
+| Esc | second Escape returns to the form | edits still there | true | PASS |
+| Esc | returning from the prompt focuses the name field | editor-name | true | PASS |
+| Esc | third Escape asks again instead of closing | Discard changes? | true | PASS |
+| Esc | no edits were lost | dialog still open with the typed name | true | PASS |
+| Esc | Keep editing keeps the typed name and focus | Changed name in editor-name | true | PASS |
+| Dialog | Browse dismissal returns focus to the address | target field | true | PASS |
+| Dialog | Remove return focuses the form | editor-name | true | PASS |
+| Dialog | closing the password prompt focuses the row | row test control | true | PASS |
+| Dialog | saving returns focus to the opener | add-storage | true | PASS |
+| Dialog | closing What's New focuses the pill | pill | true | PASS |
+| Layout | 375 Tab order is nav, content, footer | DOM order matches the screen | true | PASS |
+| Keys | arrow keys move between sections | General focused and shown | true | PASS |
+| Storage | a repeated Test still names its result | two Test toasts | true | PASS |
+| Storage | a mounting row says Mounting on its button | Mounting… | true | PASS |
+| Dialog | saved password mounts the share in the preview | Mounted chip and no stale sign-in line | true | PASS |
+| Add | the new row's actions are clear of the toast | no intersection at 820x640 | true | PASS |
+| Storage | a Test reports without mounting | still Unreachable with no mount | true | PASS |
+| Storage | a Test never asks for a password | no credentials sheet | true | PASS |
+| Updates | a check keeps an available update | still offers 0.2.0 with its download control | true | PASS |
+| Boot | Retry leaves focus on the restored page | main | true | PASS |
+| Dialog | Tab wraps inside the editor | focus stays in the sheet | true | PASS |
+| Updates | What's New opens with Close focused | close button | true | PASS |
+| Updates | closing What's New restores the pill | pill | true | PASS |
+| Keys | Test keeps keyboard focus on its button | the row's Test control | true | PASS |
+| Keys | Unmount moves keyboard focus to Mount now | row-s1794488987703-mount | true | PASS |
+| Keys | Check for Updates keeps keyboard focus | check | true | PASS |
+| Keys | Restart helper lands on a control, not BODY | nav-storage | true | PASS |
+| Layout | long name wraps instead of clipping | 0 | 0 | PASS |
+| Layout | long name adds no page overflow at 375 | 0 | 0 | PASS |
+| Footer | download control stays inside at 768 | right edge within the window | true | PASS |
+| Footer | download control stays inside at 1440 | right edge within the window | true | PASS |
+| Storage | row controls name their storage | each accessible name includes the share name | true | PASS |
+| Storage | status line summarises the list | 4 storages, all mounted. | true | PASS |
+| Appearance | segmented control is content-sized | narrower than 400 | true | PASS |
+| Appearance | three equal segments | 3 | 3 | PASS |
+| Appearance | no nested card around the control | 0 | 0 | PASS |
 
 ## Screenshots
 
@@ -134,3 +262,21 @@ Run: 2026-11-12T19:03:28.793Z · app 0.1.7 · 96/96 checks passed
 - tests/acceptance/screenshots/support/support-light-820x640.png
 - tests/acceptance/screenshots/empty/empty-light-820x640.png
 - tests/acceptance/screenshots/dialog/credentials-light-820x640.png
+- tests/acceptance/screenshots/layout/storage-375x812.png
+- tests/acceptance/screenshots/layout/editor-375x812.png
+- tests/acceptance/screenshots/layout/general-375x812.png
+- tests/acceptance/screenshots/layout/appearance-375x812.png
+- tests/acceptance/screenshots/layout/support-375x812.png
+- tests/acceptance/screenshots/layout/storage-768x900.png
+- tests/acceptance/screenshots/layout/editor-768x900.png
+- tests/acceptance/screenshots/layout/general-768x900.png
+- tests/acceptance/screenshots/layout/appearance-768x900.png
+- tests/acceptance/screenshots/layout/support-768x900.png
+- tests/acceptance/screenshots/layout/storage-1440x900.png
+- tests/acceptance/screenshots/layout/editor-1440x900.png
+- tests/acceptance/screenshots/layout/general-1440x900.png
+- tests/acceptance/screenshots/layout/appearance-1440x900.png
+- tests/acceptance/screenshots/layout/support-1440x900.png
+- tests/acceptance/screenshots/add/add-saved-feedback-light-820x640.png
+- tests/acceptance/screenshots/stress/long-name-375x812.png
+- tests/acceptance/screenshots/appearance/appearance-light-820x640.png

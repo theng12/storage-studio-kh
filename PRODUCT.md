@@ -61,4 +61,4 @@ A single Settings window opened from the menu-bar item. The person adds SMB shar
 
 ## Accessibility & Inclusion
 
-Every control keyboard-reachable with a visible focus ring; Esc closes the topmost modal; Cmd+R checks for updates; live-region announcements for results; body and placeholder text at least 4.5:1 in light and dark; reduced-motion preferences respected; status never conveyed by colour alone.
+Every control keyboard-reachable with a visible focus ring; Esc closes the topmost modal; Return saves a complete storage form and the credentials prompt; Cmd+R re-reads the mount table; Cmd+W hides Settings; live-region announcements for results; body and placeholder text at least 4.5:1 in light and dark; reduced-motion preferences respected; status never conveyed by colour alone.

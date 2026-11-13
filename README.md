@@ -33,11 +33,11 @@ is built from `helper/` and lives only inside the app.
 
 ## Release
 
-Build here, then `packaging/release-push.sh storage-studio 0.1.0 "dist/Storage Studio KH-0.1.0.dmg" CHANGELOG.md`.
+Build here, then `packaging/release-push.sh storage-studio 0.1.10 "dist/Storage Studio KH-0.1.10.dmg" CHANGELOG.md`.
 It stages the DMG and changelog on 1301, publishes with the host's own key (the only feed
 writer), and reads the served feed back to prove the version it offers.
 
-## Verification status (0.1.7)
+## Verification status (0.1.10)
 
 Verified on this Mac: mount-table detection against the real attached volumes and the real NAS
 shares; unmount → remount of a NAS share through NetFS with the saved credential; share listing
@@ -45,6 +45,13 @@ shares; unmount → remount of a NAS share through NetFS with the saved credenti
 credentials reported as needing a user name and a password; the bounded retry ladder ending in one
 Needs attention; private-file save/forget; launch/quit/force-quit leaving no helper or launchd job;
 a second launch handled plainly; DMG signature and install; launch at login.
+
+UI: every page and dialog is measured at 375/768/820/1440 in light and dark by
+`tests/acceptance/run.cjs` (219 checks), and independent critics re-walked the app until it met the
+studio bar; their reports are `tests/acceptance/critic-round*.md`. The window reflow, status line,
+discard prompt, Undo, Restart helper, duplicate blocking, keyboard focus and the 1–8 retries picker
+are covered there. Login items register once, only from the installed `.app`; a development build
+never registers. Tests run on the shared machine lane with `lane-mem.sh` (UI peak 794 MB).
 
 Still the owner's hands-on step: add a share in the app's own dialog on a Mac whose private file
 has no credential yet, so the in-app password prompt itself is exercised.

@@ -44,6 +44,7 @@ export function testResultChanged(
 }
 
 export interface DraftValidation {
+  id?: string;
   name: string;
   kind: string;
   target: string;
@@ -54,6 +55,9 @@ export function validateStorageDraft(draft: DraftValidation): string | null {
   if (!draft.name.trim()) return "Give the storage a name.";
   if (draft.kind === "smb") {
     const target = draft.target.trim();
+    if (!/^smb:\/\//i.test(target)) {
+      return "Use an smb:// address, like smb://nas.local/studio.";
+    }
     if (!/^smb:\/\/[^\s/]+\/\S+$/i.test(target)) {
       return "Use a share address like smb://nas.local/studio.";
     }
@@ -91,6 +95,7 @@ export function saveBlockReason(draft: DraftValidation, hasVolumes = true): stri
   if (draft.kind === "smb") {
     const target = draft.target.trim();
     if (!target) return "Enter the device address first, like smb://studio.local/photos.";
+    if (!/^smb:\/\//i.test(target)) return "Use an smb:// address, like smb://nas.local/studio.";
     if (!/^smb:\/\/[^\s/]+\/\S+$/i.test(target)) return "Add the share name to the address, like smb://nas.local/studio.";
     return null;
   }
@@ -99,6 +104,48 @@ export function saveBlockReason(draft: DraftValidation, hasVolumes = true): stri
     return hasVolumes ? "Choose a disk to reconnect." : "No disks are connected right now.";
   }
   return "Choose SMB share or attached disk.";
+}
+
+export function storageSummary(storages: { status: string }[]): string {
+  const total = storages.length;
+  if (!total) return "No storages yet.";
+  const noun = total === 1 ? "storage" : "storages";
+  const count = (statuses: string[]): number => storages.filter((item) => statuses.includes(item.status)).length;
+  const mounted = count(["mounted"]);
+  const needs = count(["needs_attention"]);
+  const unreachable = count(["unreachable"]);
+  const mounting = count(["mounting"]);
+  const retrying = count(["retrying"]);
+  const idle = count(["not_mounted"]);
+  if (mounted === total) return `${total} ${noun}, all mounted.`;
+  const parts = [mounted ? `${mounted} of ${total} ${noun} mounted` : `${total} ${noun}, none mounted`];
+  if (needs) parts.push(`${needs} ${needs === 1 ? "needs" : "need"} attention`);
+  if (unreachable) parts.push(`${unreachable} unreachable`);
+  if (mounting) parts.push(`${mounting} mounting`);
+  if (retrying) parts.push(`${retrying} retrying`);
+  if (idle && mounted) parts.push(`${idle} not mounted`);
+  return `${parts.join(", ")}.`;
+}
+
+/** A share is the same mount whether or not a user name is in front of the host. */
+function shareKey(target: string): string {
+  return target.trim().toLowerCase().replace(/^smb:\/\/([^/@]*@)?/, "smb://");
+}
+
+/** A share or disk may exist once: the same address would give two rows for one mount. */
+export function duplicateStorageReason(
+  draft: DraftValidation,
+  storages: { id: string; name: string; kind: string; target: string; volumeUUID: string | null }[],
+): string | null {
+  const target = shareKey(draft.target);
+  const match = storages.find((storage) => {
+    if (storage.id === draft.id) return false;
+    if (draft.kind === "smb") return storage.kind === "smb" && target !== "smb://" && shareKey(storage.target) === target;
+    if (draft.kind === "volume") return Boolean(draft.volumeUUID) && storage.volumeUUID === draft.volumeUUID;
+    return false;
+  });
+  if (!match) return null;
+  return `${draft.kind === "smb" ? "This share" : "This disk"} is already added as ${match.name}.`;
 }
 
 export function retrySentence(retries: number): string {

@@ -448,7 +448,7 @@ fn start_helper(app: &AppHandle) -> Result<(), String> {
         if gone {
             log("The background helper stopped.");
             *state.engine_error.lock().unwrap() =
-                Some("The background helper stopped. Reopen the app to start it again.".into());
+                Some("It stopped unexpectedly. Restart it here.".into());
             emit_snapshot(&app_handle);
         }
     });
@@ -576,6 +576,21 @@ fn notify(app: &AppHandle, title: String, body: String) {
 
 // ---------------------------------------------------------------- login item
 
+/// Only a real .app bundle may register a login item. A bare `target/release` binary
+/// registers under a phantom identity that no installed app can match (owner-reported).
+fn is_app_bundle_path(exe: &std::path::Path) -> bool {
+    exe.to_string_lossy().contains(".app/Contents/MacOS/")
+}
+
+/// Registration is keyed to the app's identity: only call it when the state differs.
+fn login_item_needs_change(status: i64, enabled: bool) -> bool {
+    if enabled {
+        status != 1
+    } else {
+        status != 0
+    }
+}
+
 #[cfg(target_os = "macos")]
 mod login_item {
     use objc2::rc::Retained;
@@ -598,10 +613,23 @@ mod login_item {
         status() == 1
     }
 
+    /// A development build (`cargo run`, a bare release binary) must never register.
+    pub fn can_register() -> bool {
+        std::env::current_exe()
+            .map(|exe| super::is_app_bundle_path(&exe))
+            .unwrap_or(false)
+    }
+
     pub fn set(enabled: bool) -> Result<(), String> {
+        if enabled && !can_register() {
+            return Err("Launch at login needs the installed app. Open Storage Studio KH from Applications.".into());
+        }
         let Some(service) = service() else {
             return Err("Login items are not available on this version of macOS.".into());
         };
+        if !super::login_item_needs_change(status(), enabled) {
+            return Ok(());
+        }
         let mut error: *mut AnyObject = std::ptr::null_mut();
         let ok: bool = unsafe {
             if enabled {
@@ -625,6 +653,7 @@ mod login_item {
 mod login_item {
     pub fn status() -> i64 { 3 }
     pub fn is_enabled() -> bool { false }
+    pub fn can_register() -> bool { false }
     pub fn set(_enabled: bool) -> Result<(), String> {
         Err("Launch at login is only available on macOS.".into())
     }
@@ -947,6 +976,17 @@ fn open_updater() -> Result<(), String> {
 }
 
 #[tauri::command]
+fn restart_helper(app: AppHandle, state: State<'_, AppState>) -> Result<(), String> {
+    let running = state.helper.lock().unwrap().is_some();
+    if running {
+        return Err("The background helper is already running.".into());
+    }
+    start_helper(&app)?;
+    emit_snapshot(&app);
+    Ok(())
+}
+
+#[tauri::command]
 fn open_support() -> Result<(), String> {
     Command::new("open")
         .arg(SUPPORT_URL)
@@ -1121,6 +1161,26 @@ mod tests {
     }
 
     #[test]
+    fn only_an_app_bundle_may_register_a_login_item() {
+        assert!(super::is_app_bundle_path(std::path::Path::new(
+            "/Applications/Storage Studio KH.app/Contents/MacOS/Storage Studio KH"
+        )));
+        assert!(!super::is_app_bundle_path(std::path::Path::new(
+            "/Users/x/Developer/My Own Apps/storage-studio-kh/src-tauri/target/release/Storage Studio KH"
+        )));
+        assert!(!super::is_app_bundle_path(std::path::Path::new("/tmp/Storage Studio KH")));
+    }
+
+    #[test]
+    fn login_item_registration_is_idempotent() {
+        assert!(!super::login_item_needs_change(1, true));
+        assert!(!super::login_item_needs_change(0, false));
+        assert!(super::login_item_needs_change(0, true));
+        assert!(super::login_item_needs_change(1, false));
+        assert!(super::login_item_needs_change(2, true));
+    }
+
+    #[test]
     fn smb_address_must_name_a_share() {
         assert!(validate_input(&input("smb", "smb://nas.local/photos", "")).is_ok());
         assert!(validate_input(&input("smb", "smb://nas.local", "")).is_err());
@@ -1274,6 +1334,7 @@ fn main() {
             check_updates,
             open_updater,
             open_support,
+            restart_helper,
         ])
         .setup(move |app| {
             let handle = app.handle().clone();
@@ -1295,6 +1356,7 @@ fn main() {
                 true,
                 &[
                     &MenuItem::with_id(app, "app-settings", "Settings…", true, Some("CmdOrCtrl+,"))?,
+                    &PredefinedMenuItem::close_window(app, Some("Close Window"))?,
                     &PredefinedMenuItem::separator(app)?,
                     &PredefinedMenuItem::hide(app, Some("Hide Storage Studio KH"))?,
                     &PredefinedMenuItem::hide_others(app, Some("Hide Others"))?,
@@ -1320,6 +1382,8 @@ fn main() {
 
             // Launch at login is on by default; report honestly when macOS refuses.
             if setup_settings.general.launch_at_login
+                && !is_test_mode()
+                && login_item::can_register()
                 && !login_item::is_enabled()
                 && std::env::var("STORAGE_STUDIO_NO_LOGIN_ITEM").is_err()
             {

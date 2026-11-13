@@ -76,7 +76,7 @@ function buildSnapshot(hash: string): Snapshot {
   ];
   return {
     appName: "Storage Studio KH",
-    version: "0.1.1",
+    version: "0.1.10",
     appearance: theme === "dark" || theme === "light" ? theme : "system",
     general: { notifications: true, launchAtLogin: true, retries: 3 },
     storages,
@@ -100,24 +100,48 @@ function buildSnapshot(hash: string): Snapshot {
         mountPoint: "/Volumes/studio",
       },
     ],
-    update: { state: "available", version: "0.1.1", reason: null },
+    update: { state: "available", version: "0.2.0", reason: null },
     whatsNew: [
       {
-        version: "0.1.0",
-        date: "2026-11-12",
+        version: "0.1.10",
+        date: "2026-11-13",
         items: [
-          "Keeps chosen SMB shares and attached disks connected after login and after wake.",
-          "Retries three times, then says which storage needs attention.",
-          "Passwords stay in Storage Studio KH's private file.",
+          "Only the installed app adds a Login Items entry, once: a development copy or a rebuild no longer registers a second \"Storage Studio KH\".",
+          "The same share or disk can't be added twice: Save says which existing storage already uses it.",
+          "The helper-stopped banner now has a Restart helper button, and the Storage line says the helper isn't running.",
+          "Keyboard focus stays on the switch or appearance choice you just changed.",
+          "Saving a storage says what happened, scrolls the new row clear of the toast and offers Mount now; removing one offers Undo.",
+          "Tab stays inside open sheets, and Undo, a boot Retry and What's New keep keyboard focus.",
+          "Saving a password says the share is being tried again instead of leaving the old failure on screen.",
+          "Closing Add or Edit with typed changes asks before discarding them.",
+          "Retries is a 1–8 picker, an http:// address gets the right message, and a refused login item says where to allow it.",
+          "Long names wrap, the mounted path gets its own line in a narrow window, and the update button no longer crosses the sidebar edge.",
+          "Storage rows are shorter, use the right side of a wide window, and their buttons name the storage for screen readers.",
         ],
       },
       {
-        version: "0.1.1",
-        date: "2026-11-19",
+        version: "0.1.9",
+        date: "2026-11-13",
         items: [
-          "Check for updates from the footer, then update through Studio Launcher KH.",
-          "Attached disks show the folder they will reconnect to.",
+          "A narrow window keeps the same layout: sections move to a row at the top, the storage list fills the width, and Support, the version pill and the update controls stay pinned to the bottom.",
+          "Storage says one honest line about the list, such as \"4 storages, all mounted.\" — and counts what needs attention instead of leaving you to scan.",
+          "The Add storage sheet no longer closes, losing what you typed, when you click outside it. Return saves when the form is complete.",
+          "Appearance is one content-sized System / Light / Dark control.",
+          "Close Window (⌘W) hides Settings like a standard macOS window.",
         ],
+      },
+      {
+        version: "0.1.8",
+        date: "2026-11-13",
+        items: [
+          "Opening the app again while it is already running brings the Settings window back on screen, even after you closed it.",
+          "A window that comes back tiny or offscreen is given a normal size again.",
+        ],
+      },
+      {
+        version: "0.1.7",
+        date: "2026-11-13",
+        items: ["Passwords live in Storage Studio KH's own private file — never a system credential store."],
       },
     ],
     launchAtLoginEnabled: true,
@@ -153,6 +177,15 @@ export function createDevBackend(hash: string): {
   let bootFailures = 0;
 
   function mountStorage(storage: StorageView): void {
+    // Mirror the helper: without a saved password a share asks, then mounts once it has one.
+    if (storage.kind === "smb" && storage.status !== "mounted" && !storage.hasCredentials) {
+      storage.status = "needs_attention";
+      storage.detail = "Sign in to this share to continue.";
+      storage.mountedPath = null;
+      emit("snapshot", snapshot);
+      emit("needs-credentials", { id: storage.id, name: storage.name });
+      return;
+    }
     storage.status = "mounting";
     storage.detail = "Connecting…";
     emit("snapshot", snapshot);
@@ -179,7 +212,7 @@ export function createDevBackend(hash: string): {
         const input = (args?.input ?? {}) as StorageInput;
         const existing = input.id ? snapshot.storages.find((item) => item.id === input.id) : undefined;
         const view: StorageView = {
-          id: existing?.id ?? `s${Date.now()}`,
+          id: input.id ?? existing?.id ?? `s${Date.now()}`,
           name: input.name,
           kind: input.kind,
           target: input.target,
@@ -234,16 +267,20 @@ export function createDevBackend(hash: string): {
       }
 
       case "test_storage": {
+        // Mirror the helper: a Test reports; it never mounts and never asks for a password.
         const storage = snapshot.storages.find((item) => item.id === args?.id);
         if (!storage) return null;
-        if (storage.kind === "smb" && !storage.hasCredentials) {
-          storage.detail = "Sign in to this share to continue.";
-          emit("snapshot", snapshot);
-          emit("needs-credentials", { id: storage.id, name: storage.name });
-          return null;
+        if (storage.status === "mounted") {
+          storage.detail = `Connected at ${storage.mountedPath || storage.mountPoint || `/Volumes/${storage.name}`}.`;
+        } else if (storage.kind === "smb") {
+          storage.status = "not_mounted";
+          storage.detail = `${hostOf(storage.target)} is reachable and ready to mount.`;
+        } else if (storage.status === "unreachable") {
+          storage.detail = "The disk isn't connected.";
+        } else {
+          storage.status = "not_mounted";
+          storage.detail = "The disk is connected and ready to mount.";
         }
-        storage.detail =
-          storage.kind === "smb" ? `${hostOf(storage.target)} is reachable.` : `${storage.name} is connected.`;
         emit("snapshot", snapshot);
         return null;
       }
@@ -259,7 +296,13 @@ export function createDevBackend(hash: string): {
         if (storage) {
           storage.username = String(args?.username ?? "") || null;
           storage.hasCredentials = true;
-          emit("snapshot", snapshot);
+          // The helper mounts a moment later, so the "Trying…" note has a real end.
+          window.setTimeout(() => {
+            storage.status = "mounted";
+            storage.detail = storage.kind === "smb" ? "Connected." : "The disk is connected.";
+            storage.mountedPath = storage.mountPoint || `/Volumes/${storage.name}`;
+            emit("snapshot", snapshot);
+          }, 150);
         }
         return null;
       }
@@ -290,10 +333,14 @@ export function createDevBackend(hash: string): {
         return null;
       }
       case "check_updates": {
+        // Keep the offer it already has instead of claiming "up to date" over it.
+        const offered = snapshot.update.version;
         snapshot.update = { state: "checking", version: null, reason: null };
         emit("snapshot", snapshot);
         await new Promise((resolve) => window.setTimeout(resolve, 700));
-        const result: UpdateState = { state: "up-to-date", version: null, reason: null };
+        const result: UpdateState = offered
+          ? { state: "available", version: offered, reason: null }
+          : { state: "up-to-date", version: null, reason: null };
         snapshot.update = result;
         emit("snapshot", snapshot);
         return result;
@@ -302,6 +349,13 @@ export function createDevBackend(hash: string): {
       case "refresh_storage":
         emit("snapshot", snapshot);
         return null;
+
+      case "restart_helper": {
+        snapshot.engineRunning = true;
+        snapshot.engineError = null;
+        emit("snapshot", snapshot);
+        return null;
+      }
 
       case "open_updater":
       case "open_support":

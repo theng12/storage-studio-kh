@@ -86,6 +86,7 @@ interface Snapshot {
 | `unmount_storage` | `{ id }` | `null` |
 | `test_storage` | `{ id }` | `null` — the result arrives as a new snapshot (`detail`) |
 | `refresh_storage` | — | `null` — re-reads the mount table and connected disks (⌘R) |
+| `restart_helper` | — | `null` — starts the background helper again after it stopped (a `snapshot` event follows) |
 | `list_shares` | `{ address, username?, password? }` | `null` — the shares arrive on the `shares` event |
 | `reveal_storage` | `{ id }` | `null` |
 | `set_credentials` | `{ id, username, password }` | `null` |

@@ -168,30 +168,28 @@ button {
   border: 0;
 }
 
+/* Sections on the left, content on the right, footer under the sections.
+   DOM order is nav → main → footer so Tab matches the visual order at every width. */
 .app {
-  display: flex;
+  display: grid;
+  grid-template-columns: 236px minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "nav main"
+    "foot main";
   height: 100vh;
   min-height: 0;
 }
 
-/* Sidebar ------------------------------------------------------------- */
-
-.sidebar {
-  width: 220px;
-  flex: 0 0 220px;
-  display: flex;
-  flex-direction: column;
-  padding: var(--s-l) var(--s-tight) var(--s-s);
-  background: var(--sidebar);
-  border-right: 1px solid var(--line);
-}
-
 .nav {
+  grid-area: nav;
   display: flex;
   flex-direction: column;
   gap: var(--s-xs);
-  flex: 1 1 auto;
   min-height: 0;
+  padding: var(--s-l) var(--s-tight) 0;
+  background: var(--sidebar);
+  border-right: 1px solid var(--line);
   overflow: auto;
 }
 
@@ -231,12 +229,15 @@ button {
 }
 
 .foot {
+  grid-area: foot;
   display: flex;
   flex-direction: column;
   gap: var(--s-s);
-  margin-top: var(--s-m);
-  padding-top: var(--s-m);
+  min-height: 0;
+  padding: var(--s-m) var(--s-tight) var(--s-s);
+  background: var(--sidebar);
   border-top: 1px solid var(--line);
+  border-right: 1px solid var(--line);
 }
 
 .foot-support {
@@ -246,14 +247,15 @@ button {
 .foot-updates {
   display: flex;
   align-items: center;
-  gap: var(--s-s);
+  gap: var(--s-xs);
   padding: 0 var(--s-s);
+  min-width: 0;
 }
 
 .foot-updates .icon-btn {
-  width: 24px;
-  height: 24px;
-  flex: 0 0 24px;
+  width: 22px;
+  height: 22px;
+  flex: 0 0 22px;
 }
 
 .pill {
@@ -339,7 +341,7 @@ button {
 /* Main ---------------------------------------------------------------- */
 
 .main {
-  flex: 1 1 auto;
+  grid-area: main;
   min-width: 0;
   padding: var(--s-page);
   background: var(--surface);
@@ -486,7 +488,7 @@ h3 {
 .banner {
   display: flex;
   gap: var(--s-m);
-  align-items: flex-start;
+  align-items: center;
   margin-bottom: var(--s-l);
   padding: var(--s-m) var(--s-l);
   border: 1px solid var(--line);
@@ -497,6 +499,15 @@ h3 {
 .banner > .icon {
   margin-top: 1px;
   color: var(--warn);
+}
+
+.banner > div {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.banner-btn {
+  flex: 0 0 auto;
 }
 
 .banner-title {
@@ -516,7 +527,8 @@ h3 {
 
 .storage-list {
   list-style: none;
-  margin: 0;
+  /* Enough room below the last row to scroll it clear of a toast. */
+  margin: 0 0 96px;
   padding: 0;
   border: 1px solid var(--line);
   border-radius: var(--r-card);
@@ -525,7 +537,13 @@ h3 {
 }
 
 .storage-row {
-  padding: var(--s-l);
+  padding: var(--s-m) var(--s-l);
+  scroll-margin-bottom: 96px;
+  transition: background 600ms ease-out;
+}
+
+.storage-row.is-new {
+  background: var(--accent-tint);
 }
 
 .storage-row + .storage-row {
@@ -543,10 +561,15 @@ h3 {
   min-width: 0;
 }
 
+.storage-id h3 {
+  overflow-wrap: anywhere;
+}
+
 .storage-kind {
-  margin: 1px 0 0;
+  margin-left: var(--s-s);
   color: var(--text-3);
   font-size: var(--t-secondary);
+  font-weight: 400;
 }
 
 .chip {
@@ -618,6 +641,10 @@ h3 {
   height: 13px;
 }
 
+.storage-path span:not(.path-text) {
+  white-space: nowrap;
+}
+
 .path-text {
   font-family: var(--mono);
   font-size: var(--t-caption);
@@ -652,7 +679,33 @@ h3 {
   align-items: center;
   flex-wrap: wrap;
   gap: var(--s-xs);
-  margin-top: var(--s-m);
+  margin-top: var(--s-s);
+}
+
+/* A wide window keeps the row's actions together on the right instead of leaving
+   the whole right half of the list empty. */
+@media (min-width: 900px) {
+  .storage-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    column-gap: var(--s-xl);
+  }
+
+  .storage-head,
+  .storage-detail,
+  .storage-path,
+  .facts {
+    grid-column: 1;
+  }
+
+  .row-actions {
+    grid-column: 2;
+    grid-row: 1 / span 4;
+    align-self: center;
+    justify-content: flex-end;
+    max-width: 280px;
+    margin-top: 0;
+  }
 }
 
 .row-btn {
@@ -850,6 +903,10 @@ h3 {
   box-shadow: 0 0 0 3px var(--accent-ring);
 }
 
+select.number-input {
+  padding-right: var(--s-xs);
+}
+
 .segmented {
   display: flex;
   gap: var(--s-xs);
@@ -910,11 +967,18 @@ h3 {
 }
 
 .appearance-block {
-  padding: var(--s-l);
+  padding: 0;
 }
 
 .appearance-block .segmented {
-  max-width: 420px;
+  display: inline-flex;
+  width: auto;
+  max-width: none;
+}
+
+.appearance-block .segmented label {
+  flex: 1 1 0;
+  min-width: 104px;
 }
 
 .appearance-block .note {
@@ -999,6 +1063,22 @@ h3 {
 .toast-close:hover {
   background: var(--hover);
   color: var(--text);
+}
+
+.toast-action {
+  flex: 0 0 auto;
+  height: 22px;
+  padding: 0 var(--s-tight);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-control);
+  background: var(--raised);
+  color: var(--text);
+  font-size: var(--t-caption);
+  font-weight: 600;
+}
+
+.toast-action:hover {
+  background: var(--hover);
 }
 
 /* Dialogs ------------------------------------------------------------- */
@@ -1238,6 +1318,67 @@ dialog.sheet::backdrop {
   }
 }
 
+/* A window squeezed narrow keeps the same frame: sections on top, content, footer
+   pinned to the bottom with the version pill still bottom-left. */
+@media (max-width: 640px) {
+  .app {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    grid-template-areas:
+      "nav"
+      "main"
+      "foot";
+  }
+
+  .nav {
+    flex-direction: row;
+    padding: var(--s-s) var(--s-m);
+    overflow-x: auto;
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .nav-item {
+    width: auto;
+    flex: 0 0 auto;
+  }
+
+  .main {
+    padding: var(--s-l);
+  }
+
+  .foot {
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--s-s) var(--s-m);
+    padding: var(--s-s) var(--s-m);
+    border-right: 0;
+  }
+
+  .foot-support {
+    width: auto;
+  }
+
+  .foot-updates {
+    padding: 0;
+  }
+
+  .update-line {
+    flex-basis: 100%;
+    padding: 0;
+  }
+
+  .storage-path {
+    flex-wrap: wrap;
+  }
+
+  .storage-path .path-text {
+    flex: 1 0 100%;
+    padding-left: 19px;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -1250,7 +1391,7 @@ dialog.sheet::backdrop {
 
 .browse-row { display: flex; gap: var(--s-s); align-items: center; }
 .browse-row input { flex: 1 1 auto; min-width: 0; }
-.quiet-line { color: var(--text-muted); font-size: var(--t-caption); }
+.quiet-line { color: var(--text-3); font-size: var(--t-caption); }
 .save-reason { color: var(--bad); font-size: var(--t-caption); max-width: 38ch; }
 .share-picker { flex-shrink: 0; display: flex; flex-direction: column; align-items: stretch; gap: 2px; border: 1px solid var(--line); border-radius: var(--r-control); padding: var(--s-xs); background: var(--raised); max-height: 160px; overflow: auto; }
 .share-choice { text-align: left; border: 0; background: none; color: var(--text); padding: var(--s-xs) var(--s-s); border-radius: var(--r-control); font: inherit; cursor: pointer; }
@@ -1264,7 +1405,7 @@ dialog.sheet::backdrop {
 .connected-row:hover, .connected-row:focus-visible { background: var(--hover); }
 .connected-copy { display: flex; flex-direction: column; min-width: 0; }
 .connected-name { font-size: var(--t-row); font-weight: 600; }
-.connected-path { font-size: var(--t-caption); color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.connected-path { font-size: var(--t-caption); color: var(--text-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .connected-add { margin-left: auto; color: var(--accent); font-size: var(--t-secondary); font-weight: 600; }
 
 .field-note { flex-shrink: 0; margin: 0; font-size: var(--t-caption); line-height: 1.4; }
