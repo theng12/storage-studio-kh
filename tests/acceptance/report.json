@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-13T15:45:03.048Z",
+  "generatedAt": "2026-11-13T17:40:52.811Z",
   "appVersion": "0.1.10",
   "checks": [
     {
@@ -1982,6 +1982,22 @@
       "evidence": "true"
     },
     {
+      "page": "Add",
+      "id": "an uppercase scheme is refused with the same message",
+      "expected": "Use an smb:// address",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Storage",
+      "id": "opening another row's menu resets the first",
+      "expected": "aria-expanded false",
+      "actual": "true",
+      "pass": true,
+      "evidence": "false"
+    },
+    {
       "page": "Layout",
       "id": "long name wraps instead of clipping",
       "expected": 0,
@@ -2107,8 +2123,8 @@
     "tests/acceptance/screenshots/appearance/appearance-light-820x640.png"
   ],
   "summary": {
-    "total": 256,
-    "passed": 256,
+    "total": 258,
+    "passed": 258,
     "failed": 0
   }
 }

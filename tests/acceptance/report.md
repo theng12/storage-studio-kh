@@ -1,6 +1,6 @@
 # Storage Studio KH — page acceptance
 
-Run: 2026-11-13T15:45:03.048Z · app 0.1.10 · 256/256 checks passed
+Run: 2026-11-13T17:40:52.811Z · app 0.1.10 · 258/258 checks passed
 
 | Page | Check | Expected | Actual | Result |
 | --- | --- | --- | --- | --- |
@@ -251,6 +251,8 @@ Run: 2026-11-13T15:45:03.048Z · app 0.1.10 · 256/256 checks passed
 | Completeness | declared page capabilities have controls | all present | true | PASS |
 | Completeness | General capabilities have controls | notifications, login, retries | true | PASS |
 | Completeness | Appearance has exactly three controls | System/Light/Dark | true | PASS |
+| Add | an uppercase scheme is refused with the same message | Use an smb:// address | true | PASS |
+| Storage | opening another row's menu resets the first | aria-expanded false | true | PASS |
 | Layout | long name wraps instead of clipping | 0 | 0 | PASS |
 | Layout | long name adds no page overflow at 375 | 0 | 0 | PASS |
 | Footer | download control stays inside at 768 | right edge within the window | true | PASS |

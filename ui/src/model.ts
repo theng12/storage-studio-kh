@@ -95,7 +95,7 @@ export function saveBlockReason(draft: DraftValidation, hasVolumes = true): stri
   if (draft.kind === "smb") {
     const target = draft.target.trim();
     if (!target) return "Enter the device address first, like smb://studio.local/photos.";
-    if (!/^smb:\/\//i.test(target)) return "Use an smb:// address, like smb://nas.local/studio.";
+    if (!/^smb:\/\//.test(target)) return "Use an smb:// address, like smb://nas.local/studio.";
     if (!/^smb:\/\/[^\s/]+\/\S+$/.test(target)) return "Add the share name to the address, like smb://nas.local/studio.";
     return null;
   }
