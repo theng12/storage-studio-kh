@@ -16,6 +16,7 @@ import {
   dedupeStorages,
   warningGroups,
   readableTarget,
+  checkedAgo,
   updateIsAvailable,
   updateWording,
   validateStorageDraft,
@@ -312,11 +313,11 @@ function renderFoot(): void {
     <div class="foot-updates">
       <button type="button" class="pill" data-action="whats-new" data-fk="pill" title="What's New" aria-label="What's New, ${esc(
         snapshot.appName,
-      )} v${esc(snapshot.version)}">${esc(snapshot.appName)} v${esc(snapshot.version)}</button>
+      )} v${esc(snapshot.version)}">${icons.drive}<span>${esc(snapshot.appName)} v${esc(snapshot.version)}</span></button>
       <button type="button" class="icon-btn${checkBusy ? " is-spinning" : ""}" data-action="check-updates" data-fk="check" title="${
         checkBusy ? "Checking for Updates…" : "Check for Updates"
       }" aria-label="${checkBusy ? "Checking for Updates" : "Check for Updates"}"${
-        checkBusy ? ' disabled aria-busy="true"' : ""
+        checkBusy ? ' aria-disabled="true" aria-busy="true"' : ""
       }>${icons.refresh}</button>
       ${
         download
@@ -388,6 +389,7 @@ function renderStorage(): string {
                 ? `<div class="warning-groups" aria-label="Warnings">${warnings.map(renderWarningGroup).join("")}</div>`
                 : ""
             }
+            ${s.lastChecked ? `<span class="checked-line">${checkedAgo(s.lastChecked)}</span>` : ""}
             ${renderViewSwitch(mode)}
           </div>
           ${mode === "table" ? renderStorageTable(groups) : renderStorageCards(groups)}`
@@ -911,6 +913,7 @@ function renderEditor(): void {
   const savedCredentials = Boolean(savedStorage?.hasCredentials);
   const volumes = snapshot?.volumes ?? [];
   const savedVolumeMissing = d.kind === "volume" && d.volumeUUID && !volumes.some((volume) => volume.uuid === d.volumeUUID);
+  const savedDiskMissing = Boolean(savedVolumeMissing) || savedStorage?.status === "unreachable";
   const blockReason = editorBlockReason();
   const showReason = editor.touched && blockReason;
   const connectedShares =
@@ -1005,9 +1008,11 @@ function renderEditor(): void {
               .join("")}
           </select>
           <span class="field-hint">${
-            volumes.length
-              ? "These disks are connected now."
-              : "Connect the disk first, then reopen this window."
+            savedDiskMissing
+              ? `${esc(savedStorage?.name ?? "This disk")} isn't connected. Reconnect it, then reopen this window.`
+              : volumes.length
+                ? "These disks are connected now."
+                : "Connect the disk first, then reopen this window."
           }</span>
         </label>
         ${

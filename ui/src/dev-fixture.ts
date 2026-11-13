@@ -1,4 +1,5 @@
 import type { Snapshot, StorageInput, StorageView, UpdateState } from "./types";
+import { sameStorageIdentity } from "./model";
 
 type Handler = (payload: unknown) => void;
 
@@ -82,7 +83,6 @@ function buildSnapshot(hash: string): Snapshot {
     general: { notifications: true, launchAtLogin: true, retries: 3 },
     storages,
     volumes: [
-      { name: "Editing SSD", path: "/Volumes/Editing SSD", uuid: "5C2A-9F1E", device: "disk4s1" },
       { name: "Backup Disk", path: "/Volumes/Backup Disk", uuid: "8B14-2D77", device: "disk5s1" },
     ],
     mountedShares: params.get("empty") === "1" ? [] : [
@@ -246,8 +246,10 @@ export function createDevBackend(hash: string): {
 
       case "remove_storage": {
         const id = String(args?.id ?? "");
-        const index = snapshot.storages.findIndex((item) => item.id === id);
-        if (index >= 0) snapshot.storages.splice(index, 1);
+        const removed = snapshot.storages.find((item) => item.id === id);
+        snapshot.storages = removed
+          ? snapshot.storages.filter((item) => !sameStorageIdentity(item, removed))
+          : snapshot.storages;
         emit("snapshot", snapshot);
         return snapshot;
       }

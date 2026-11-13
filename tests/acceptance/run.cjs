@@ -1312,6 +1312,111 @@ async function noOverflow(page, id) {
       await page.close();
     }
 
+    /* -------------------------------------------- Round-7: disk hint, table, check, removal */
+    {
+      const page = await open(browser, live);
+      truthy("Storage", "the list says when it was checked", "Checked", (await page.locator(".checked-line").innerText()).includes("Checked"), await page.locator(".checked-line").innerText());
+      truthy("Footer", "the version pill carries an icon", "an svg", (await page.locator('[data-fk="pill"] svg').count()) === 1, null);
+
+      // A missing saved disk is described as missing, not "connected now".
+      const missing = variant((snapshot) => {
+        snapshot.storages[2].kind = "volume";
+        snapshot.storages[2].volumeUUID = "GONE-0000";
+        snapshot.storages[2].status = "unreachable";
+        snapshot.storages[2].detail = "The disk isn't connected right now.";
+        snapshot.storages[2].mountedPath = null;
+      });
+      await page.close();
+      const diskPage = await open(browser, missing);
+      await rowAction(diskPage, live.storages[2].id, "edit");
+      const hint = await diskPage.locator(".field-hint").last().innerText().catch(() => "");
+      truthy("Add", "a missing disk is not called connected", "isn't connected", hint.includes("isn't connected"), hint);
+      await closeEditorDiscarding(diskPage);
+      await diskPage.close();
+    }
+
+    {
+      const page = await open(browser, live, { width: 375, height: 812 });
+      await page.locator('[data-list-view="table"]').check();
+      await page.waitForTimeout(300);
+      const actions = await page.evaluate(() => {
+        const wrap = document.querySelector(".storage-table-wrap").getBoundingClientRect();
+        const button = document.querySelector(".storage-table .cell-actions [data-row-menu]");
+        const r = button.getBoundingClientRect();
+        return { wrapRight: Math.round(wrap.right), buttonRight: Math.round(r.right), scrollLeft: document.querySelector(".storage-table-wrap").scrollLeft };
+      });
+      truthy("View", "at 375 the table shows a row action at rest", "menu inside the wrap", actions.buttonRight <= actions.wrapRight && actions.scrollLeft === 0, JSON.stringify(actions));
+      await page.close();
+    }
+
+    {
+      const page = await open(browser, live, { width: 820, height: 640 });
+      await page.locator('[data-fk="check"]').focus();
+      await page.keyboard.press("Enter");
+      await page.waitForTimeout(100);
+      const during = await page.evaluate(() => document.activeElement?.getAttribute("data-fk") || document.activeElement?.tagName);
+      await page.waitForTimeout(900);
+      const after = await page.evaluate(() => document.activeElement?.getAttribute("data-fk") || document.activeElement?.tagName);
+      truthy("Keys", "Check for Updates never drops focus", "check during and after", during === "check" && after === "check", `${during} / ${after}`);
+      await page.close();
+    }
+
+    {
+      const duplicated = variant((snapshot) => {
+        snapshot.storages.push({ ...snapshot.storages[0], id: "dup-old", name: "Old copy" });
+      });
+      const page = await open(browser, duplicated);
+      await rowAction(page, live.storages[0].id, "remove");
+      await page.locator('[data-editor-action="confirm-remove"]').click();
+      await page.waitForTimeout(300);
+      const text = await page.locator("main").innerText();
+      truthy("Remove", "removing a ×2 row clears its duplicate", "no Old copy, three rows", !text.includes("Old copy") && (await page.locator(".storage-row").count()) === 3, String(await page.locator(".storage-row").count()));
+      await page.close();
+    }
+
+    {
+      const down = variant((snapshot) => {
+        snapshot.engineRunning = false;
+        snapshot.engineError = "It stopped unexpectedly. Restart it here.";
+      });
+      const page = await open(browser, down, { width: 375, height: 812 });
+      await page.mouse.move(180, 400);
+      await page.mouse.wheel(0, 300);
+      await page.waitForTimeout(300);
+      const wheeled = await page.evaluate(() => {
+        const foot = document.querySelector("#foot").getBoundingClientRect();
+        return {
+          winY: window.scrollY,
+          mainScroll: document.querySelector("#main").scrollTop,
+          footerPinned: Math.abs(foot.bottom - window.innerHeight) <= 1,
+        };
+      });
+      truthy(
+        "Engine",
+        "helper-down at 375 scrolls the content, not the window",
+        "window stays put, footer pinned, content scrolls",
+        wheeled.winY === 0 && wheeled.footerPinned && wheeled.mainScroll > 0,
+        JSON.stringify(wheeled),
+      );
+      await page.close();
+    }
+
+    {
+      const page = await open(browser, live, { width: 820, height: 640 });
+      await page.locator('[data-list-view="table"]').check();
+      await page.waitForTimeout(300);
+      const noWrap = await page.evaluate(() => {
+        const cell = document.querySelector(".storage-table .cell-actions");
+        const primary = cell.querySelector(".row-primary");
+        const menu = cell.querySelector("[data-row-menu]");
+        const a = primary.getBoundingClientRect();
+        const b = menu.getBoundingClientRect();
+        return { cellWidth: Math.round(cell.getBoundingClientRect().width), sameLine: Math.abs(a.top - b.top) < 2, primaryRight: Math.round(a.right), menuLeft: Math.round(b.left) };
+      });
+      truthy("View", "the table's row actions stay on one line", "primary and menu share a top", noWrap.sameLine, JSON.stringify(noWrap));
+      await page.close();
+    }
+
     /* --------------------------------------- Round-5: focus, identity, table, toasts */
     {
       const page = await open(browser, live);

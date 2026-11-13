@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-13T22:55:14.527Z",
+  "generatedAt": "2026-11-13T23:29:53.738Z",
   "appVersion": "0.1.10",
   "checks": [
     {
@@ -2054,6 +2054,70 @@
       "evidence": null
     },
     {
+      "page": "Storage",
+      "id": "the list says when it was checked",
+      "expected": "Checked",
+      "actual": "true",
+      "pass": true,
+      "evidence": "Checked 41 min ago"
+    },
+    {
+      "page": "Footer",
+      "id": "the version pill carries an icon",
+      "expected": "an svg",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Add",
+      "id": "a missing disk is not called connected",
+      "expected": "isn't connected",
+      "actual": "true",
+      "pass": true,
+      "evidence": "Public Space-System pool isn't connected. Reconnect it, then reopen this window."
+    },
+    {
+      "page": "View",
+      "id": "at 375 the table shows a row action at rest",
+      "expected": "menu inside the wrap",
+      "actual": "true",
+      "pass": true,
+      "evidence": "{\"wrapRight\":359,\"buttonRight\":346,\"scrollLeft\":0}"
+    },
+    {
+      "page": "Keys",
+      "id": "Check for Updates never drops focus",
+      "expected": "check during and after",
+      "actual": "true",
+      "pass": true,
+      "evidence": "check / check"
+    },
+    {
+      "page": "Remove",
+      "id": "removing a ×2 row clears its duplicate",
+      "expected": "no Old copy, three rows",
+      "actual": "true",
+      "pass": true,
+      "evidence": "3"
+    },
+    {
+      "page": "Engine",
+      "id": "helper-down at 375 scrolls the content, not the window",
+      "expected": "window stays put, footer pinned, content scrolls",
+      "actual": "true",
+      "pass": true,
+      "evidence": "{\"winY\":0,\"mainScroll\":300,\"footerPinned\":true}"
+    },
+    {
+      "page": "View",
+      "id": "the table's row actions stay on one line",
+      "expected": "primary and menu share a top",
+      "actual": "true",
+      "pass": true,
+      "evidence": "{\"cellWidth\":200,\"sameLine\":true,\"primaryRight\":747,\"menuLeft\":751}"
+    },
+    {
       "page": "Keys",
       "id": "the editor's Test keeps focus on its button",
       "expected": "editor-test",
@@ -2203,7 +2267,7 @@
       "expected": "right edge within the window",
       "actual": "true",
       "pass": true,
-      "evidence": "{\"right\":219,\"edge\":236}"
+      "evidence": "{\"right\":235,\"edge\":236}"
     },
     {
       "page": "Footer",
@@ -2211,7 +2275,7 @@
       "expected": "right edge within the window",
       "actual": "true",
       "pass": true,
-      "evidence": "{\"right\":219,\"edge\":236}"
+      "evidence": "{\"right\":235,\"edge\":236}"
     },
     {
       "page": "Storage",
@@ -2307,8 +2371,8 @@
     "tests/acceptance/screenshots/appearance/appearance-light-820x640.png"
   ],
   "summary": {
-    "total": 281,
-    "passed": 281,
+    "total": 289,
+    "passed": 289,
     "failed": 0
   }
 }

@@ -1,6 +1,6 @@
 # Storage Studio KH — page acceptance
 
-Run: 2026-11-13T22:55:14.527Z · app 0.1.10 · 281/281 checks passed
+Run: 2026-11-13T23:29:53.738Z · app 0.1.10 · 289/289 checks passed
 
 | Page | Check | Expected | Actual | Result |
 | --- | --- | --- | --- | --- |
@@ -260,6 +260,14 @@ Run: 2026-11-13T22:55:14.527Z · app 0.1.10 · 281/281 checks passed
 | Remove | the row menu offers Remove | a confirmation | true | PASS |
 | Remove | menu Remove removes the row | 3 | 3 | PASS |
 | Remove | menu Remove can be undone | Public Space-Media - 4TB - Music returned | true | PASS |
+| Storage | the list says when it was checked | Checked | true | PASS |
+| Footer | the version pill carries an icon | an svg | true | PASS |
+| Add | a missing disk is not called connected | isn't connected | true | PASS |
+| View | at 375 the table shows a row action at rest | menu inside the wrap | true | PASS |
+| Keys | Check for Updates never drops focus | check during and after | true | PASS |
+| Remove | removing a ×2 row clears its duplicate | no Old copy, three rows | true | PASS |
+| Engine | helper-down at 375 scrolls the content, not the window | window stays put, footer pinned, content scrolls | true | PASS |
+| View | the table's row actions stay on one line | primary and menu share a top | true | PASS |
 | Keys | the editor's Test keeps focus on its button | editor-test | true | PASS |
 | Add | a trailing slash is the same share | Save disabled with the duplicate reason | true | PASS |
 | Add | percent escapes are the same share | Save disabled with the duplicate reason | true | PASS |
