@@ -315,6 +315,7 @@ fn snapshot(app: &AppHandle) -> Snapshot {
     let second_instance = *state.second_instance.lock().unwrap();
     let launch_at_login_error = state.login_error.lock().unwrap().clone();
     let engine_running = state.helper.lock().unwrap().is_some();
+    let last_checked = *state.last_checked.lock().unwrap();
     Snapshot {
         app_name: APP_NAME.into(),
         version: APP_VERSION.into(),
@@ -329,7 +330,7 @@ fn snapshot(app: &AppHandle) -> Snapshot {
         launch_at_login_enabled: login_item::is_enabled(),
         launch_at_login_error,
         engine_running,
-        last_checked: *state.last_checked.lock().unwrap(),
+        last_checked,
         engine_error,
         second_instance,
     }

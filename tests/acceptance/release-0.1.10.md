@@ -1,7 +1,6 @@
 # Storage Studio KH 0.1.10 — release evidence
 
-Status: **in progress** (last updated 2026-11-14 01:05Z). Everything below is measured; the
-unfilled rows are pending and are never to be read as passed.
+Status: **released** (2026-11-14 01:41Z). Every row below is measured evidence.
 
 ## Source
 
@@ -42,15 +41,22 @@ unfilled rows are pending and are never to be read as passed.
 | 7 | FAIL 3/3/3/3/3 — 8 findings, fixed at 158349f | `critic-round7.md` |
 | 8 | FAIL 3/3/4/2/3 — 5 findings, fixed at f9e8148 | `critic-round8.md` |
 | 9 | FAIL 4/4/3/3/3 — 5 findings, fixed at 3b005c6 | `critic-round9.md` |
-| 10 | running on 3b005c6 (release verdict) | — |
+| 10 | **PASS 5×4/4**, no defects — release verdict on 3b005c6 | `critic-round10.md` |
 
 ## Native gate (story-mini, macmini-angkor)
 
-- Pending 0.1.10 install: `tests/gate.sh` (6 checks) and `tests/mini-reopen.sh` (5 checks). 0.1.9
-  passed both earlier this session.
+- 0.1.10 installed from the DMG. `tests/gate.sh`: **6/6 PASS** (launch + helper, bounded retry → one
+  needs-attention, second launch handled, quit stops the helper, force-quit leaves no helper, no
+  launchd residue). `tests/mini-reopen.sh`: **5/5 PASS** (hidden start, open -a, open -n -a,
+  show/hide/show).
 
 ## Artifact, publish and readback
 
-- DMG: pending (metered `PEAK storage-build`).
-- Served feed 1301: currently 0.1.8; 0.1.10 publish pending, with served artifact sha256 and
-  readback.
+- DMG: `dist/Storage Studio KH-0.1.10.dmg`, **sha256
+  `4828c667d8ba4725ce1b393d0d5fd2f67c6d83c941f22769b76d33717732af22`**, 4,464,688 bytes. Retention:
+  0.1.10 + served 0.1.8 (0.1.9 was internal and retired earlier).
+- Metered build: **`PEAK storage-build 3470 MB over 83s`** (after disk cleanup; UI peak 794 MB max
+  across runs).
+- Published through 1301: feed offers **storage-studio 0.1.10 (previous 0.1.8)**, released
+  2026-11-14T01:41:02Z. Served artifact downloaded over HTTP from the feed host hashes to the same
+  `4828c667…32af22`; feed entry sha256 and bytes match.
