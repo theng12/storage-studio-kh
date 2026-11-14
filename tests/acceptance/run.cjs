@@ -1237,6 +1237,18 @@ async function noOverflow(page, id) {
       truthy("Completeness", "forget sends remove_credentials", "removeCredentials true", last?.args?.input?.removeCredentials === true, JSON.stringify(last?.args));
       const forgetToast = (await page.locator(".toast").allInnerTexts()).join(" ");
       truthy("Completeness", "the forget toast names the forgotten password", "forgotten", forgetToast.includes("forgotten"), forgetToast);
+      await page.waitForTimeout(200);
+      await rowAction(page, live.storages[0].id, "edit");
+      const placeholder = await page.locator('input[name="password"]').getAttribute("placeholder");
+      truthy(
+        "Completeness",
+        "after forgetting, the field does not promise a saved password",
+        "no keep phrase",
+        !String(placeholder).includes("keep the saved one"),
+        String(placeholder),
+      );
+      eq("Completeness", "the forget control disappears once nothing is saved", 0, await page.locator('input[name="forgetPassword"]').count());
+      await closeEditorDiscarding(page);
       await page.close();
     }
 
@@ -1561,6 +1573,20 @@ async function noOverflow(page, id) {
       await page.close();
     }
 
+    {
+      const page = await open(browser, live, { width: 820, height: 640 });
+      await page.evaluate(() => document.body.focus());
+      await page.waitForTimeout(50);
+      await page.keyboard.press("Tab");
+      const firstStop = await page.evaluate(() => document.activeElement?.getAttribute("data-fk") || document.activeElement?.tagName);
+      truthy("Keys", "the first Tab reaches the navigation", "nav-storage", firstStop === "nav-storage", String(firstStop));
+      await page.locator('[data-fk="check"]').focus();
+      await page.keyboard.press("Tab");
+      const wrapped = await page.evaluate(() => document.activeElement?.getAttribute("data-fk") || document.activeElement?.tagName);
+      truthy("Keys", "Tab wraps from the footer to the navigation", "nav-storage", wrapped === "nav-storage", String(wrapped));
+      await page.close();
+    }
+
     /* ------------------------------------------- Round-8: root height, 768 table, undo state */
     {
       const page = await open(browser, live, { width: 375, height: 812 });
@@ -1680,15 +1706,16 @@ async function noOverflow(page, id) {
       await page.locator('[data-fk="nav-appearance"]').click();
       const control = await page.evaluate(() => {
         const segmented = document.querySelector(".appearance-block .segmented");
+        const row = document.querySelector(".appearance-block .setting-row");
         return {
           width: Math.round(segmented.getBoundingClientRect().width),
-          nested: document.querySelectorAll(".group .segmented").length,
+          rowWidth: Math.round(row.getBoundingClientRect().width),
           segments: [...segmented.querySelectorAll("label")].map((el) => Math.round(el.getBoundingClientRect().width)),
         };
       });
       truthy("Appearance", "segmented control is content-sized", "narrower than 400", control.width < 400, JSON.stringify(control));
       eq("Appearance", "three equal segments", 3, new Set(control.segments).size);
-      eq("Appearance", "no nested card around the control", 0, control.nested);
+      truthy("Appearance", "the settings row fills the page", "row wider than 500 at 820", control.rowWidth > 500, JSON.stringify(control));
       await shot(page, "appearance/appearance-light-820x640");
       await page.close();
     }

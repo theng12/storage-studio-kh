@@ -1,0 +1,158 @@
+{
+ "menu_open": {
+  "exists": true,
+  "display": "block",
+  "visibility": "visible",
+  "opacity": "1",
+  "hidden": false,
+  "ariaHidden": null,
+  "rect": {
+   "x": 265,
+   "y": 387,
+   "w": 180,
+   "h": 122
+  },
+  "inDom": true,
+  "expanded": "row-studio-nas-menu",
+  "active": "row-studio-nas-unmount"
+ },
+ "menu_down": {
+  "exists": true,
+  "display": "block",
+  "visibility": "visible",
+  "opacity": "1",
+  "hidden": false,
+  "ariaHidden": null,
+  "rect": {
+   "x": 265,
+   "y": 387,
+   "w": 180,
+   "h": 122
+  },
+  "inDom": true,
+  "expanded": "row-studio-nas-menu",
+  "active": "row-studio-nas-test"
+ },
+ "menu_esc": {
+  "exists": true,
+  "display": "none",
+  "visibility": "visible",
+  "opacity": "1",
+  "hidden": true,
+  "ariaHidden": null,
+  "rect": {
+   "x": 0,
+   "y": 0,
+   "w": 0,
+   "h": 0
+  },
+  "inDom": true,
+  "expanded": null,
+  "active": "row-studio-nas-menu"
+ },
+ "menu_outside": {
+  "exists": true,
+  "display": "none",
+  "visibility": "visible",
+  "opacity": "1",
+  "hidden": true,
+  "ariaHidden": null,
+  "rect": {
+   "x": 0,
+   "y": 0,
+   "w": 0,
+   "h": 0
+  },
+  "inDom": true,
+  "expanded": null,
+  "active": "Storage\n        1 of 3 storage"
+ },
+ "menu_375": {
+  "rect": {
+   "x": 8,
+   "y": 587,
+   "w": 180,
+   "h": 94,
+   "bottom": 681,
+   "right": 188
+  },
+  "inside": true,
+  "doc": {
+   "sh": 812,
+   "ch": 812
+  },
+  "items": [
+   "Test",
+   "Edit",
+   "Remove…"
+  ]
+ },
+ "menu_768": {
+  "rect": {
+   "x": 224,
+   "y": 673,
+   "w": 180,
+   "h": 94,
+   "bottom": 767,
+   "right": 404
+  },
+  "inside": true,
+  "doc": {
+   "sh": 900,
+   "ch": 900
+  },
+  "items": [
+   "Test",
+   "Edit",
+   "Remove…"
+  ]
+ },
+ "menu_820": {
+  "rect": {
+   "x": 224,
+   "y": 507,
+   "w": 180,
+   "h": 94,
+   "bottom": 601,
+   "right": 404
+  },
+  "inside": true,
+  "doc": {
+   "sh": 640,
+   "ch": 640
+  },
+  "items": [
+   "Test",
+   "Edit",
+   "Remove…"
+  ]
+ },
+ "menu_1440": {
+  "rect": {
+   "x": 997,
+   "y": 347,
+   "w": 180,
+   "h": 94,
+   "bottom": 441,
+   "right": 1177
+  },
+  "inside": true,
+  "doc": {
+   "sh": 900,
+   "ch": 900
+  },
+  "items": [
+   "Test",
+   "Edit",
+   "Remove…"
+  ]
+ },
+ "confirm_html": "<dialog class=\"sheet\" id=\"editor\" aria-labelledby=\"editor-title\" open=\"\">\n      <div class=\"sheet-head\">\n        <h2 id=\"editor-title\">Discard changes?</h2>\n        <p class=\"sheet-sub\">Your edits to this storage haven't been saved.</p>\n      </div>\n      <div class=\"sheet-body\">\n        <p class=\"confirm-text\">Closing now loses them. Keep editing to go back.</p>\n      </div>\n      <div class=\"sheet-actions\">\n        <button type=\"button\" class=\"btn btn-danger\" data-editor-action=\"discard\" data-fk=\"editor-discard\">Discard changes</button>\n        <span class=\"spacer\"></span>\n        <button type=\"button\" class=\"btn btn-primary\" data-editor-action=\"keep-editing\" data-fk=\"editor-keep-editing\">Keep editing</button>\n      </div></dialog>",
+ "confirm_state": {
+  "open": true,
+  "modal": null,
+  "inputs": []
+ },
+ "keep_count": 0,
+ "error": "TimeoutError: locator.click: Timeout 30000ms exceeded.\nCall log:\n  - waiting for locator('[data-editor-action=\"keep\"]')\n"
+}

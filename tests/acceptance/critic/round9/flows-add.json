@@ -1,0 +1,384 @@
+{
+ "add375_opened": {
+  "doc": {
+   "sh": 812,
+   "ch": 812,
+   "sw": 375,
+   "cw": 375
+  },
+  "foot": {
+   "x": 0,
+   "y": 708.2,
+   "w": 375,
+   "h": 103.8,
+   "bottom": 812,
+   "right": 375
+  },
+  "toast": {
+   "x": 12,
+   "y": 789.2,
+   "w": 351,
+   "h": 14.8,
+   "bottom": 804,
+   "right": 363
+  },
+  "toastText": "Version 0.2.0 is available",
+  "active": {
+   "tag": "INPUT",
+   "id": "",
+   "fk": "editor-name",
+   "text": "",
+   "rect": {
+    "x": 48,
+    "y": 175.4,
+    "w": 279,
+    "h": 30,
+    "bottom": 205.4,
+    "right": 327
+   },
+   "visible": true
+  },
+  "main": {
+   "top": 0,
+   "sh": 904,
+   "ch": 661
+  },
+  "sheet": {
+   "x": 24,
+   "y": 68.9,
+   "w": 327,
+   "h": 674.2,
+   "bottom": 743.1,
+   "right": 351
+  },
+  "sheetInside": true,
+  "rowCount": 3,
+  "bodyText": "Storage\nGeneral\nAppearance\nStorage\n\n1 of 3 storages mounted, 1 needs attention, 1 unreachable.\n\nAdd storage\nNeeds attention\n1\nShow\nCan't be reached\n1\nShow\nStorage list checked just now\nCards\nTable\nStudio NASSMB share\n, SMB share\nMounted\n\nConnected as studio.\n\nMounted at\n/Volumes/studio\nAddress\nsmb://nas.local/studio\nReconnects\nAt login · after wake\nOpen in Finder\nArchive ShareSMB share\n, SMB share\nNeeds attention\n\nThe share couldn't be reached after three tries.\n\nMounted at\nNot mounted\nAddress\nsmb://archive.local/backups\nReconnects\nAt login · not after wake\nMount now\nEditing SSDAttached disk\n, Attached disk\nUnreachable\n\nThe disk isn't connected right now.\n\nMounted at\nNot mounted\nReconnects\nAt login · after wake\nMount now\nSupport this app\nStorage Studio KH v0.1.10\n\nVersion 0.2.0 is available\n\nAdd storage\n\nA share or disk that reconnects on its own.\n\nName\nKind\nSMB share\nAttached disk\nFrom a connected share\nPublic Space-Media - 4TB - Music\n/Volumes/Public Space-Media - 4TB - Music\nAdd\nShare address (host + share)\nBrowse…\nUser name (optional)\nPassword (optional)\nMount point (optional)\nLeave blank and macOS chooses a folder in /Volumes.\nReconnect at login\nReconnect after wake\nCancel\nTest\nSave"
+ },
+ "add375_tabtrap": {
+  "escapes": [],
+  "offscreen": []
+ },
+ "add375_saveEnabled": true,
+ "add375_saved": {
+  "doc": {
+   "sh": 812,
+   "ch": 812,
+   "sw": 375,
+   "cw": 375
+  },
+  "foot": {
+   "x": 0,
+   "y": 708.2,
+   "w": 375,
+   "h": 103.8,
+   "bottom": 812,
+   "right": 375
+  },
+  "toast": {
+   "x": 12,
+   "y": 789.2,
+   "w": 351,
+   "h": 14.8,
+   "bottom": 804,
+   "right": 363
+  },
+  "toastText": "Version 0.2.0 is available",
+  "active": {
+   "tag": "BUTTON",
+   "id": "",
+   "fk": "row-s1794615345915-menu",
+   "text": "",
+   "rect": {
+    "x": 128,
+    "y": 571.2,
+    "w": 28,
+    "h": 28,
+    "bottom": 599.2,
+    "right": 156
+   },
+   "visible": true
+  },
+  "main": {
+   "top": 412,
+   "sh": 1089,
+   "ch": 661
+  },
+  "sheet": {
+   "x": 0,
+   "y": 0,
+   "w": 0,
+   "h": 0,
+   "bottom": 0,
+   "right": 0
+  },
+  "sheetInside": true,
+  "rowCount": 4,
+  "bodyText": "Storage\nGeneral\nAppearance\nStorage\n\n1 of 4 storages mounted, 1 needs attention, 1 unreachable, 1 not mounted.\n\nAdd storage\nNeeds attention\n1\nShow\nCan't be reached\n1\nShow\nStorage list checked just now\nCards\nTable\nStudio NASSMB share\n, SMB share\nMounted\n\nConnected as studio.\n\nMounted at\n/Volumes/studio\nAddress\nsmb://nas.local/studio\nReconnects\nAt login · after wake\nOpen in Finder\nArchive ShareSMB share\n, SMB share\nNeeds attention\n\nThe share couldn't be reached after three tries.\n\nMounted at\nNot mounted\nAddress\nsmb://archive.local/backups\nReconnects\nAt login · not after wake\nMount now\nEditing SSDAttached disk\n, Attached disk\nUnreachable\n\nThe disk isn't connected right now.\n\nMounted at\nNot mounted\nReconnects\nAt login · after wake\nMount now\nPocket ShareSMB share\n, SMB share\nNot mounted\nMounted at\nNot mounted\nAddress\nsmb://pocket.local/media\nReconnects\nAt login · after wake\nMount now\nSupport this app\nStorage Studio KH v0.1.10\n\nVersion 0.2.0 is available\n\nAdded Pocket Share.\nMount now"
+ },
+ "add375_scrolled": {
+  "sy": 0
+ },
+ "add375_after": {
+  "doc": 812,
+  "row": "Studio NASSMB share\n, SMB share\nMounted\n\nConnected as studio.\n\nMounted at\n/Volum",
+  "storages": [
+   "studio-nas",
+   "archive",
+   "editing-ssd",
+   "s1794615345915"
+  ]
+ },
+ "add820_opened": {
+  "doc": {
+   "sh": 640,
+   "ch": 640,
+   "sw": 820,
+   "cw": 820
+  },
+  "foot": {
+   "x": 0,
+   "y": 532.2,
+   "w": 236,
+   "h": 107.8,
+   "bottom": 640,
+   "right": 236
+  },
+  "toast": {
+   "x": 6,
+   "y": 617.2,
+   "w": 223,
+   "h": 14.8,
+   "bottom": 632,
+   "right": 229
+  },
+  "toastText": "Version 0.2.0 is available",
+  "active": {
+   "tag": "INPUT",
+   "id": "",
+   "fk": "editor-name",
+   "text": "",
+   "rect": {
+    "x": 194,
+    "y": 110.8,
+    "w": 432,
+    "h": 30,
+    "bottom": 140.8,
+    "right": 626
+   },
+   "visible": true
+  },
+  "main": {
+   "top": 0,
+   "sh": 917,
+   "ch": 640
+  },
+  "sheet": {
+   "x": 170,
+   "y": 8.3,
+   "w": 480,
+   "h": 623.4,
+   "bottom": 631.7,
+   "right": 650
+  },
+  "sheetInside": true,
+  "rowCount": 3,
+  "bodyText": "Storage\nGeneral\nAppearance\nStorage\n\n1 of 3 storages mounted, 1 needs attention, 1 unreachable.\n\nAdd storage\nNeeds attention\n1\nShow\nCan't be reached\n1\nShow\nStorage list checked just now\nCards\nTable\nStudio NASSMB share\n, SMB share\nMounted\n\nConnected as studio.\n\nMounted at\n/Volumes/studio\nAddress\nsmb://nas.local/studio\nReconnects\nAt login · after wake\nOpen in Finder\nArchive ShareSMB share\n, SMB share\nNeeds attention\n\nThe share couldn't be reached after three tries.\n\nMounted at\nNot mounted\nAddress\nsmb://archive.local/backups\nReconnects\nAt login · not after wake\nMount now\nEditing SSDAttached disk\n, Attached disk\nUnreachable\n\nThe disk isn't connected right now.\n\nMounted at\nNot mounted\nReconnects\nAt login · after wake\nMount now\nSupport this app\nStorage Studio KH v0.1.10\n\nVersion 0.2.0 is available\n\nAdd storage\n\nA share or disk that reconnects on its own.\n\nName\nKind\nSMB share\nAttached disk\nFrom a connected share\nPublic Space-Media - 4TB - Music\n/Volumes/Public Space-Media - 4TB - Music\nAdd\nShare address (host + share)\nBrowse…\nUser name (optional)\nPassword (optional)\nMount point (optional)\nLeave blank and macOS chooses a folder in /Volumes.\nReconnect at login\nReconnect after wake\nCancel\nTest\nSave"
+ },
+ "add820_tabtrap": {
+  "escapes": [],
+  "offscreen": []
+ },
+ "add820_saveEnabled": true,
+ "add820_saved": {
+  "doc": {
+   "sh": 640,
+   "ch": 640,
+   "sw": 820,
+   "cw": 820
+  },
+  "foot": {
+   "x": 0,
+   "y": 532.2,
+   "w": 236,
+   "h": 107.8,
+   "bottom": 640,
+   "right": 236
+  },
+  "toast": {
+   "x": 6,
+   "y": 617.2,
+   "w": 223,
+   "h": 14.8,
+   "bottom": 632,
+   "right": 229
+  },
+  "toastText": "Version 0.2.0 is available",
+  "active": {
+   "tag": "BUTTON",
+   "id": "",
+   "fk": "row-s1794615347632-menu",
+   "text": "",
+   "rect": {
+    "x": 376,
+    "y": 503.3,
+    "w": 28,
+    "h": 28,
+    "bottom": 531.3,
+    "right": 404
+   },
+   "visible": true
+  },
+  "main": {
+   "top": 434,
+   "sh": 1102,
+   "ch": 640
+  },
+  "sheet": {
+   "x": 0,
+   "y": 0,
+   "w": 0,
+   "h": 0,
+   "bottom": 0,
+   "right": 0
+  },
+  "sheetInside": true,
+  "rowCount": 4,
+  "bodyText": "Storage\nGeneral\nAppearance\nStorage\n\n1 of 4 storages mounted, 1 needs attention, 1 unreachable, 1 not mounted.\n\nAdd storage\nNeeds attention\n1\nShow\nCan't be reached\n1\nShow\nStorage list checked just now\nCards\nTable\nStudio NASSMB share\n, SMB share\nMounted\n\nConnected as studio.\n\nMounted at\n/Volumes/studio\nAddress\nsmb://nas.local/studio\nReconnects\nAt login · after wake\nOpen in Finder\nArchive ShareSMB share\n, SMB share\nNeeds attention\n\nThe share couldn't be reached after three tries.\n\nMounted at\nNot mounted\nAddress\nsmb://archive.local/backups\nReconnects\nAt login · not after wake\nMount now\nEditing SSDAttached disk\n, Attached disk\nUnreachable\n\nThe disk isn't connected right now.\n\nMounted at\nNot mounted\nReconnects\nAt login · after wake\nMount now\nPocket ShareSMB share\n, SMB share\nNot mounted\nMounted at\nNot mounted\nAddress\nsmb://pocket.local/media\nReconnects\nAt login · after wake\nMount now\nSupport this app\nStorage Studio KH v0.1.10\n\nVersion 0.2.0 is available\n\nAdded Pocket Share.\nMount now"
+ },
+ "add820_scrolled": {
+  "sy": 0
+ },
+ "add820_after": {
+  "doc": 640,
+  "row": "Studio NASSMB share\n, SMB share\nMounted\n\nConnected as studio.\n\nMounted at\n/Volum",
+  "storages": [
+   "studio-nas",
+   "archive",
+   "editing-ssd",
+   "s1794615347632"
+  ]
+ },
+ "engine_add375": {
+  "doc": {
+   "sh": 812,
+   "ch": 812,
+   "sw": 375,
+   "cw": 375
+  },
+  "foot": {
+   "x": 0,
+   "y": 708.2,
+   "w": 375,
+   "h": 103.8,
+   "bottom": 812,
+   "right": 375
+  },
+  "toast": {
+   "x": 12,
+   "y": 789.2,
+   "w": 351,
+   "h": 14.8,
+   "bottom": 804,
+   "right": 363
+  },
+  "toastText": "Version 0.2.0 is available",
+  "active": {
+   "tag": "BUTTON",
+   "id": "",
+   "fk": "row-s1794615349160-menu",
+   "text": "",
+   "rect": {
+    "x": 128,
+    "y": 571.3,
+    "w": 28,
+    "h": 28,
+    "bottom": 599.3,
+    "right": 156
+   },
+   "visible": true
+  },
+  "main": {
+   "top": 568,
+   "sh": 1245,
+   "ch": 661
+  },
+  "sheet": {
+   "x": 0,
+   "y": 0,
+   "w": 0,
+   "h": 0,
+   "bottom": 0,
+   "right": 0
+  },
+  "sheetInside": true,
+  "rowCount": 4,
+  "bodyText": "Storage\nGeneral\nAppearance\nStorage\n\nHelper isn't running. Helper last reported 07:15 AM. 1 of 4 storages mounted, 1 needs attention, 1 unreachable, 1 not mounted.\n\nAdd storage\n\nThe background helper isn't running\n\nThe helper stopped responding.\n\nRestart helper\nNeeds attention\n1\nShow\nCan't be reached\n1\nShow\nStorage list checked just now\nCards\nTable\nStudio NASSMB share\n, SMB share\nMounted\n\nConnected as studio.\n\nMounted at\n/Volumes/studio\nAddress\nsmb://nas.local/studio\nReconnects\nAt login · after wake\nOpen in Finder\nArchive ShareSMB share\n, SMB share\nNeeds attention\n\nThe share couldn't be reached after three tries.\n\nMounted at\nNot mounted\nAddress\nsmb://archive.local/backups\nReconnects\nAt login · not after wake\nMount now\nEditing SSDAttached disk\n, Attached disk\nUnreachable\n\nThe disk isn't connected right now.\n\nMounted at\nNot mounted\nReconnects\nAt login · after wake\nMount now\nPocket ShareSMB share\n, SMB share\nNot mounted\nMounted at\nNot mounted\nAddress\nsmb://pocket.local/media\nReconnects\nAt login · after wake\nMount now\nSupport this app\nStorage Studio KH v0.1.10\n\nVersion 0.2.0 is available\n\nAdded Pocket Share.\nMount now"
+ },
+ "engine_add375_scroll": {
+  "sy": 0,
+  "sh": 812,
+  "ch": 812
+ },
+ "engine_add820": {
+  "doc": {
+   "sh": 640,
+   "ch": 640,
+   "sw": 820,
+   "cw": 820
+  },
+  "foot": {
+   "x": 0,
+   "y": 532.2,
+   "w": 236,
+   "h": 107.8,
+   "bottom": 640,
+   "right": 236
+  },
+  "toast": {
+   "x": 6,
+   "y": 617.2,
+   "w": 223,
+   "h": 14.8,
+   "bottom": 632,
+   "right": 229
+  },
+  "toastText": "Version 0.2.0 is available",
+  "active": {
+   "tag": "BUTTON",
+   "id": "",
+   "fk": "row-s1794615350493-menu",
+   "text": "",
+   "rect": {
+    "x": 376,
+    "y": 503.4,
+    "w": 28,
+    "h": 28,
+    "bottom": 531.4,
+    "right": 404
+   },
+   "visible": true
+  },
+  "main": {
+   "top": 535,
+   "sh": 1203,
+   "ch": 640
+  },
+  "sheet": {
+   "x": 0,
+   "y": 0,
+   "w": 0,
+   "h": 0,
+   "bottom": 0,
+   "right": 0
+  },
+  "sheetInside": true,
+  "rowCount": 4,
+  "bodyText": "Storage\nGeneral\nAppearance\nStorage\n\nHelper isn't running. Helper last reported 07:15 AM. 1 of 4 storages mounted, 1 needs attention, 1 unreachable, 1 not mounted.\n\nAdd storage\n\nThe background helper isn't running\n\nThe helper stopped responding.\n\nRestart helper\nNeeds attention\n1\nShow\nCan't be reached\n1\nShow\nStorage list checked just now\nCards\nTable\nStudio NASSMB share\n, SMB share\nMounted\n\nConnected as studio.\n\nMounted at\n/Volumes/studio\nAddress\nsmb://nas.local/studio\nReconnects\nAt login · after wake\nOpen in Finder\nArchive ShareSMB share\n, SMB share\nNeeds attention\n\nThe share couldn't be reached after three tries.\n\nMounted at\nNot mounted\nAddress\nsmb://archive.local/backups\nReconnects\nAt login · not after wake\nMount now\nEditing SSDAttached disk\n, Attached disk\nUnreachable\n\nThe disk isn't connected right now.\n\nMounted at\nNot mounted\nReconnects\nAt login · after wake\nMount now\nPocket ShareSMB share\n, SMB share\nNot mounted\nMounted at\nNot mounted\nAddress\nsmb://pocket.local/media\nReconnects\nAt login · after wake\nMount now\nSupport this app\nStorage Studio KH v0.1.10\n\nVersion 0.2.0 is available\n\nAdded Pocket Share.\nMount now"
+ },
+ "engine_add820_scroll": {
+  "sy": 0,
+  "sh": 640,
+  "ch": 640
+ }
+}

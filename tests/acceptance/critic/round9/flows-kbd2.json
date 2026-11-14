@@ -1,0 +1,501 @@
+{
+ "dom375": {
+  "children": [
+   {
+    "tag": "NAV",
+    "cls": "nav",
+    "id": "nav",
+    "clients": [
+     "BUTTON.nav-item is-active",
+     "BUTTON.nav-item",
+     "BUTTON.nav-item"
+    ]
+   },
+   {
+    "tag": "MAIN",
+    "cls": "main",
+    "id": "main",
+    "clients": [
+     "HEADER.page-head",
+     "DIV.storage-toolbar",
+     "UL.storage-list storage-cards"
+    ]
+   },
+   {
+    "tag": "DIV",
+    "cls": "foot",
+    "id": "foot",
+    "clients": [
+     "BUTTON.foot-support",
+     "DIV.foot-updates",
+     "P.update-line"
+    ]
+   }
+  ],
+  "navRect": {
+   "x": 0,
+   "y": 0,
+   "w": 375,
+   "h": 47
+  },
+  "mainRect": {
+   "x": 0,
+   "y": 47,
+   "w": 375,
+   "h": 661.15625
+  },
+  "footRect": {
+   "x": 0,
+   "y": 708.15625,
+   "w": 375,
+   "h": 103.84375
+  },
+  "initial": "MAIN"
+ },
+ "tab375": [
+  {
+   "tag": "BUTTON",
+   "cls": "btn btn-primary",
+   "fk": "add-storage",
+   "text": "Add storage",
+   "y": 63,
+   "x": 239,
+   "visible": true
+  },
+  {
+   "tag": "BUTTON",
+   "cls": "warning-group",
+   "fk": null,
+   "text": "Needs attention\n    1\n",
+   "y": 152,
+   "x": 16,
+   "visible": true
+  },
+  {
+   "tag": "BUTTON",
+   "cls": "warning-group",
+   "fk": null,
+   "text": "Can't be reached\n    1",
+   "y": 152,
+   "x": 180,
+   "visible": true
+  },
+  {
+   "tag": "INPUT",
+   "cls": "",
+   "fk": "view-cards",
+   "text": "",
+   "y": 197,
+   "x": 207,
+   "visible": true
+  },
+  {
+   "tag": "BUTTON",
+   "cls": "row-primary",
+   "fk": "row-studio-nas-reveal",
+   "text": "Open in Finder",
+   "y": 400,
+   "x": 33,
+   "visible": true
+  },
+  {
+   "tag": "BUTTON",
+   "cls": "row-menu-btn",
+   "fk": "row-studio-nas-menu",
+   "text": "",
+   "y": 400,
+   "x": 169,
+   "visible": true
+  },
+  {
+   "tag": "BUTTON",
+   "cls": "row-primary row-primary-accent",
+   "fk": "row-archive-mount",
+   "text": "Mount now",
+   "y": 610,
+   "x": 33,
+   "visible": true
+  },
+  {
+   "tag": "BUTTON",
+   "cls": "row-menu-btn",
+   "fk": "row-archive-menu",
+   "text": "",
+   "y": 610,
+   "x": 128,
+   "visible": true
+  },
+  {
+   "tag": "BUTTON",
+   "cls": "row-primary row-primary-accent",
+   "fk": "row-editing-ssd-mount",
+   "text": "Mount now",
+   "y": 555,
+   "x": 33,
+   "visible": true
+  },
+  {
+   "tag": "BUTTON",
+   "cls": "row-menu-btn",
+   "fk": "row-editing-ssd-menu",
+   "text": "",
+   "y": 555,
+   "x": 128,
+   "visible": true
+  },
+  {
+   "tag": "BUTTON",
+   "cls": "foot-support",
+   "fk": "nav-support",
+   "text": "Support this app",
+   "y": 717,
+   "x": 12,
+   "visible": true
+  },
+  {
+   "tag": "BUTTON",
+   "cls": "pill",
+   "fk": "pill",
+   "text": "Storage Studio KH v0.1",
+   "y": 755,
+   "x": 12,
+   "visible": true
+  },
+  {
+   "tag": "BUTTON",
+   "cls": "icon-btn",
+   "fk": "check",
+   "text": "",
+   "y": 757,
+   "x": 185,
+   "visible": true
+  },
+  {
+   "tag": "BUTTON",
+   "cls": "icon-btn icon-btn-accent",
+   "fk": "download",
+   "text": "",
+   "y": 757,
+   "x": 211,
+   "visible": true
+  },
+  {
+   "tag": "BODY",
+   "cls": "",
+   "fk": null,
+   "text": "StorageGeneralAppearan",
+   "y": 0,
+   "x": 0,
+   "visible": true
+  },
+  {
+   "tag": "BUTTON",
+   "cls": "nav-item is-active",
+   "fk": "nav-storage",
+   "text": "Storage",
+   "y": 8,
+   "x": 12,
+   "visible": true
+  },
+  {
+   "tag": "BUTTON",
+   "cls": "nav-item",
+   "fk": "nav-general",
+   "text": "General",
+   "y": 8,
+   "x": 106,
+   "visible": true
+  },
+  {
+   "tag": "BUTTON",
+   "cls": "nav-item",
+   "fk": "nav-appearance",
+   "text": "Appearance",
+   "y": 8,
+   "x": 198,
+   "visible": true
+  },
+  {
+   "tag": "BUTTON",
+   "cls": "btn btn-primary",
+   "fk": "add-storage",
+   "text": "Add storage",
+   "y": 63,
+   "x": 239,
+   "visible": true
+  },
+  {
+   "tag": "BUTTON",
+   "cls": "warning-group",
+   "fk": null,
+   "text": "Needs attention\n    1\n",
+   "y": 152,
+   "x": 16,
+   "visible": true
+  }
+ ],
+ "dom820": {
+  "children": [
+   {
+    "tag": "NAV",
+    "cls": "nav",
+    "id": "nav",
+    "clients": [
+     "BUTTON.nav-item is-active",
+     "BUTTON.nav-item",
+     "BUTTON.nav-item"
+    ]
+   },
+   {
+    "tag": "MAIN",
+    "cls": "main",
+    "id": "main",
+    "clients": [
+     "HEADER.page-head",
+     "DIV.storage-toolbar",
+     "UL.storage-list storage-cards"
+    ]
+   },
+   {
+    "tag": "DIV",
+    "cls": "foot",
+    "id": "foot",
+    "clients": [
+     "BUTTON.foot-support",
+     "DIV.foot-updates",
+     "P.update-line"
+    ]
+   }
+  ],
+  "navRect": {
+   "x": 0,
+   "y": 0,
+   "w": 236,
+   "h": 532.15625
+  },
+  "mainRect": {
+   "x": 236,
+   "y": 0,
+   "w": 584,
+   "h": 640
+  },
+  "footRect": {
+   "x": 0,
+   "y": 532.15625,
+   "w": 236,
+   "h": 107.84375
+  },
+  "initial": "MAIN"
+ },
+ "tab820": [
+  {
+   "tag": "BUTTON",
+   "cls": "btn btn-primary",
+   "fk": "add-storage",
+   "text": "Add storage",
+   "y": 28,
+   "x": 672,
+   "visible": true
+  },
+  {
+   "tag": "BUTTON",
+   "cls": "warning-group",
+   "fk": null,
+   "text": "Needs attention\n    1\n",
+   "y": 106,
+   "x": 264,
+   "visible": true
+  },
+  {
+   "tag": "BUTTON",
+   "cls": "warning-group",
+   "fk": null,
+   "text": "Can't be reached\n    1",
+   "y": 106,
+   "x": 428,
+   "visible": true
+  },
+  {
+   "tag": "INPUT",
+   "cls": "",
+   "fk": "view-cards",
+   "text": "",
+   "y": 151,
+   "x": 269,
+   "visible": true
+  },
+  {
+   "tag": "BUTTON",
+   "cls": "row-primary",
+   "fk": "row-studio-nas-reveal",
+   "text": "Open in Finder",
+   "y": 355,
+   "x": 281,
+   "visible": true
+  },
+  {
+   "tag": "BUTTON",
+   "cls": "row-menu-btn",
+   "fk": "row-studio-nas-menu",
+   "text": "",
+   "y": 355,
+   "x": 417,
+   "visible": true
+  },
+  {
+   "tag": "BUTTON",
+   "cls": "row-primary row-primary-accent",
+   "fk": "row-archive-mount",
+   "text": "Mount now",
+   "y": 564,
+   "x": 281,
+   "visible": true
+  },
+  {
+   "tag": "BUTTON",
+   "cls": "row-menu-btn",
+   "fk": "row-archive-menu",
+   "text": "",
+   "y": 564,
+   "x": 376,
+   "visible": true
+  },
+  {
+   "tag": "BUTTON",
+   "cls": "row-primary row-primary-accent",
+   "fk": "row-editing-ssd-mount",
+   "text": "Mount now",
+   "y": 475,
+   "x": 281,
+   "visible": true
+  },
+  {
+   "tag": "BUTTON",
+   "cls": "row-menu-btn",
+   "fk": "row-editing-ssd-menu",
+   "text": "",
+   "y": 475,
+   "x": 376,
+   "visible": true
+  },
+  {
+   "tag": "BUTTON",
+   "cls": "foot-support",
+   "fk": "nav-support",
+   "text": "Support this app",
+   "y": 545,
+   "x": 6,
+   "visible": true
+  },
+  {
+   "tag": "BUTTON",
+   "cls": "pill",
+   "fk": "pill",
+   "text": "Storage Studio KH v0.1",
+   "y": 583,
+   "x": 14,
+   "visible": true
+  },
+  {
+   "tag": "BUTTON",
+   "cls": "icon-btn",
+   "fk": "check",
+   "text": "",
+   "y": 585,
+   "x": 187,
+   "visible": true
+  },
+  {
+   "tag": "BUTTON",
+   "cls": "icon-btn icon-btn-accent",
+   "fk": "download",
+   "text": "",
+   "y": 585,
+   "x": 213,
+   "visible": true
+  },
+  {
+   "tag": "BODY",
+   "cls": "",
+   "fk": null,
+   "text": "StorageGeneralAppearan",
+   "y": 0,
+   "x": 0,
+   "visible": true
+  },
+  {
+   "tag": "BUTTON",
+   "cls": "nav-item is-active",
+   "fk": "nav-storage",
+   "text": "Storage",
+   "y": 16,
+   "x": 6,
+   "visible": true
+  },
+  {
+   "tag": "BUTTON",
+   "cls": "nav-item",
+   "fk": "nav-general",
+   "text": "General",
+   "y": 50,
+   "x": 6,
+   "visible": true
+  },
+  {
+   "tag": "BUTTON",
+   "cls": "nav-item",
+   "fk": "nav-appearance",
+   "text": "Appearance",
+   "y": 84,
+   "x": 6,
+   "visible": true
+  },
+  {
+   "tag": "BUTTON",
+   "cls": "btn btn-primary",
+   "fk": "add-storage",
+   "text": "Add storage",
+   "y": 28,
+   "x": 672,
+   "visible": true
+  },
+  {
+   "tag": "BUTTON",
+   "cls": "warning-group",
+   "fk": null,
+   "text": "Needs attention\n    1\n",
+   "y": 106,
+   "x": 264,
+   "visible": true
+  }
+ ],
+ "unnamed": [],
+ "notif": {
+  "before": true,
+  "after": false,
+  "toast": null,
+  "live": [
+   "Version 0.2.0 is available"
+  ]
+ },
+ "retries": {
+  "value": "5",
+  "toast": null,
+  "live": [
+   "Version 0.2.0 is available"
+  ]
+ },
+ "copyDark": "Appearance\n\nChoose how Storage Studio KH looks.\n\nSystem\nLight\nDark\n\nStorage Studio KH always uses the dark look.",
+ "copyLight": "Appearance\n\nChoose how Storage Studio KH looks.\n\nSystem\nLight\nDark\n\nStorage Studio KH always uses the light look.",
+ "copySystem": {
+  "text": "Appearance\n\nChoose how Storage Studio KH looks.\n\nSystem\nLight\nDark\n\nSystem follows your Mac's light or dark appearance.",
+  "theme": "light"
+ },
+ "support": {
+  "toast": null,
+  "live": [
+   "Version 0.2.0 is available"
+  ],
+  "text": "Support\n\nHelp keep Storage Studio KH going.\n\nStorage Studio KH is free, with everything unlocked. A one-time donation is optional.\n\nOpen donation page"
+ }
+}

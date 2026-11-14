@@ -1,0 +1,34 @@
+{
+ "warningShow": {
+  "mainTop": 39,
+  "active": "row-archive-mount row-primary row-primary-accent",
+  "archive": {
+   "y": 414.4375,
+   "bottom": 612,
+   "visible": true
+  },
+  "doc": {
+   "sh": 812,
+   "ch": 812
+  }
+ },
+ "editSave": {
+  "dialog": false,
+  "toast": "Saved Studio NAS 2.",
+  "row": "Studio NAS 2SMB share | , SMB share | Mounted |  | Connected as studio. |  | Mounted at | /Volumes/studio | Address | sm",
+  "active": {
+   "tag": "BUTTON",
+   "fk": "row-studio-nas-menu",
+   "visible": true
+  },
+  "doc": {
+   "sh": 640,
+   "ch": 640
+  }
+ },
+ "second": {
+  "toast": "Storage Studio KH is already running. This window is the running copy.",
+  "active": "MAIN null",
+  "text": "at\nNot mounted\nReconnects\nAt login · after wake\nMount now\nSupport this app\nStorage Studio KH v0.1.10\n\nVersion 0.2.0 is available\n\nStorage Studio KH is already running. This window is the running copy."
+ }
+}

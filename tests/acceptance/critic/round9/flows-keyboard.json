@@ -1,0 +1,87 @@
+{
+ "cred_immediate": {
+  "dialog": null,
+  "toast": "Password saved. Trying Archive Share…",
+  "row": "Archive ShareSMB share | , SMB share | Needs attention |  | Sign in to this share to continue. |  | Mounted at | Not mounted | Address | smb://archive.local/backups | Reconnects | At login · not after wake | Mount now",
+  "lede": "1 of 3 storages mounted, 1 needs attention, 1 unreachable.",
+  "live": "Version 0.2.0 is available"
+ },
+ "forget_present": true,
+ "forget_hint": "Forget the saved password\nMount point (optional)",
+ "forget_saved": {
+  "toast": {
+   "text": "Saved Studio NAS. The saved password was forgotten.",
+   "rect": {
+    "x": 484,
+    "y": 571.21875,
+    "width": 320,
+    "height": 52.78125,
+    "top": 571.21875,
+    "right": 804,
+    "bottom": 624,
+    "left": 484
+   }
+  },
+  "dialog": false,
+  "row": "Studio NASSMB share | , SMB share | Mounted |  | Connected as studio. |  | Mounted at | /Volumes/studio | Address | smb://nas.local/studio | Reconnects | At login · after wake | Open in Finder"
+ },
+ "rowmenu_keys": [
+  {
+   "key": "ArrowDown",
+   "open": true,
+   "active": "Test",
+   "visible": true
+  },
+  {
+   "key": "ArrowDown",
+   "open": true,
+   "active": "Edit",
+   "visible": true
+  },
+  {
+   "key": "ArrowUp",
+   "open": true,
+   "active": "Test",
+   "visible": true
+  },
+  {
+   "key": "End",
+   "open": true,
+   "active": "Remove…",
+   "visible": true
+  },
+  {
+   "key": "Home",
+   "open": true,
+   "active": "Unmount",
+   "visible": true
+  },
+  {
+   "key": "Escape",
+   "open": true,
+   "active": "",
+   "visible": true
+  }
+ ],
+ "rowmenu_outside": true,
+ "discard1": {
+  "open": true,
+  "text": "Discard changes?\n\nYour edits to this storage haven't been saved.\n\nClosing now loses them. Keep editing to go back.\n\nDiscard changes\nKeep editing",
+  "active": "Keep editing",
+  "activeVisible": true
+ },
+ "discard2": {
+  "open": true,
+  "text": "Add storage\n\nA share or disk that reconnects on its own.\n\nName\nKind\nSMB share\nAttached disk\nFrom a connected share\nPublic Space-Media - 4TB - Music\n/Volumes/Public Space-Media - 4T"
+ },
+ "discard3": {
+  "open": true,
+  "text": "Discard changes?\n\nYour edits to this storage haven't been saved.\n\nClosing now loses them. Keep editing to go back.\n\nDiscard changes\nKeep editing",
+  "active": "Keep editing"
+ },
+ "discard_keep": {
+  "open": true,
+  "active": "editor-keep-editing"
+ },
+ "error": "TimeoutError: page.focus: Timeout 30000ms exceeded.\nCall log:\n  - waiting for locator('input[name=name]')\n"
+}

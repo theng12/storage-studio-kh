@@ -1,0 +1,106 @@
+{
+ "keep": {
+  "open": true,
+  "text": "Add storage\n\nA share or disk that reconnects on its own.\n\nName\nKind\nSMB share\nAttached disk\nFrom a connected share\nPublic Space-Media - 4TB - Music\n/Volumes/Public Space-Media - 4TB - Music\nAdd\nShare ",
+  "value": "Draft",
+  "active": "INPUT editor-name",
+  "visible": true
+ },
+ "cancel_confirm": "Discard changes?\n\nYour edits to this storage haven't been saved.\n\nClosing now loses them. Keep editing to go back.\n\nDiscard changes\nKeep editing",
+ "discarded": {
+  "open": false,
+  "active": "BUTTON add-storage Add storage",
+  "doc": {
+   "sh": 640,
+   "ch": 640
+  }
+ },
+ "browse": {
+  "text": "Add storage\n\nA share or disk that reconnects on its own.\n\nName\nKind\nSMB share\nAttached disk\nFrom a connected share\nPublic Space-Media - 4TB - Music\n/Volumes/Public Space-Media - 4TB - Music\nAdd\nShare address (host + share)\nBrowse…\n\nEnter the device address first, like smb://studio.local/photos.\n\nUser name (optional)\nPassword (optional)\nMount point (optional)\nLeave blank and macOS chooses a folder in /Volumes.\nReconnect at login\nReconnect after wake\nCancel\nTest\nSave",
+  "active": null,
+  "doc": {
+   "sh": 640,
+   "ch": 640
+  },
+  "sheet": {
+   "x": 170,
+   "y": 8,
+   "w": 480,
+   "h": 624,
+   "inside": true
+  },
+  "buttons": [
+   "Public Space-Media - 4TB - Music\n                /Volumes/Public Space-Media - 4TB - Music\n              \n              Add",
+   "Browse…",
+   "Cancel",
+   "Test",
+   "Save"
+  ]
+ },
+ "browse_esc": {
+  "editorOpen": false,
+  "active": "add-storage",
+  "browseResults": 1
+ },
+ "remove_open": {
+  "text": "Remove Studio NAS?\n\nStorage Studio KH will stop reconnecting it. The files stay where they are.\n\nThis removes the storage from Storage Studio KH, forgets its saved password and clears any duplicate en",
+  "active": "editor-keep"
+ },
+ "remove_esc": {
+  "open": true,
+  "active": "editor-name ",
+  "visible": true
+ },
+ "cred_tab": {
+  "escapes": []
+ },
+ "cred_esc": {
+  "open": false,
+  "active": "row-archive-menu"
+ },
+ "cred_progress": [
+  {
+   "ms": 60,
+   "state": {
+    "toast": "Password saved. Trying Archive Share…",
+    "dialog": false,
+    "row": "Archive ShareSMB share | , SMB share | Needs attention |  | Sign in to this share to continue. |  | Mounted at | Not mounted | Address | smb://archive.local/backups | Reconnects | ",
+    "lede": "1 of 3 storages mounted, 1 needs attention, 1 unreachable."
+   }
+  },
+  {
+   "ms": 200,
+   "state": {
+    "toast": null,
+    "dialog": false,
+    "row": "Archive ShareSMB share | , SMB share | Mounted |  | Connected. |  | Mounted at | /Volumes/Archive Share | Address | smb://archive.local/backups | Reconnects | At login · not after ",
+    "lede": "2 of 3 storages mounted, 1 unreachable."
+   }
+  },
+  {
+   "ms": 500,
+   "state": {
+    "toast": null,
+    "dialog": false,
+    "row": "Archive ShareSMB share | , SMB share | Mounted |  | Connected. |  | Mounted at | /Volumes/Archive Share | Address | smb://archive.local/backups | Reconnects | At login · not after ",
+    "lede": "2 of 3 storages mounted, 1 unreachable."
+   }
+  },
+  {
+   "ms": 900,
+   "state": {
+    "toast": null,
+    "dialog": false,
+    "row": "Archive ShareSMB share | , SMB share | Mounted |  | Connected. |  | Mounted at | /Volumes/Archive Share | Address | smb://archive.local/backups | Reconnects | At login · not after ",
+    "lede": "2 of 3 storages mounted, 1 unreachable."
+   }
+  }
+ ],
+ "forget_toast": "Saved Studio NAS. The saved password was forgotten.",
+ "forget_reopen": {
+  "forget": false,
+  "passwordPlaceholder": "Leave blank to keep the saved one",
+  "user": "studio",
+  "row": "Studio NASSMB share | , SMB share | Mounted |  | Connected as studio. |  | Mounted at | /Volumes/studio | Address | smb://nas.local/studio | Reconnects | At log"
+ }
+}

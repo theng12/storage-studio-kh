@@ -262,7 +262,10 @@ function focusTopDialog(): void {
   target?.focus();
 }
 
+let bootFailed = false;
+
 function renderBootError(error: unknown): void {
+  bootFailed = true;
   snapshot = null;
   // Nothing but Retry works until the app can read its state, so no dead navigation.
   navEl.innerHTML = "";
@@ -679,9 +682,9 @@ function renderGeneral(): string {
 }
 
 function appearanceNote(choice: ThemeChoice): string {
-  if (choice === "light") return "Storage Studio KH always uses the light look.";
-  if (choice === "dark") return "Storage Studio KH always uses the dark look.";
-  return "System follows your Mac's light or dark appearance.";
+  if (choice === "light") return "This window is using the light look.";
+  if (choice === "dark") return "This window is using the dark look.";
+  return "This window follows your Mac's light or dark appearance.";
 }
 
 function renderAppearance(): string {
@@ -701,22 +704,27 @@ function renderAppearance(): string {
       </div>
     </header>
     ${renderEngineBannerIfNeeded()}
-    <section class="appearance-block" aria-label="Appearance">
-      <div class="segmented" role="radiogroup" aria-label="Appearance">
-        ${options
-          .map(
-            (option) => `
-          <label>
-            <input type="radio" name="appearance" value="${option.value}" data-appearance="${option.value}" data-fk="appearance-${option.value}" ${
-              choice === option.value ? "checked" : ""
-            }${appearanceBusy ? " disabled" : ""} />
-            <span>${option.icon}${option.label}</span>
-          </label>`,
-          )
-          .join("")}
+    <section class="group appearance-block" aria-label="Appearance">
+      <div class="setting-row">
+        <div class="setting-copy">
+          <span class="setting-title">Appearance</span>
+          <p class="setting-hint">${esc(appearanceNote(choice))}</p>
+        </div>
+        <div class="segmented" role="radiogroup" aria-label="Appearance">
+          ${options
+            .map(
+              (option) => `
+            <label>
+              <input type="radio" name="appearance" value="${option.value}" data-appearance="${option.value}" data-fk="appearance-${option.value}" ${
+                choice === option.value ? "checked" : ""
+              }${appearanceBusy ? " disabled" : ""} />
+              <span>${option.icon}${option.label}</span>
+            </label>`,
+            )
+            .join("")}
+        </div>
       </div>
-    </section>
-    <p class="note">${esc(appearanceNote(choice))}</p>`;
+    </section>`;
 }
 
 function renderSupport(): string {
@@ -979,7 +987,11 @@ function renderEditor(): void {
         <label class="field">
           <span class="field-label">Password (optional)</span>
           <input type="password" name="password" value="${esc(d.password)}" placeholder="${
-            d.removeCredentials ? "Saved password will be forgotten" : isEdit ? "Leave blank to keep the saved one" : "Stored privately by Storage Studio KH"
+            d.removeCredentials
+              ? "Saved password will be forgotten"
+              : savedCredentials
+                ? "Leave blank to keep the saved one"
+                : "Stored privately by Storage Studio KH"
           }" autocomplete="off"${editor.busy || d.removeCredentials ? " disabled" : ""} />
         </label>
         ${
@@ -1936,6 +1948,25 @@ function wireEvents(): void {
   });
 
   document.addEventListener("keydown", (event) => {
+    if (event.key !== "Tab" || document.querySelector("dialog[open]")) return;
+    const focusables = Array.from(
+      document.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      ),
+    ).filter((element) => element.offsetParent !== null);
+    if (focusables.length < 2) return;
+    const first = focusables[0];
+    const last = focusables[focusables.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  });
+
+  document.addEventListener("keydown", (event) => {
     if (event.key === "Escape" && openMenuFor) {
       event.preventDefault();
       closeRowMenu(true);
@@ -2178,7 +2209,10 @@ async function boot(): Promise<void> {
     if (snapshot.secondInstance) showSecondInstance();
     render();
     applyDevLocation();
-    if (document.activeElement === document.body) mainEl.focus({ preventScroll: true });
+    if (bootFailed) {
+      bootFailed = false;
+      if (document.activeElement === document.body) mainEl.focus({ preventScroll: true });
+    }
   } catch (error) {
     renderBootError(error);
   } finally {

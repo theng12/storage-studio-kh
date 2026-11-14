@@ -1069,6 +1069,20 @@ h3 {
 
 /* Below 1100px the table keeps Storage, Status, Address and Actions; the pinned Actions cell
    would otherwise cover the middle columns. */
+@media (max-width: 899px) {
+  .storage-table .cell-name {
+    min-width: 140px;
+  }
+
+  .storage-table .cell-status {
+    min-width: 120px;
+  }
+
+  .storage-table .cell-actions {
+    min-width: 190px;
+  }
+}
+
 @media (max-width: 1099px) {
   .storage-table th:nth-child(4),
   .storage-table th:nth-child(5),
@@ -1328,8 +1342,8 @@ select.number-input {
   opacity: 0.55;
 }
 
-.appearance-block {
-  padding: 0;
+.appearance-block .setting-row {
+  align-items: center;
 }
 
 .appearance-block .segmented {
@@ -1341,10 +1355,6 @@ select.number-input {
 .appearance-block .segmented label {
   flex: 1 1 0;
   min-width: 104px;
-}
-
-.appearance-block .note {
-  margin-top: var(--s-m);
 }
 
 /* Support ------------------------------------------------------------- */

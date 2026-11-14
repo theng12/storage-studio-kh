@@ -1,0 +1,977 @@
+{
+ "page-general-375": {
+  "h1": "General",
+  "text": "General\n\nHow Storage Studio KH behaves on this Mac.\n\nNotifications\n\nTell me when a storage reconnects or stops trying.\n\nLaunch at login\n\nStart Storage Studio KH when you log in, so your storage reconnects without opening the app.\n\nRetries before it stops\n\nChoose from 1 to 8. The default is 3.\n\n1\n2\n3\n4\n5\n6\n7\n8\n\nAfter a failure it tries again after 5 s, 15 s and 60 s, then stops and marks the storage Needs attention until you choose Mount now.",
+  "doc": {
+   "sh": 812,
+   "ch": 812,
+   "sw": 375,
+   "cw": 375
+  },
+  "main": {
+   "x": 0,
+   "y": 47,
+   "w": 375,
+   "h": 661.2,
+   "bottom": 708.2,
+   "right": 375,
+   "sh": 661,
+   "ch": 661,
+   "scrollTop": 0
+  },
+  "content": null,
+  "foot": {
+   "x": 0,
+   "y": 708.2,
+   "w": 375,
+   "h": 103.8,
+   "bottom": 812,
+   "right": 375
+  },
+  "docScrollable": false,
+  "controls": [
+   {
+    "tag": "INPUT",
+    "type": "checkbox",
+    "text": "on",
+    "name": "",
+    "checked": true,
+    "disabled": false,
+    "aria": null
+   },
+   {
+    "tag": "INPUT",
+    "type": "checkbox",
+    "text": "on",
+    "name": "",
+    "checked": true,
+    "disabled": false,
+    "aria": null
+   },
+   {
+    "tag": "SELECT",
+    "type": "select-one",
+    "text": "12345678",
+    "name": "",
+    "disabled": false,
+    "aria": null
+   }
+  ]
+ },
+ "page-appearance-375": {
+  "h1": "Appearance",
+  "text": "Appearance\n\nChoose how Storage Studio KH looks.\n\nSystem\nLight\nDark\n\nStorage Studio KH always uses the light look.",
+  "doc": {
+   "sh": 812,
+   "ch": 812,
+   "sw": 375,
+   "cw": 375
+  },
+  "main": {
+   "x": 0,
+   "y": 47,
+   "w": 375,
+   "h": 661.2,
+   "bottom": 708.2,
+   "right": 375,
+   "sh": 661,
+   "ch": 661,
+   "scrollTop": 0
+  },
+  "content": null,
+  "foot": {
+   "x": 0,
+   "y": 708.2,
+   "w": 375,
+   "h": 103.8,
+   "bottom": 812,
+   "right": 375
+  },
+  "docScrollable": false,
+  "controls": [
+   {
+    "tag": "INPUT",
+    "type": "radio",
+    "text": "system",
+    "name": "appearance",
+    "checked": false,
+    "disabled": false,
+    "aria": null
+   },
+   {
+    "tag": "INPUT",
+    "type": "radio",
+    "text": "light",
+    "name": "appearance",
+    "checked": true,
+    "disabled": false,
+    "aria": null
+   },
+   {
+    "tag": "INPUT",
+    "type": "radio",
+    "text": "dark",
+    "name": "appearance",
+    "checked": false,
+    "disabled": false,
+    "aria": null
+   }
+  ]
+ },
+ "page-support-375": {
+  "h1": "Support",
+  "text": "Support\n\nHelp keep Storage Studio KH going.\n\nStorage Studio KH is free, with everything unlocked. A one-time donation is optional.\n\nOpen donation page",
+  "doc": {
+   "sh": 812,
+   "ch": 812,
+   "sw": 375,
+   "cw": 375
+  },
+  "main": {
+   "x": 0,
+   "y": 47,
+   "w": 375,
+   "h": 661.2,
+   "bottom": 708.2,
+   "right": 375,
+   "sh": 661,
+   "ch": 661,
+   "scrollTop": 0
+  },
+  "content": null,
+  "foot": {
+   "x": 0,
+   "y": 708.2,
+   "w": 375,
+   "h": 103.8,
+   "bottom": 812,
+   "right": 375
+  },
+  "docScrollable": false,
+  "controls": [
+   {
+    "tag": "BUTTON",
+    "type": "button",
+    "text": "Open donation page",
+    "name": "",
+    "disabled": false,
+    "aria": null
+   }
+  ]
+ },
+ "page-general-768": {
+  "h1": "General",
+  "text": "General\n\nHow Storage Studio KH behaves on this Mac.\n\nNotifications\n\nTell me when a storage reconnects or stops trying.\n\nLaunch at login\n\nStart Storage Studio KH when you log in, so your storage reconnects without opening the app.\n\nRetries before it stops\n\nChoose from 1 to 8. The default is 3.\n\n1\n2\n3\n4\n5\n6\n7\n8\n\nAfter a failure it tries again after 5 s, 15 s and 60 s, then stops and marks the storage Needs attention until you choose Mount now.",
+  "doc": {
+   "sh": 900,
+   "ch": 900,
+   "sw": 768,
+   "cw": 768
+  },
+  "main": {
+   "x": 236,
+   "y": 0,
+   "w": 532,
+   "h": 900,
+   "bottom": 900,
+   "right": 768,
+   "sh": 900,
+   "ch": 900,
+   "scrollTop": 0
+  },
+  "content": null,
+  "foot": {
+   "x": 0,
+   "y": 792.2,
+   "w": 236,
+   "h": 107.8,
+   "bottom": 900,
+   "right": 236
+  },
+  "docScrollable": false,
+  "controls": [
+   {
+    "tag": "INPUT",
+    "type": "checkbox",
+    "text": "on",
+    "name": "",
+    "checked": true,
+    "disabled": false,
+    "aria": null
+   },
+   {
+    "tag": "INPUT",
+    "type": "checkbox",
+    "text": "on",
+    "name": "",
+    "checked": true,
+    "disabled": false,
+    "aria": null
+   },
+   {
+    "tag": "SELECT",
+    "type": "select-one",
+    "text": "12345678",
+    "name": "",
+    "disabled": false,
+    "aria": null
+   }
+  ]
+ },
+ "page-appearance-768": {
+  "h1": "Appearance",
+  "text": "Appearance\n\nChoose how Storage Studio KH looks.\n\nSystem\nLight\nDark\n\nStorage Studio KH always uses the light look.",
+  "doc": {
+   "sh": 900,
+   "ch": 900,
+   "sw": 768,
+   "cw": 768
+  },
+  "main": {
+   "x": 236,
+   "y": 0,
+   "w": 532,
+   "h": 900,
+   "bottom": 900,
+   "right": 768,
+   "sh": 900,
+   "ch": 900,
+   "scrollTop": 0
+  },
+  "content": null,
+  "foot": {
+   "x": 0,
+   "y": 792.2,
+   "w": 236,
+   "h": 107.8,
+   "bottom": 900,
+   "right": 236
+  },
+  "docScrollable": false,
+  "controls": [
+   {
+    "tag": "INPUT",
+    "type": "radio",
+    "text": "system",
+    "name": "appearance",
+    "checked": false,
+    "disabled": false,
+    "aria": null
+   },
+   {
+    "tag": "INPUT",
+    "type": "radio",
+    "text": "light",
+    "name": "appearance",
+    "checked": true,
+    "disabled": false,
+    "aria": null
+   },
+   {
+    "tag": "INPUT",
+    "type": "radio",
+    "text": "dark",
+    "name": "appearance",
+    "checked": false,
+    "disabled": false,
+    "aria": null
+   }
+  ]
+ },
+ "page-support-768": {
+  "h1": "Support",
+  "text": "Support\n\nHelp keep Storage Studio KH going.\n\nStorage Studio KH is free, with everything unlocked. A one-time donation is optional.\n\nOpen donation page",
+  "doc": {
+   "sh": 900,
+   "ch": 900,
+   "sw": 768,
+   "cw": 768
+  },
+  "main": {
+   "x": 236,
+   "y": 0,
+   "w": 532,
+   "h": 900,
+   "bottom": 900,
+   "right": 768,
+   "sh": 900,
+   "ch": 900,
+   "scrollTop": 0
+  },
+  "content": null,
+  "foot": {
+   "x": 0,
+   "y": 792.2,
+   "w": 236,
+   "h": 107.8,
+   "bottom": 900,
+   "right": 236
+  },
+  "docScrollable": false,
+  "controls": [
+   {
+    "tag": "BUTTON",
+    "type": "button",
+    "text": "Open donation page",
+    "name": "",
+    "disabled": false,
+    "aria": null
+   }
+  ]
+ },
+ "page-general-820": {
+  "h1": "General",
+  "text": "General\n\nHow Storage Studio KH behaves on this Mac.\n\nNotifications\n\nTell me when a storage reconnects or stops trying.\n\nLaunch at login\n\nStart Storage Studio KH when you log in, so your storage reconnects without opening the app.\n\nRetries before it stops\n\nChoose from 1 to 8. The default is 3.\n\n1\n2\n3\n4\n5\n6\n7\n8\n\nAfter a failure it tries again after 5 s, 15 s and 60 s, then stops and marks the storage Needs attention until you choose Mount now.",
+  "doc": {
+   "sh": 640,
+   "ch": 640,
+   "sw": 820,
+   "cw": 820
+  },
+  "main": {
+   "x": 236,
+   "y": 0,
+   "w": 584,
+   "h": 640,
+   "bottom": 640,
+   "right": 820,
+   "sh": 640,
+   "ch": 640,
+   "scrollTop": 0
+  },
+  "content": null,
+  "foot": {
+   "x": 0,
+   "y": 532.2,
+   "w": 236,
+   "h": 107.8,
+   "bottom": 640,
+   "right": 236
+  },
+  "docScrollable": false,
+  "controls": [
+   {
+    "tag": "INPUT",
+    "type": "checkbox",
+    "text": "on",
+    "name": "",
+    "checked": true,
+    "disabled": false,
+    "aria": null
+   },
+   {
+    "tag": "INPUT",
+    "type": "checkbox",
+    "text": "on",
+    "name": "",
+    "checked": true,
+    "disabled": false,
+    "aria": null
+   },
+   {
+    "tag": "SELECT",
+    "type": "select-one",
+    "text": "12345678",
+    "name": "",
+    "disabled": false,
+    "aria": null
+   }
+  ]
+ },
+ "page-appearance-820": {
+  "h1": "Appearance",
+  "text": "Appearance\n\nChoose how Storage Studio KH looks.\n\nSystem\nLight\nDark\n\nStorage Studio KH always uses the light look.",
+  "doc": {
+   "sh": 640,
+   "ch": 640,
+   "sw": 820,
+   "cw": 820
+  },
+  "main": {
+   "x": 236,
+   "y": 0,
+   "w": 584,
+   "h": 640,
+   "bottom": 640,
+   "right": 820,
+   "sh": 640,
+   "ch": 640,
+   "scrollTop": 0
+  },
+  "content": null,
+  "foot": {
+   "x": 0,
+   "y": 532.2,
+   "w": 236,
+   "h": 107.8,
+   "bottom": 640,
+   "right": 236
+  },
+  "docScrollable": false,
+  "controls": [
+   {
+    "tag": "INPUT",
+    "type": "radio",
+    "text": "system",
+    "name": "appearance",
+    "checked": false,
+    "disabled": false,
+    "aria": null
+   },
+   {
+    "tag": "INPUT",
+    "type": "radio",
+    "text": "light",
+    "name": "appearance",
+    "checked": true,
+    "disabled": false,
+    "aria": null
+   },
+   {
+    "tag": "INPUT",
+    "type": "radio",
+    "text": "dark",
+    "name": "appearance",
+    "checked": false,
+    "disabled": false,
+    "aria": null
+   }
+  ]
+ },
+ "page-support-820": {
+  "h1": "Support",
+  "text": "Support\n\nHelp keep Storage Studio KH going.\n\nStorage Studio KH is free, with everything unlocked. A one-time donation is optional.\n\nOpen donation page",
+  "doc": {
+   "sh": 640,
+   "ch": 640,
+   "sw": 820,
+   "cw": 820
+  },
+  "main": {
+   "x": 236,
+   "y": 0,
+   "w": 584,
+   "h": 640,
+   "bottom": 640,
+   "right": 820,
+   "sh": 640,
+   "ch": 640,
+   "scrollTop": 0
+  },
+  "content": null,
+  "foot": {
+   "x": 0,
+   "y": 532.2,
+   "w": 236,
+   "h": 107.8,
+   "bottom": 640,
+   "right": 236
+  },
+  "docScrollable": false,
+  "controls": [
+   {
+    "tag": "BUTTON",
+    "type": "button",
+    "text": "Open donation page",
+    "name": "",
+    "disabled": false,
+    "aria": null
+   }
+  ]
+ },
+ "page-general-1440": {
+  "h1": "General",
+  "text": "General\n\nHow Storage Studio KH behaves on this Mac.\n\nNotifications\n\nTell me when a storage reconnects or stops trying.\n\nLaunch at login\n\nStart Storage Studio KH when you log in, so your storage reconnects without opening the app.\n\nRetries before it stops\n\nChoose from 1 to 8. The default is 3.\n\n1\n2\n3\n4\n5\n6\n7\n8\n\nAfter a failure it tries again after 5 s, 15 s and 60 s, then stops and marks the storage Needs attention until you choose Mount now.",
+  "doc": {
+   "sh": 900,
+   "ch": 900,
+   "sw": 1440,
+   "cw": 1440
+  },
+  "main": {
+   "x": 236,
+   "y": 0,
+   "w": 1204,
+   "h": 900,
+   "bottom": 900,
+   "right": 1440,
+   "sh": 900,
+   "ch": 900,
+   "scrollTop": 0
+  },
+  "content": null,
+  "foot": {
+   "x": 0,
+   "y": 792.2,
+   "w": 236,
+   "h": 107.8,
+   "bottom": 900,
+   "right": 236
+  },
+  "docScrollable": false,
+  "controls": [
+   {
+    "tag": "INPUT",
+    "type": "checkbox",
+    "text": "on",
+    "name": "",
+    "checked": true,
+    "disabled": false,
+    "aria": null
+   },
+   {
+    "tag": "INPUT",
+    "type": "checkbox",
+    "text": "on",
+    "name": "",
+    "checked": true,
+    "disabled": false,
+    "aria": null
+   },
+   {
+    "tag": "SELECT",
+    "type": "select-one",
+    "text": "12345678",
+    "name": "",
+    "disabled": false,
+    "aria": null
+   }
+  ]
+ },
+ "page-appearance-1440": {
+  "h1": "Appearance",
+  "text": "Appearance\n\nChoose how Storage Studio KH looks.\n\nSystem\nLight\nDark\n\nStorage Studio KH always uses the light look.",
+  "doc": {
+   "sh": 900,
+   "ch": 900,
+   "sw": 1440,
+   "cw": 1440
+  },
+  "main": {
+   "x": 236,
+   "y": 0,
+   "w": 1204,
+   "h": 900,
+   "bottom": 900,
+   "right": 1440,
+   "sh": 900,
+   "ch": 900,
+   "scrollTop": 0
+  },
+  "content": null,
+  "foot": {
+   "x": 0,
+   "y": 792.2,
+   "w": 236,
+   "h": 107.8,
+   "bottom": 900,
+   "right": 236
+  },
+  "docScrollable": false,
+  "controls": [
+   {
+    "tag": "INPUT",
+    "type": "radio",
+    "text": "system",
+    "name": "appearance",
+    "checked": false,
+    "disabled": false,
+    "aria": null
+   },
+   {
+    "tag": "INPUT",
+    "type": "radio",
+    "text": "light",
+    "name": "appearance",
+    "checked": true,
+    "disabled": false,
+    "aria": null
+   },
+   {
+    "tag": "INPUT",
+    "type": "radio",
+    "text": "dark",
+    "name": "appearance",
+    "checked": false,
+    "disabled": false,
+    "aria": null
+   }
+  ]
+ },
+ "page-support-1440": {
+  "h1": "Support",
+  "text": "Support\n\nHelp keep Storage Studio KH going.\n\nStorage Studio KH is free, with everything unlocked. A one-time donation is optional.\n\nOpen donation page",
+  "doc": {
+   "sh": 900,
+   "ch": 900,
+   "sw": 1440,
+   "cw": 1440
+  },
+  "main": {
+   "x": 236,
+   "y": 0,
+   "w": 1204,
+   "h": 900,
+   "bottom": 900,
+   "right": 1440,
+   "sh": 900,
+   "ch": 900,
+   "scrollTop": 0
+  },
+  "content": null,
+  "foot": {
+   "x": 0,
+   "y": 792.2,
+   "w": 236,
+   "h": 107.8,
+   "bottom": 900,
+   "right": 236
+  },
+  "docScrollable": false,
+  "controls": [
+   {
+    "tag": "BUTTON",
+    "type": "button",
+    "text": "Open donation page",
+    "name": "",
+    "disabled": false,
+    "aria": null
+   }
+  ]
+ },
+ "appearance_controls": [
+  {
+   "name": "appearance",
+   "value": "system",
+   "checked": false,
+   "type": "radio",
+   "role": null
+  },
+  {
+   "name": "appearance",
+   "value": "light",
+   "checked": true,
+   "type": "radio",
+   "role": null
+  },
+  {
+   "name": "appearance",
+   "value": "dark",
+   "checked": false,
+   "type": "radio",
+   "role": null
+  }
+ ],
+ "appearance_dark": {
+  "theme": "dark",
+  "checked": true,
+  "stored": null
+ },
+ "appearance_arrow": {
+  "theme": "light",
+  "checked": [
+   "system"
+  ]
+ },
+ "view_switch": {
+  "table": true,
+  "checked": [
+   "table"
+  ],
+  "stored": null
+ },
+ "view_reload": {
+  "table": false,
+  "cards": false,
+  "stored": null,
+  "rows": 3,
+  "lede": "1 of 3 storages mounted, 1 needs attention, 1 unreachable.",
+  "doc": {
+   "sh": 640,
+   "ch": 640
+  }
+ },
+ "engine_before": {
+  "lede": "Helper isn't running. Helper last reported 07:25 AM. 1 of 3 storages mounted, 1 needs attention, 1 unreachable.",
+  "banner": "The background helper isn't running\n\nThe helper stopped responding.\n\nRestart helper"
+ },
+ "restart_count": 1,
+ "engine_after": {
+  "lede": "1 of 3 storages mounted, 1 needs attention, 1 unreachable.",
+  "banner": null,
+  "toast": "Helper started.",
+  "doc": {
+   "sh": 640,
+   "ch": 640
+  }
+ },
+ "remove_confirm_active": {
+  "title": "Remove Studio NAS?",
+  "text": "Remove Studio NAS?\n\nStorage Studio KH will stop reconnecting it. The files stay where they are.\n\nThis removes the storage from Storage Studio KH, forgets its saved password and clears any duplicate entries. Nothing is deleted from the share or disk.\n\nRemove Studio NAS\nKeep",
+  "active": "editor-keep"
+ },
+ "remove_keep": {
+  "title": "Edit storage",
+  "open": true,
+  "text": "Edit storage\n\nChange how this storage reconnects.\n\nName\nKind\nSMB share\nAttached disk\nShare address (host + share)\nBrowse…\nShare: studio\nUser name (optional)\nPassword (optional)\nForget the saved password\nMount point (optional)\nLeave blank and macOS chooses a folder in /Volumes.\nReconnect at login\nReconnect after wake\nRemove\nCancel\nTest\nSave",
+  "active": "editor-name",
+  "rowCount": 3
+ },
+ "remove_keep_cancel": {
+  "open": false,
+  "active": "row-studio-nas-menu"
+ },
+ "browse2": {
+  "text": "Add storage\n\nA share or disk that reconnects on its own.\n\nName\nKind\nSMB share\nAttached disk\nFrom a connected share\nPublic Space-Media - 4TB - Music\n/Volumes/Public Space-Media - 4TB - Music\nAdd\nShare address (host + share)\nBrowse…\n\nShares on nas.local\n\nPublic Space-Media - 4TB - Music\nPublic Space-System pool\nStudio Projects\nDismiss\nUser name (optional)\nPassword (optional)\nMount point (optional)\nLeave blank and macOS chooses a folder in /Volumes.\nReconnect at login\nReconnect after wake\nGive this storage a name.\nCancel\nTest\nSave",
+  "buttons": [
+   "Public Space-Media - 4TB - Music\n                /Volumes/Pu",
+   "Browse…",
+   "Public Space-Media - 4TB - Music",
+   "Public Space-System pool",
+   "Studio Projects",
+   "Dismiss",
+   "Cancel",
+   "Test",
+   "Save"
+  ],
+  "active": "share-Public Space-Media - 4TB - Music",
+  "doc": {
+   "sh": 640,
+   "ch": 640
+  },
+  "dialogs": 1
+ },
+ "browse2_esc": {
+  "editorOpen": true,
+  "stillResults": 1,
+  "title": "Add storage",
+  "active": null,
+  "text": "Add storage\n\nA share or disk that reconnects on its own.\n\nName\nKind\nSMB share\nAttached disk\nFrom a connected share\nPublic Space-Media - 4TB - Music\n/Volumes/Public Space-Media - 4TB - Music\nAdd\nShare address (host + share)\nBrowse…\nUser name (optional)\nPassword (optional)\nMount point (optional)\nLeave"
+ },
+ "tab375": [
+  {
+   "n": "Add storage",
+   "fk": "add-storage",
+   "y": 63,
+   "bottom": 91,
+   "visible": true,
+   "outline": true,
+   "mainTop": 0
+  },
+  {
+   "n": "Needs attention\n    1\n  ",
+   "fk": null,
+   "y": 152,
+   "bottom": 180,
+   "visible": true,
+   "outline": true,
+   "mainTop": 0
+  },
+  {
+   "n": "Can't be reached\n    1\n ",
+   "fk": null,
+   "y": 152,
+   "bottom": 180,
+   "visible": true,
+   "outline": true,
+   "mainTop": 0
+  },
+  {
+   "n": "list-view",
+   "fk": "view-cards",
+   "y": 197,
+   "bottom": 227,
+   "visible": true,
+   "outline": true,
+   "mainTop": 0
+  },
+  {
+   "n": "Open in Finder",
+   "fk": "row-studio-nas-reveal",
+   "y": 400,
+   "bottom": 428,
+   "visible": true,
+   "outline": true,
+   "mainTop": 0
+  },
+  {
+   "n": "BUTTON",
+   "fk": "row-studio-nas-menu",
+   "y": 400,
+   "bottom": 428,
+   "visible": true,
+   "outline": true,
+   "mainTop": 0
+  },
+  {
+   "n": "Mount now",
+   "fk": "row-archive-mount",
+   "y": 610,
+   "bottom": 638,
+   "visible": true,
+   "outline": true,
+   "mainTop": 0
+  },
+  {
+   "n": "BUTTON",
+   "fk": "row-archive-menu",
+   "y": 610,
+   "bottom": 638,
+   "visible": true,
+   "outline": true,
+   "mainTop": 0
+  },
+  {
+   "n": "Mount now",
+   "fk": "row-editing-ssd-mount",
+   "y": 555,
+   "bottom": 583,
+   "visible": true,
+   "outline": true,
+   "mainTop": 243
+  },
+  {
+   "n": "BUTTON",
+   "fk": "row-editing-ssd-menu",
+   "y": 555,
+   "bottom": 583,
+   "visible": true,
+   "outline": true,
+   "mainTop": 243
+  },
+  {
+   "n": "Support this app",
+   "fk": "nav-support",
+   "y": 717,
+   "bottom": 747,
+   "visible": true,
+   "outline": true,
+   "mainTop": 243
+  },
+  {
+   "n": "Storage Studio KH v0.1.1",
+   "fk": "pill",
+   "y": 755,
+   "bottom": 781,
+   "visible": true,
+   "outline": true,
+   "mainTop": 243
+  },
+  {
+   "n": "BUTTON",
+   "fk": "check",
+   "y": 757,
+   "bottom": 779,
+   "visible": true,
+   "outline": true,
+   "mainTop": 243
+  },
+  {
+   "n": "BUTTON",
+   "fk": "download",
+   "y": 757,
+   "bottom": 779,
+   "visible": true,
+   "outline": true,
+   "mainTop": 243
+  },
+  {
+   "n": "StorageGeneralAppearance",
+   "fk": null,
+   "y": 0,
+   "bottom": 812,
+   "visible": true,
+   "outline": false,
+   "mainTop": 243
+  },
+  {
+   "n": "Storage",
+   "fk": "nav-storage",
+   "y": 8,
+   "bottom": 38,
+   "visible": true,
+   "outline": true,
+   "mainTop": 243
+  }
+ ],
+ "footer_focus": {
+  "rect": {
+   "x": 212.78125,
+   "right": 234.78125,
+   "y": 845.15625,
+   "bottom": 867.15625
+  },
+  "footRight": 236,
+  "outline": {
+   "style": "solid",
+   "width": "2px",
+   "color": "rgb(13, 107, 92)",
+   "offset": "2px"
+  },
+  "clipped": false
+ },
+ "contrast": {
+  "body": {
+   "color": "rgb(32, 32, 29)",
+   "bg": [
+    240,
+    239,
+    234
+   ],
+   "font": "13px"
+  },
+  "lede": {
+   "color": "rgb(84, 84, 78)",
+   "bg": [
+    251,
+    250,
+    247
+   ],
+   "font": "13px"
+  },
+  "quiet": {
+   "color": "rgb(95, 94, 88)",
+   "bg": [
+    231,
+    228,
+    222
+   ],
+   "font": "11px"
+  },
+  "chip": {
+   "color": "rgb(31, 114, 72)",
+   "bg": [
+    230,
+    241,
+    234
+   ],
+   "font": "11px"
+  },
+  "primary": {
+   "color": "rgb(255, 255, 255)",
+   "bg": [
+    13,
+    107,
+    92
+   ],
+   "font": "12px"
+  },
+  "footer": {
+   "color": "rgb(32, 32, 29)",
+   "bg": [
+    255,
+    255,
+    255
+   ],
+   "font": "11px"
+  }
+ },
+ "contrast_ratios": {
+  "body": 14.19,
+  "lede": 7.3,
+  "quiet": 5.13,
+  "chip": 5.1,
+  "primary": 6.41,
+  "footer": 16.33
+ }
+}

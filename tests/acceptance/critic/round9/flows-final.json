@@ -1,0 +1,162 @@
+{
+ "wn375": {
+  "title": "What's New",
+  "text": "What's New\n\nStorage Studio KH 0.1.10\n\nVersion 0.2.0 is available. Its notes appear here after it is installed.\n\n0.1.10\nCurrent version\n2026-11-13\nOnly the installed app adds a Login Items entry, once: a development copy or a rebuild no longer registers a second \"Storage Studio KH\".\nStorage can be shown as cards or a table, and the choice is remembered. Cards are equal height with labelled values; the table keeps its first column pinned in a narrow window.\nEach storage has one primary action (Mou",
+  "inside": true,
+  "rect": {
+   "x": 24,
+   "y": 8,
+   "width": 327,
+   "height": 796,
+   "top": 8,
+   "right": 351,
+   "bottom": 804,
+   "left": 24
+  },
+  "active": "BUTTON Close",
+  "doc": {
+   "sh": 812,
+   "ch": 812
+  }
+ },
+ "wn375_esc": {
+  "open": false,
+  "active": "pill",
+  "visible": true
+ },
+ "wn820": {
+  "title": "What's New",
+  "text": "What's New\n\nStorage Studio KH 0.1.10\n\nVersion 0.2.0 is available. Its notes appear here after it is installed.\n\n0.1.10\nCurrent version\n2026-11-13\nOnly the installed app adds a Login Items entry, once: a development copy or a rebuild no longer registers a second \"Storage Studio KH\".\nStorage can be shown as cards or a table, and the choice is remembered. Cards are equal height with labelled values; the table keeps its first column pinned in a narrow window.\nEach storage has one primary action (Mou",
+  "inside": true,
+  "rect": {
+   "x": 170,
+   "y": 8,
+   "width": 480,
+   "height": 624,
+   "top": 8,
+   "right": 650,
+   "bottom": 632,
+   "left": 170
+  },
+  "active": "BUTTON Close",
+  "doc": {
+   "sh": 640,
+   "ch": 640
+  }
+ },
+ "wn820_esc": {
+  "open": false,
+  "active": "pill",
+  "visible": true
+ },
+ "wn1440": {
+  "title": "What's New",
+  "text": "What's New\n\nStorage Studio KH 0.1.10\n\nVersion 0.2.0 is available. Its notes appear here after it is installed.\n\n0.1.10\nCurrent version\n2026-11-13\nOnly the installed app adds a Login Items entry, once: a development copy or a rebuild no longer registers a second \"Storage Studio KH\".\nStorage can be shown as cards or a table, and the choice is remembered. Cards are equal height with labelled values; the table keeps its first column pinned in a narrow window.\nEach storage has one primary action (Mou",
+  "inside": true,
+  "rect": {
+   "x": 480,
+   "y": 8,
+   "width": 480,
+   "height": 884,
+   "top": 8,
+   "right": 960,
+   "bottom": 892,
+   "left": 480
+  },
+  "active": "BUTTON Close",
+  "doc": {
+   "sh": 900,
+   "ch": 900
+  }
+ },
+ "wn1440_esc": {
+  "open": false,
+  "active": "pill",
+  "visible": true
+ },
+ "check_120": {
+  "pill": "Checking for updates…",
+  "footText": "Support this app | Storage Studio KH v0.1.10 |  | Checking for updates…",
+  "btn": "Checking for Updates"
+ },
+ "check_after": {
+  "pill": "Version 0.2.0 is available",
+  "footText": "Support this app | Storage Studio KH v0.1.10 |  | Version 0.2.0 is available"
+ },
+ "unreach_mount": {
+  "toast": null,
+  "row": "Editing SSDAttached disk | , Attached disk | Mounted |  | The disk is connected. |  | Mounted at | /Volumes/Editing SSD | Reconnects | At login · after wake | Open in Finder",
+  "lede": "2 of 3 storages mounted, 1 needs attention."
+ },
+ "unmount": {
+  "toast": null,
+  "row": "Studio NASSMB share | , SMB share | Not mounted | Mounted at | Not mounted | Address | smb://nas.local/studio | Reconnects | At login · after wake | Mount now",
+  "lede": "3 storages, none mounted, 1 needs attention, 1 unreachable.",
+  "active": "row-studio-nas-mount"
+ },
+ "dup": {
+  "saveDisabled": true,
+  "reason": [
+   "This share is already added as Studio NAS.",
+   "Save"
+  ],
+  "active": null
+ },
+ "badscheme": {
+  "saveDisabled": true,
+  "text": "Add storage\n\nA share or disk that reconnects on its own.\n\nName\nKind\nSMB share\nAttached disk\nFrom a connected share\nPublic Space-Media - 4TB - Music\n/Volumes/Public Space-Media - 4TB - Music\nAdd\nShare address (host + share)\nBrowse…\nUser name (optional)\nPassword (optional)\nMount point (optional)\nLeave blank and macOS chooses a folder in /Volumes.\nReconnect at login\nReconnect after wake\nUse an smb:// address, like smb://nas.local/studio.\nCancel\nTest\nSave"
+ },
+ "longname": {
+  "text": "This Is A Very Long Studio Share Name That Should Wrap Without ClippingSMB share\n, SMB share\nNot mounted\nMounted at\nNot mounted\nAddress\nsmb://long.local/share\nReconnects\nAt login · after wake\nMount now",
+  "nameRect": {
+   "x": 33,
+   "y": 435.46875,
+   "width": 197.890625,
+   "height": 56.53125,
+   "top": 435.46875,
+   "right": 230.890625,
+   "bottom": 492,
+   "left": 33
+  },
+  "h": "56.5312px",
+  "doc": {
+   "sh": 812,
+   "ch": 812,
+   "sw": 375,
+   "cw": 375
+  },
+  "clipped": null
+ },
+ "dedupe": {
+  "rows": [
+   {
+    "id": "dup0",
+    "text": "Public Space-Media - 4TB - Music×2SMB share | , SMB share | Mounted | Mounted at | /Volumes/Public Space-Media - 4TB - M"
+   }
+  ],
+  "dup": [
+   "×2"
+  ],
+  "doc": {
+   "sh": 640,
+   "ch": 640
+  }
+ },
+ "boot": {
+  "text": "Storage Studio KH\n\nThe settings window couldn't read the app's current state.\n\nStorage Studio KH couldn't start\n\nThe app couldn't read its settings.\n\nRetry",
+  "active": "Retry",
+  "doc": {
+   "sh": 640,
+   "ch": 640
+  }
+ },
+ "boot_retry": {
+  "h1": "Storage",
+  "rows": 3,
+  "active": "MAIN",
+  "doc": {
+   "sh": 640,
+   "ch": 640
+  }
+ }
+}

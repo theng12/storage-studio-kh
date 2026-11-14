@@ -1,0 +1,126 @@
+{
+ "remove_confirm": "Remove Studio NAS?\n\nStorage Studio KH will stop reconnecting it. The files stay where they are.\n\nThis removes the storage from Storage Studio KH, forgets its saved password and clears any duplicate entries. Nothing is deleted from the share or disk.\n\nRemove Studio NAS\nKeep",
+ "remove_toast": {
+  "text": "Removed Studio NAS.\nUndo",
+  "rect": {
+   "x": 484,
+   "y": 584,
+   "w": 320,
+   "h": 40,
+   "bottom": 624
+  },
+  "buttons": [
+   "Undo"
+  ]
+ },
+ "remove_status": "2 storages, none mounted, 1 needs attention, 1 unreachable.",
+ "undo_toast": {
+  "text": "Restored Studio NAS.",
+  "rect": {
+   "x": 484,
+   "y": 588.609375,
+   "w": 320,
+   "h": 35.390625,
+   "bottom": 624
+  },
+  "buttons": []
+ },
+ "undo_statusline": "1 of 3 storages mounted, 1 needs attention, 1 unreachable.",
+ "undo_row": {
+  "text": "Studio NASSMB share | , SMB share | Mounted | Mounted at | /Volumes/studio | Address | smb://nas.local/studio | Reconnects | At login · after wake | Open in Finder",
+  "chip": "Mounted",
+  "path": [
+   "/Volumes/studio",
+   "smb://nas.local/studio",
+   "At login · after wake"
+  ]
+ },
+ "undo_active": {
+  "fk": "row-studio-nas-menu",
+  "text": "",
+  "visible": true
+ },
+ "edit_archive": {
+  "text": "Edit storage\n\nChange how this storage reconnects.\n\nName\nKind\nSMB share\nAttached disk\nShare address (host + share)\nBrowse…\nShare: backups\nUser name (optional)\nPassword (optional)\nMount point (optional)\nLeave blank and macOS chooses a folder in /Volumes.\nReconnect at login\nReconnect after wake\nRemove\nCancel\nTest\nSave",
+  "buttons": [
+   "Browse…",
+   "Remove",
+   "Cancel",
+   "Test",
+   "Save"
+  ]
+ },
+ "edit_remove_confirm": "Remove Archive Share?\n\nStorage Studio KH will stop reconnecting it. The files stay where they are.\n\nThis removes the storage from Storage Studio KH, forgets its saved password and clears any duplicate entries. Nothing is deleted from the share or disk.\n\nRemove Archive Share\nKeep",
+ "edit_remove_toast": {
+  "text": "Removed Archive Share.\nUndo",
+  "rect": {
+   "x": 484,
+   "y": 584,
+   "w": 320,
+   "h": 40,
+   "bottom": 624
+  },
+  "buttons": [
+   "Undo"
+  ]
+ },
+ "edit_undo": {
+  "status": "1 of 3 storages mounted, 1 unreachable, 1 not mounted.",
+  "toast": {
+   "text": "Restored Archive Share.",
+   "rect": {
+    "x": 484,
+    "y": 588.609375,
+    "w": 320,
+    "h": 35.390625,
+    "bottom": 624
+   },
+   "buttons": []
+  },
+  "row": "Archive ShareSMB share | , SMB share | Not mounted | Mounted at | Not mounted | Address | smb://archive.local/backups | Reconnects | At login · not after wake | Mount now"
+ },
+ "test1": {
+  "text": "Test: archive.local is reachable and ready to mount.",
+  "rect": {
+   "x": 484,
+   "y": 588.609375,
+   "w": 320,
+   "h": 35.390625,
+   "bottom": 624
+  },
+  "buttons": []
+ },
+ "test2": {
+  "text": "Test: archive.local is reachable and ready to mount.",
+  "rect": {
+   "x": 484,
+   "y": 588.609375,
+   "w": 320,
+   "h": 35.390625,
+   "bottom": 624
+  },
+  "buttons": []
+ },
+ "cred_sheet": {
+  "text": "Sign in to Archive Share\n\nStorage Studio KH needs a user name and password for this share. It is saved privately at ~/Library/Application Support/Storage Studio KH/secrets.json.\n\nUser name\nPassword\nCancel\nSave",
+  "buttons": [
+   "Cancel",
+   "Save"
+  ],
+  "active": "INPUT credentials-username",
+  "inside": true
+ },
+ "cred_after": {
+  "toast": null,
+  "sheet": true,
+  "row": "Archive ShareSMB share | , SMB share | Needs attention |  | Sign in to this share to continue. |  | Mounted at | Not mounted | Address | smb://archive.local/backups | Reconnects | At login · not after wake | Mount now",
+  "status": "1 of 3 storages mounted, 1 needs attention, 1 unreachable."
+ },
+ "edit_forget_buttons": [
+  "Browse…",
+  "Remove",
+  "Cancel",
+  "Test",
+  "Save"
+ ]
+}

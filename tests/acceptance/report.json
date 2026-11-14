@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-14T00:08:25.885Z",
+  "generatedAt": "2026-11-14T00:54:44.810Z",
   "appVersion": "0.1.10",
   "checks": [
     {
@@ -1787,7 +1787,7 @@
       "expected": "row menu",
       "actual": "true",
       "pass": true,
-      "evidence": "row-s1794614864690-menu"
+      "evidence": "row-s1794617642496-menu"
     },
     {
       "page": "Dialog",
@@ -1991,6 +1991,22 @@
     },
     {
       "page": "Completeness",
+      "id": "after forgetting, the field does not promise a saved password",
+      "expected": "no keep phrase",
+      "actual": "true",
+      "pass": true,
+      "evidence": "Stored privately by Storage Studio KH"
+    },
+    {
+      "page": "Completeness",
+      "id": "the forget control disappears once nothing is saved",
+      "expected": 0,
+      "actual": "0",
+      "pass": "0",
+      "evidence": true
+    },
+    {
+      "page": "Completeness",
       "id": "declared page capabilities have controls",
       "expected": "all present",
       "actual": "true",
@@ -2059,7 +2075,7 @@
       "expected": "Storage list checked",
       "actual": "true",
       "pass": true,
-      "evidence": "Storage list checked 1 h ago"
+      "evidence": "Storage list checked 2 h ago"
     },
     {
       "page": "Footer",
@@ -2115,7 +2131,7 @@
       "expected": "primary and menu share a top",
       "actual": "true",
       "pass": true,
-      "evidence": "{\"cellWidth\":196,\"sameLine\":true,\"primaryRight\":747,\"menuLeft\":751}"
+      "evidence": "{\"cellWidth\":190,\"sameLine\":true,\"primaryRight\":747,\"menuLeft\":751}"
     },
     {
       "page": "Keys",
@@ -2246,6 +2262,22 @@
       "evidence": "add-storage"
     },
     {
+      "page": "Keys",
+      "id": "the first Tab reaches the navigation",
+      "expected": "nav-storage",
+      "actual": "true",
+      "pass": true,
+      "evidence": "nav-storage"
+    },
+    {
+      "page": "Keys",
+      "id": "Tab wraps from the footer to the navigation",
+      "expected": "nav-storage",
+      "actual": "true",
+      "pass": true,
+      "evidence": "nav-storage"
+    },
+    {
       "page": "Layout",
       "id": "adding at 375 keeps the window pinned",
       "expected": "document height equals the viewport",
@@ -2259,7 +2291,7 @@
       "expected": "the focused control is visible",
       "actual": "true",
       "pass": true,
-      "evidence": "{\"fk\":\"row-s1794614901673-menu\",\"top\":606,\"bottom\":634,\"h\":812}"
+      "evidence": "{\"fk\":\"row-s1794617680626-menu\",\"top\":606,\"bottom\":634,\"h\":812}"
     },
     {
       "page": "Layout",
@@ -2339,7 +2371,7 @@
       "expected": "narrower than 400",
       "actual": "true",
       "pass": true,
-      "evidence": "{\"width\":330,\"nested\":0,\"segments\":[104,104,104]}"
+      "evidence": "{\"width\":330,\"rowWidth\":526,\"segments\":[104,104,104]}"
     },
     {
       "page": "Appearance",
@@ -2351,11 +2383,11 @@
     },
     {
       "page": "Appearance",
-      "id": "no nested card around the control",
-      "expected": 0,
-      "actual": "0",
-      "pass": "0",
-      "evidence": true
+      "id": "the settings row fills the page",
+      "expected": "row wider than 500 at 820",
+      "actual": "true",
+      "pass": true,
+      "evidence": "{\"width\":330,\"rowWidth\":526,\"segments\":[104,104,104]}"
     }
   ],
   "screenshots": [
@@ -2411,8 +2443,8 @@
     "tests/acceptance/screenshots/appearance/appearance-light-820x640.png"
   ],
   "summary": {
-    "total": 294,
-    "passed": 294,
+    "total": 298,
+    "passed": 298,
     "failed": 0
   }
 }

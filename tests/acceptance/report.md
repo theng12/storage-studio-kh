@@ -1,6 +1,6 @@
 # Storage Studio KH — page acceptance
 
-Run: 2026-11-14T00:08:25.885Z · app 0.1.10 · 294/294 checks passed
+Run: 2026-11-14T00:54:44.810Z · app 0.1.10 · 298/298 checks passed
 
 | Page | Check | Expected | Actual | Result |
 | --- | --- | --- | --- | --- |
@@ -252,6 +252,8 @@ Run: 2026-11-14T00:08:25.885Z · app 0.1.10 · 294/294 checks passed
 | Completeness | forget disables the password field | password input disabled | true | PASS |
 | Completeness | forget sends remove_credentials | removeCredentials true | true | PASS |
 | Completeness | the forget toast names the forgotten password | forgotten | true | PASS |
+| Completeness | after forgetting, the field does not promise a saved password | no keep phrase | true | PASS |
+| Completeness | the forget control disappears once nothing is saved | 0 | 0 | PASS |
 | Completeness | declared page capabilities have controls | all present | true | PASS |
 | Completeness | General capabilities have controls | notifications, login, retries | true | PASS |
 | Completeness | Appearance has exactly three controls | System/Light/Dark | true | PASS |
@@ -284,6 +286,8 @@ Run: 2026-11-14T00:08:25.885Z · app 0.1.10 · 294/294 checks passed
 | Boot | the boot error hides navigation | 0 | 0 | PASS |
 | Boot | the navigation comes back after Retry | 3 | 3 | PASS |
 | Remove | a timed-out Undo leaves focus on a real control | add-storage | true | PASS |
+| Keys | the first Tab reaches the navigation | nav-storage | true | PASS |
+| Keys | Tab wraps from the footer to the navigation | nav-storage | true | PASS |
 | Layout | adding at 375 keeps the window pinned | document height equals the viewport | true | PASS |
 | Layout | focus after saving is on screen at 375 | the focused control is visible | true | PASS |
 | Layout | adding at 820 keeps the window pinned | document height equals the viewport | true | PASS |
@@ -297,7 +301,7 @@ Run: 2026-11-14T00:08:25.885Z · app 0.1.10 · 294/294 checks passed
 | Storage | status line summarises the list | 4 storages, all mounted. | true | PASS |
 | Appearance | segmented control is content-sized | narrower than 400 | true | PASS |
 | Appearance | three equal segments | 3 | 3 | PASS |
-| Appearance | no nested card around the control | 0 | 0 | PASS |
+| Appearance | the settings row fills the page | row wider than 500 at 820 | true | PASS |
 
 ## Screenshots
 
