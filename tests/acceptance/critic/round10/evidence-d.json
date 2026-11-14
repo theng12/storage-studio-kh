@@ -1,0 +1,505 @@
+{
+  "checks": [
+    {
+      "area": "craft",
+      "id": "pill-bottom-left-375",
+      "pass": true,
+      "expected": "version/Whats New pill bottom-left",
+      "actual": "{\"pill\":{\"x\":12,\"y\":755.2,\"w\":168.8,\"h\":26,\"right\":180.8,\"bottom\":781.2,\"text\":\"Storage Studio KH v0.1.10\",\"hasSvg\":true,\"aria\":\"What's New, Storage Studio KH v0.1.10\"},\"foot\":{\"x\":0,\"y\":708.2,\"w\":375,\"h\":103.8,\"bottom\":812,\"right\":375}}",
+      "evidence": null,
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "support-above-pill-375",
+      "pass": true,
+      "expected": "Support row above pill",
+      "actual": "{\"support\":{\"x\":12,\"y\":717.2,\"w\":136.3,\"h\":30,\"right\":148.3,\"bottom\":747.2,\"text\":\"Support this app\",\"hasSvg\":true,\"aria\":null},\"pill\":{\"x\":12,\"y\":755.2,\"w\":168.8,\"h\":26,\"right\":180.8,\"bottom\":781.2,\"text\":\"Storage Studio KH v0.1.10\",\"hasSvg\":true,\"aria\":\"What's New, Storage Studio KH v0.1.10\"}}",
+      "evidence": null,
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "pill-bottom-left-820",
+      "pass": true,
+      "expected": "version/Whats New pill bottom-left",
+      "actual": "{\"pill\":{\"x\":14,\"y\":583.2,\"w\":168.8,\"h\":26,\"right\":182.8,\"bottom\":609.2,\"text\":\"Storage Studio KH v0.1.10\",\"hasSvg\":true,\"aria\":\"What's New, Storage Studio KH v0.1.10\"},\"foot\":{\"x\":0,\"y\":532.2,\"w\":236,\"h\":107.8,\"bottom\":640,\"right\":236}}",
+      "evidence": null,
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "support-above-pill-820",
+      "pass": true,
+      "expected": "Support row above pill",
+      "actual": "{\"support\":{\"x\":6,\"y\":545.2,\"w\":223,\"h\":30,\"right\":229,\"bottom\":575.2,\"text\":\"Support this app\",\"hasSvg\":true,\"aria\":null},\"pill\":{\"x\":14,\"y\":583.2,\"w\":168.8,\"h\":26,\"right\":182.8,\"bottom\":609.2,\"text\":\"Storage Studio KH v0.1.10\",\"hasSvg\":true,\"aria\":\"What's New, Storage Studio KH v0.1.10\"}}",
+      "evidence": null,
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "pill-bottom-left-1440",
+      "pass": true,
+      "expected": "version/Whats New pill bottom-left",
+      "actual": "{\"pill\":{\"x\":14,\"y\":843.2,\"w\":168.8,\"h\":26,\"right\":182.8,\"bottom\":869.2,\"text\":\"Storage Studio KH v0.1.10\",\"hasSvg\":true,\"aria\":\"What's New, Storage Studio KH v0.1.10\"},\"foot\":{\"x\":0,\"y\":792.2,\"w\":236,\"h\":107.8,\"bottom\":900,\"right\":236}}",
+      "evidence": null,
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "support-above-pill-1440",
+      "pass": true,
+      "expected": "Support row above pill",
+      "actual": "{\"support\":{\"x\":6,\"y\":805.2,\"w\":223,\"h\":30,\"right\":229,\"bottom\":835.2,\"text\":\"Support this app\",\"hasSvg\":true,\"aria\":null},\"pill\":{\"x\":14,\"y\":843.2,\"w\":168.8,\"h\":26,\"right\":182.8,\"bottom\":869.2,\"text\":\"Storage Studio KH v0.1.10\",\"hasSvg\":true,\"aria\":\"What's New, Storage Studio KH v0.1.10\"}}",
+      "evidence": null,
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "table-375-fits",
+      "pass": true,
+      "expected": "table fits/no pan at 375",
+      "actual": "{\"doc\":{\"sw\":375,\"cw\":375,\"wx\":0,\"sh\":812},\"wrap\":{\"sw\":341,\"cw\":341,\"sl\":0,\"w\":343},\"ths\":[{\"text\":\"Storage\",\"display\":\"table-cell\",\"vis\":\"visible\",\"w\":144.7},{\"text\":\"Status\",\"display\":\"none\",\"vis\":\"visible\",\"w\":0},{\"text\":\"Address\",\"display\":\"none\",\"vis\":\"visible\",\"w\":0},{\"text\":\"Mounted at\",\"display\":\"none\",\"vis\":\"visible\",\"w\":0},{\"text\":\"Reconnects\",\"display\":\"none\",\"vis\":\"visible\",\"w\":0},{\"text\":\"Actions\",\"display\":\"table-cell\",\"vis\":\"visible\",\"w\":196.3}],\"main\":{\"sw\":375,\"cw\":375}}",
+      "evidence": "table-375",
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "storage-fills-1440",
+      "pass": true,
+      "expected": "storage content uses width",
+      "actual": "deadRight~28.0 mainW=1204",
+      "evidence": "storage-cards-1440-measure",
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "general-fills-1440",
+      "pass": true,
+      "expected": "general content uses width",
+      "actual": "deadRight~28.0 rows=4",
+      "evidence": null,
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "focus-view-switch",
+      "pass": true,
+      "expected": "focus not body after view switch",
+      "actual": "{\"tag\":\"INPUT\",\"isBody\":false,\"fk\":\"view-table\"}",
+      "evidence": null,
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "focus-after-test",
+      "pass": true,
+      "expected": "focus not body after test",
+      "actual": "{\"tag\":\"BUTTON\",\"isBody\":false,\"fk\":\"row-studio-nas-menu\"}",
+      "evidence": null,
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "row-menu-inside-375",
+      "pass": true,
+      "expected": "row menu inside viewport",
+      "actual": "{\"menu\":{\"x\":17,\"y\":432,\"right\":197,\"bottom\":554,\"w\":180},\"wrap\":{\"right\":375,\"w\":375},\"vp\":{\"w\":375,\"h\":812}}",
+      "evidence": null,
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "row-menu-inside-768",
+      "pass": true,
+      "expected": "row menu inside viewport",
+      "actual": "{\"menu\":{\"x\":265,\"y\":405,\"right\":445,\"bottom\":527,\"w\":180},\"wrap\":{\"right\":768,\"w\":532},\"vp\":{\"w\":768,\"h\":900}}",
+      "evidence": null,
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "row-menu-inside-820",
+      "pass": true,
+      "expected": "row menu inside viewport",
+      "actual": "{\"menu\":{\"x\":265,\"y\":387,\"right\":445,\"bottom\":509,\"w\":180},\"wrap\":{\"right\":820,\"w\":584},\"vp\":{\"w\":820,\"h\":640}}",
+      "evidence": null,
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "row-menu-inside-1440",
+      "pass": true,
+      "expected": "row menu inside viewport",
+      "actual": "{\"menu\":{\"x\":265,\"y\":347,\"right\":445,\"bottom\":469,\"w\":180},\"wrap\":{\"right\":1440,\"w\":1204},\"vp\":{\"w\":1440,\"h\":900}}",
+      "evidence": null,
+      "severity": "ok"
+    }
+  ],
+  "traces": {
+    "footer_375": {
+      "foot": {
+        "x": 0,
+        "y": 708.2,
+        "w": 375,
+        "h": 103.8,
+        "bottom": 812,
+        "right": 375
+      },
+      "support": {
+        "x": 12,
+        "y": 717.2,
+        "w": 136.3,
+        "h": 30,
+        "right": 148.3,
+        "bottom": 747.2,
+        "text": "Support this app",
+        "hasSvg": true,
+        "aria": null
+      },
+      "pill": {
+        "x": 12,
+        "y": 755.2,
+        "w": 168.8,
+        "h": 26,
+        "right": 180.8,
+        "bottom": 781.2,
+        "text": "Storage Studio KH v0.1.10",
+        "hasSvg": true,
+        "aria": "What's New, Storage Studio KH v0.1.10"
+      },
+      "check": {
+        "x": 184.8,
+        "y": 757.2,
+        "w": 22,
+        "h": 22,
+        "right": 206.8,
+        "bottom": 779.2,
+        "text": "",
+        "hasSvg": true,
+        "aria": "Check for Updates"
+      },
+      "download": {
+        "x": 210.8,
+        "y": 757.2,
+        "w": 22,
+        "h": 22,
+        "right": 232.8,
+        "bottom": 779.2,
+        "text": "",
+        "hasSvg": true,
+        "aria": "Download version 0.2.0"
+      },
+      "viewport": {
+        "w": 375,
+        "h": 812
+      }
+    },
+    "footer_820": {
+      "foot": {
+        "x": 0,
+        "y": 532.2,
+        "w": 236,
+        "h": 107.8,
+        "bottom": 640,
+        "right": 236
+      },
+      "support": {
+        "x": 6,
+        "y": 545.2,
+        "w": 223,
+        "h": 30,
+        "right": 229,
+        "bottom": 575.2,
+        "text": "Support this app",
+        "hasSvg": true,
+        "aria": null
+      },
+      "pill": {
+        "x": 14,
+        "y": 583.2,
+        "w": 168.8,
+        "h": 26,
+        "right": 182.8,
+        "bottom": 609.2,
+        "text": "Storage Studio KH v0.1.10",
+        "hasSvg": true,
+        "aria": "What's New, Storage Studio KH v0.1.10"
+      },
+      "check": {
+        "x": 186.8,
+        "y": 585.2,
+        "w": 22,
+        "h": 22,
+        "right": 208.8,
+        "bottom": 607.2,
+        "text": "",
+        "hasSvg": true,
+        "aria": "Check for Updates"
+      },
+      "download": {
+        "x": 212.8,
+        "y": 585.2,
+        "w": 22,
+        "h": 22,
+        "right": 234.8,
+        "bottom": 607.2,
+        "text": "",
+        "hasSvg": true,
+        "aria": "Download version 0.2.0"
+      },
+      "viewport": {
+        "w": 820,
+        "h": 640
+      }
+    },
+    "footer_1440": {
+      "foot": {
+        "x": 0,
+        "y": 792.2,
+        "w": 236,
+        "h": 107.8,
+        "bottom": 900,
+        "right": 236
+      },
+      "support": {
+        "x": 6,
+        "y": 805.2,
+        "w": 223,
+        "h": 30,
+        "right": 229,
+        "bottom": 835.2,
+        "text": "Support this app",
+        "hasSvg": true,
+        "aria": null
+      },
+      "pill": {
+        "x": 14,
+        "y": 843.2,
+        "w": 168.8,
+        "h": 26,
+        "right": 182.8,
+        "bottom": 869.2,
+        "text": "Storage Studio KH v0.1.10",
+        "hasSvg": true,
+        "aria": "What's New, Storage Studio KH v0.1.10"
+      },
+      "check": {
+        "x": 186.8,
+        "y": 845.2,
+        "w": 22,
+        "h": 22,
+        "right": 208.8,
+        "bottom": 867.2,
+        "text": "",
+        "hasSvg": true,
+        "aria": "Check for Updates"
+      },
+      "download": {
+        "x": 212.8,
+        "y": 845.2,
+        "w": 22,
+        "h": 22,
+        "right": 234.8,
+        "bottom": 867.2,
+        "text": "",
+        "hasSvg": true,
+        "aria": "Download version 0.2.0"
+      },
+      "viewport": {
+        "w": 1440,
+        "h": 900
+      }
+    },
+    "table375": {
+      "doc": {
+        "sw": 375,
+        "cw": 375,
+        "wx": 0,
+        "sh": 812
+      },
+      "wrap": {
+        "sw": 341,
+        "cw": 341,
+        "sl": 0,
+        "w": 343
+      },
+      "ths": [
+        {
+          "text": "Storage",
+          "display": "table-cell",
+          "vis": "visible",
+          "w": 144.7
+        },
+        {
+          "text": "Status",
+          "display": "none",
+          "vis": "visible",
+          "w": 0
+        },
+        {
+          "text": "Address",
+          "display": "none",
+          "vis": "visible",
+          "w": 0
+        },
+        {
+          "text": "Mounted at",
+          "display": "none",
+          "vis": "visible",
+          "w": 0
+        },
+        {
+          "text": "Reconnects",
+          "display": "none",
+          "vis": "visible",
+          "w": 0
+        },
+        {
+          "text": "Actions",
+          "display": "table-cell",
+          "vis": "visible",
+          "w": 196.3
+        }
+      ],
+      "main": {
+        "sw": 375,
+        "cw": 375
+      }
+    },
+    "storage1440": {
+      "main": {
+        "x": 236,
+        "w": 1204,
+        "right": 1440
+      },
+      "cards": [
+        {
+          "w": 374.7,
+          "right": 638.7
+        },
+        {
+          "w": 374.7,
+          "right": 1025.3
+        },
+        {
+          "w": 374.7,
+          "right": 1412
+        }
+      ],
+      "content": [
+        {
+          "cl": "page-head",
+          "w": 1148,
+          "right": 1412
+        },
+        {
+          "cl": "storage-toolbar",
+          "w": 1148,
+          "right": 1412
+        },
+        {
+          "cl": "storage-list storage-cards",
+          "w": 1148,
+          "right": 1412
+        }
+      ]
+    },
+    "general1440": {
+      "main": {
+        "w": 1204,
+        "right": 1440
+      },
+      "rows": [
+        {
+          "cl": "group",
+          "w": 1148,
+          "right": 1412
+        },
+        {
+          "cl": "setting-row",
+          "w": 1146,
+          "right": 1411
+        },
+        {
+          "cl": "setting-row",
+          "w": 1146,
+          "right": 1411
+        },
+        {
+          "cl": "setting-row",
+          "w": 1146,
+          "right": 1411
+        }
+      ]
+    },
+    "rowMenu_375": {
+      "menu": {
+        "x": 17,
+        "y": 432,
+        "right": 197,
+        "bottom": 554,
+        "w": 180
+      },
+      "wrap": {
+        "right": 375,
+        "w": 375
+      },
+      "vp": {
+        "w": 375,
+        "h": 812
+      }
+    },
+    "rowMenu_768": {
+      "menu": {
+        "x": 265,
+        "y": 405,
+        "right": 445,
+        "bottom": 527,
+        "w": 180
+      },
+      "wrap": {
+        "right": 768,
+        "w": 532
+      },
+      "vp": {
+        "w": 768,
+        "h": 900
+      }
+    },
+    "rowMenu_820": {
+      "menu": {
+        "x": 265,
+        "y": 387,
+        "right": 445,
+        "bottom": 509,
+        "w": 180
+      },
+      "wrap": {
+        "right": 820,
+        "w": 584
+      },
+      "vp": {
+        "w": 820,
+        "h": 640
+      }
+    },
+    "rowMenu_1440": {
+      "menu": {
+        "x": 265,
+        "y": 347,
+        "right": 445,
+        "bottom": 469,
+        "w": 180
+      },
+      "wrap": {
+        "right": 1440,
+        "w": 1204
+      },
+      "vp": {
+        "w": 1440,
+        "h": 900
+      }
+    }
+  }
+}

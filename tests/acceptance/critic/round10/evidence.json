@@ -1,0 +1,2659 @@
+{
+  "meta": {
+    "ts": "2026-11-14T01:02:10.916Z",
+    "base": "http://localhost:1420/?acceptance=1",
+    "head": "3b005c6"
+  },
+  "checks": [
+    {
+      "area": "craft",
+      "id": "layout-storage-light-375x812",
+      "pass": true,
+      "expected": "doc fits viewport, footer pinned",
+      "actual": "sw=375 cw=375 sh=812 ch=812 wx=0 wy=0 footBottom=812",
+      "evidence": "page-storage-light-375x812",
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "layout-general-light-375x812",
+      "pass": true,
+      "expected": "doc fits viewport, footer pinned",
+      "actual": "sw=375 cw=375 sh=812 ch=812 wx=0 wy=0 footBottom=812",
+      "evidence": "page-general-light-375x812",
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "layout-appearance-light-375x812",
+      "pass": true,
+      "expected": "doc fits viewport, footer pinned",
+      "actual": "sw=375 cw=375 sh=812 ch=812 wx=0 wy=0 footBottom=812",
+      "evidence": "page-appearance-light-375x812",
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "layout-support-light-375x812",
+      "pass": true,
+      "expected": "doc fits viewport, footer pinned",
+      "actual": "sw=375 cw=375 sh=812 ch=812 wx=0 wy=0 footBottom=812",
+      "evidence": "page-support-light-375x812",
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "layout-storage-dark-375x812",
+      "pass": true,
+      "expected": "doc fits viewport, footer pinned",
+      "actual": "sw=375 cw=375 sh=812 ch=812 wx=0 wy=0 footBottom=812",
+      "evidence": "page-storage-dark-375x812",
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "layout-general-dark-375x812",
+      "pass": true,
+      "expected": "doc fits viewport, footer pinned",
+      "actual": "sw=375 cw=375 sh=812 ch=812 wx=0 wy=0 footBottom=812",
+      "evidence": "page-general-dark-375x812",
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "layout-appearance-dark-375x812",
+      "pass": true,
+      "expected": "doc fits viewport, footer pinned",
+      "actual": "sw=375 cw=375 sh=812 ch=812 wx=0 wy=0 footBottom=812",
+      "evidence": "page-appearance-dark-375x812",
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "layout-support-dark-375x812",
+      "pass": true,
+      "expected": "doc fits viewport, footer pinned",
+      "actual": "sw=375 cw=375 sh=812 ch=812 wx=0 wy=0 footBottom=812",
+      "evidence": "page-support-dark-375x812",
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "layout-storage-light-768x900",
+      "pass": true,
+      "expected": "doc fits viewport, footer pinned",
+      "actual": "sw=768 cw=768 sh=900 ch=900 wx=0 wy=0 footBottom=900",
+      "evidence": "page-storage-light-768x900",
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "layout-general-light-768x900",
+      "pass": true,
+      "expected": "doc fits viewport, footer pinned",
+      "actual": "sw=768 cw=768 sh=900 ch=900 wx=0 wy=0 footBottom=900",
+      "evidence": "page-general-light-768x900",
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "layout-appearance-light-768x900",
+      "pass": true,
+      "expected": "doc fits viewport, footer pinned",
+      "actual": "sw=768 cw=768 sh=900 ch=900 wx=0 wy=0 footBottom=900",
+      "evidence": "page-appearance-light-768x900",
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "layout-support-light-768x900",
+      "pass": true,
+      "expected": "doc fits viewport, footer pinned",
+      "actual": "sw=768 cw=768 sh=900 ch=900 wx=0 wy=0 footBottom=900",
+      "evidence": "page-support-light-768x900",
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "layout-storage-dark-768x900",
+      "pass": true,
+      "expected": "doc fits viewport, footer pinned",
+      "actual": "sw=768 cw=768 sh=900 ch=900 wx=0 wy=0 footBottom=900",
+      "evidence": "page-storage-dark-768x900",
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "layout-general-dark-768x900",
+      "pass": true,
+      "expected": "doc fits viewport, footer pinned",
+      "actual": "sw=768 cw=768 sh=900 ch=900 wx=0 wy=0 footBottom=900",
+      "evidence": "page-general-dark-768x900",
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "layout-appearance-dark-768x900",
+      "pass": true,
+      "expected": "doc fits viewport, footer pinned",
+      "actual": "sw=768 cw=768 sh=900 ch=900 wx=0 wy=0 footBottom=900",
+      "evidence": "page-appearance-dark-768x900",
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "layout-support-dark-768x900",
+      "pass": true,
+      "expected": "doc fits viewport, footer pinned",
+      "actual": "sw=768 cw=768 sh=900 ch=900 wx=0 wy=0 footBottom=900",
+      "evidence": "page-support-dark-768x900",
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "layout-storage-light-820x640",
+      "pass": true,
+      "expected": "doc fits viewport, footer pinned",
+      "actual": "sw=820 cw=820 sh=640 ch=640 wx=0 wy=0 footBottom=640",
+      "evidence": "page-storage-light-820x640",
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "layout-general-light-820x640",
+      "pass": true,
+      "expected": "doc fits viewport, footer pinned",
+      "actual": "sw=820 cw=820 sh=640 ch=640 wx=0 wy=0 footBottom=640",
+      "evidence": "page-general-light-820x640",
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "layout-appearance-light-820x640",
+      "pass": true,
+      "expected": "doc fits viewport, footer pinned",
+      "actual": "sw=820 cw=820 sh=640 ch=640 wx=0 wy=0 footBottom=640",
+      "evidence": "page-appearance-light-820x640",
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "layout-support-light-820x640",
+      "pass": true,
+      "expected": "doc fits viewport, footer pinned",
+      "actual": "sw=820 cw=820 sh=640 ch=640 wx=0 wy=0 footBottom=640",
+      "evidence": "page-support-light-820x640",
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "layout-storage-dark-820x640",
+      "pass": true,
+      "expected": "doc fits viewport, footer pinned",
+      "actual": "sw=820 cw=820 sh=640 ch=640 wx=0 wy=0 footBottom=640",
+      "evidence": "page-storage-dark-820x640",
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "layout-general-dark-820x640",
+      "pass": true,
+      "expected": "doc fits viewport, footer pinned",
+      "actual": "sw=820 cw=820 sh=640 ch=640 wx=0 wy=0 footBottom=640",
+      "evidence": "page-general-dark-820x640",
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "layout-appearance-dark-820x640",
+      "pass": true,
+      "expected": "doc fits viewport, footer pinned",
+      "actual": "sw=820 cw=820 sh=640 ch=640 wx=0 wy=0 footBottom=640",
+      "evidence": "page-appearance-dark-820x640",
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "layout-support-dark-820x640",
+      "pass": true,
+      "expected": "doc fits viewport, footer pinned",
+      "actual": "sw=820 cw=820 sh=640 ch=640 wx=0 wy=0 footBottom=640",
+      "evidence": "page-support-dark-820x640",
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "layout-storage-light-1440x900",
+      "pass": true,
+      "expected": "doc fits viewport, footer pinned",
+      "actual": "sw=1440 cw=1440 sh=900 ch=900 wx=0 wy=0 footBottom=900",
+      "evidence": "page-storage-light-1440x900",
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "layout-general-light-1440x900",
+      "pass": true,
+      "expected": "doc fits viewport, footer pinned",
+      "actual": "sw=1440 cw=1440 sh=900 ch=900 wx=0 wy=0 footBottom=900",
+      "evidence": "page-general-light-1440x900",
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "layout-appearance-light-1440x900",
+      "pass": true,
+      "expected": "doc fits viewport, footer pinned",
+      "actual": "sw=1440 cw=1440 sh=900 ch=900 wx=0 wy=0 footBottom=900",
+      "evidence": "page-appearance-light-1440x900",
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "layout-support-light-1440x900",
+      "pass": true,
+      "expected": "doc fits viewport, footer pinned",
+      "actual": "sw=1440 cw=1440 sh=900 ch=900 wx=0 wy=0 footBottom=900",
+      "evidence": "page-support-light-1440x900",
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "layout-storage-dark-1440x900",
+      "pass": true,
+      "expected": "doc fits viewport, footer pinned",
+      "actual": "sw=1440 cw=1440 sh=900 ch=900 wx=0 wy=0 footBottom=900",
+      "evidence": "page-storage-dark-1440x900",
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "layout-general-dark-1440x900",
+      "pass": true,
+      "expected": "doc fits viewport, footer pinned",
+      "actual": "sw=1440 cw=1440 sh=900 ch=900 wx=0 wy=0 footBottom=900",
+      "evidence": "page-general-dark-1440x900",
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "layout-appearance-dark-1440x900",
+      "pass": true,
+      "expected": "doc fits viewport, footer pinned",
+      "actual": "sw=1440 cw=1440 sh=900 ch=900 wx=0 wy=0 footBottom=900",
+      "evidence": "page-appearance-dark-1440x900",
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "layout-support-dark-1440x900",
+      "pass": true,
+      "expected": "doc fits viewport, footer pinned",
+      "actual": "sw=1440 cw=1440 sh=900 ch=900 wx=0 wy=0 footBottom=900",
+      "evidence": "page-support-dark-1440x900",
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "state-table-light-375x812",
+      "pass": true,
+      "expected": "no doc overflow, footer pinned",
+      "actual": "sw=375 sh=812 wx=0 footBottom=812 mainSH=661 mainCH=661",
+      "evidence": "state-table-light-375x812",
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "state-add-light-375x812",
+      "pass": true,
+      "expected": "no doc overflow, footer pinned",
+      "actual": "sw=375 sh=812 wx=0 footBottom=812 mainSH=904 mainCH=661",
+      "evidence": "state-add-light-375x812",
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "dialog-inside-add-light-375x812",
+      "pass": true,
+      "expected": "dialog inside viewport",
+      "actual": "{\"id\":\"editor\",\"open\":true,\"x\":24,\"y\":68.9,\"w\":327,\"h\":674.2,\"right\":351,\"bottom\":743.1}",
+      "evidence": "state-add-light-375x812",
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "state-helperdown-light-375x812",
+      "pass": true,
+      "expected": "no doc overflow, footer pinned",
+      "actual": "sw=375 sh=812 wx=0 footBottom=812 mainSH=1060 mainCH=661",
+      "evidence": "state-helperdown-light-375x812",
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "state-helperdown-add-light-375x812",
+      "pass": true,
+      "expected": "no doc overflow, footer pinned",
+      "actual": "sw=375 sh=812 wx=0 footBottom=812 mainSH=1060 mainCH=661",
+      "evidence": "state-helperdown-add-light-375x812",
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "dialog-inside-helperdown-add-light-375x812",
+      "pass": true,
+      "expected": "dialog inside viewport",
+      "actual": "{\"id\":\"editor\",\"open\":true,\"x\":24,\"y\":68.9,\"w\":327,\"h\":674.2,\"right\":351,\"bottom\":743.1}",
+      "evidence": "state-helperdown-add-light-375x812",
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "state-table-dark-375x812",
+      "pass": true,
+      "expected": "no doc overflow, footer pinned",
+      "actual": "sw=375 sh=812 wx=0 footBottom=812 mainSH=661 mainCH=661",
+      "evidence": "state-table-dark-375x812",
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "state-add-dark-375x812",
+      "pass": true,
+      "expected": "no doc overflow, footer pinned",
+      "actual": "sw=375 sh=812 wx=0 footBottom=812 mainSH=904 mainCH=661",
+      "evidence": "state-add-dark-375x812",
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "dialog-inside-add-dark-375x812",
+      "pass": true,
+      "expected": "dialog inside viewport",
+      "actual": "{\"id\":\"editor\",\"open\":true,\"x\":24,\"y\":68.9,\"w\":327,\"h\":674.2,\"right\":351,\"bottom\":743.1}",
+      "evidence": "state-add-dark-375x812",
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "state-helperdown-dark-375x812",
+      "pass": true,
+      "expected": "no doc overflow, footer pinned",
+      "actual": "sw=375 sh=812 wx=0 footBottom=812 mainSH=1060 mainCH=661",
+      "evidence": "state-helperdown-dark-375x812",
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "state-helperdown-add-dark-375x812",
+      "pass": true,
+      "expected": "no doc overflow, footer pinned",
+      "actual": "sw=375 sh=812 wx=0 footBottom=812 mainSH=1060 mainCH=661",
+      "evidence": "state-helperdown-add-dark-375x812",
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "dialog-inside-helperdown-add-dark-375x812",
+      "pass": true,
+      "expected": "dialog inside viewport",
+      "actual": "{\"id\":\"editor\",\"open\":true,\"x\":24,\"y\":68.9,\"w\":327,\"h\":674.2,\"right\":351,\"bottom\":743.1}",
+      "evidence": "state-helperdown-add-dark-375x812",
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "state-table-light-768x900",
+      "pass": true,
+      "expected": "no doc overflow, footer pinned",
+      "actual": "sw=768 sh=900 wx=0 footBottom=900 mainSH=900 mainCH=900",
+      "evidence": "state-table-light-768x900",
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "state-add-light-768x900",
+      "pass": true,
+      "expected": "no doc overflow, footer pinned",
+      "actual": "sw=768 sh=900 wx=0 footBottom=900 mainSH=936 mainCH=900",
+      "evidence": "state-add-light-768x900",
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "dialog-inside-add-light-768x900",
+      "pass": true,
+      "expected": "dialog inside viewport",
+      "actual": "{\"id\":\"editor\",\"open\":true,\"x\":144,\"y\":138.3,\"w\":480,\"h\":623.4,\"right\":624,\"bottom\":761.7}",
+      "evidence": "state-add-light-768x900",
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "state-helperdown-light-768x900",
+      "pass": true,
+      "expected": "no doc overflow, footer pinned",
+      "actual": "sw=768 sh=900 wx=0 footBottom=900 mainSH=1018 mainCH=900",
+      "evidence": "state-helperdown-light-768x900",
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "state-helperdown-add-light-768x900",
+      "pass": true,
+      "expected": "no doc overflow, footer pinned",
+      "actual": "sw=768 sh=900 wx=0 footBottom=900 mainSH=1018 mainCH=900",
+      "evidence": "state-helperdown-add-light-768x900",
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "dialog-inside-helperdown-add-light-768x900",
+      "pass": true,
+      "expected": "dialog inside viewport",
+      "actual": "{\"id\":\"editor\",\"open\":true,\"x\":144,\"y\":138.3,\"w\":480,\"h\":623.4,\"right\":624,\"bottom\":761.7}",
+      "evidence": "state-helperdown-add-light-768x900",
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "state-table-dark-768x900",
+      "pass": true,
+      "expected": "no doc overflow, footer pinned",
+      "actual": "sw=768 sh=900 wx=0 footBottom=900 mainSH=900 mainCH=900",
+      "evidence": "state-table-dark-768x900",
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "state-add-dark-768x900",
+      "pass": true,
+      "expected": "no doc overflow, footer pinned",
+      "actual": "sw=768 sh=900 wx=0 footBottom=900 mainSH=936 mainCH=900",
+      "evidence": "state-add-dark-768x900",
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "dialog-inside-add-dark-768x900",
+      "pass": true,
+      "expected": "dialog inside viewport",
+      "actual": "{\"id\":\"editor\",\"open\":true,\"x\":144,\"y\":138.3,\"w\":480,\"h\":623.4,\"right\":624,\"bottom\":761.7}",
+      "evidence": "state-add-dark-768x900",
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "state-helperdown-dark-768x900",
+      "pass": true,
+      "expected": "no doc overflow, footer pinned",
+      "actual": "sw=768 sh=900 wx=0 footBottom=900 mainSH=1018 mainCH=900",
+      "evidence": "state-helperdown-dark-768x900",
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "state-helperdown-add-dark-768x900",
+      "pass": true,
+      "expected": "no doc overflow, footer pinned",
+      "actual": "sw=768 sh=900 wx=0 footBottom=900 mainSH=1018 mainCH=900",
+      "evidence": "state-helperdown-add-dark-768x900",
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "dialog-inside-helperdown-add-dark-768x900",
+      "pass": true,
+      "expected": "dialog inside viewport",
+      "actual": "{\"id\":\"editor\",\"open\":true,\"x\":144,\"y\":138.3,\"w\":480,\"h\":623.4,\"right\":624,\"bottom\":761.7}",
+      "evidence": "state-helperdown-add-dark-768x900",
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "state-table-light-820x640",
+      "pass": true,
+      "expected": "no doc overflow, footer pinned",
+      "actual": "sw=820 sh=640 wx=0 footBottom=640 mainSH=640 mainCH=640",
+      "evidence": "state-table-light-820x640",
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "state-add-light-820x640",
+      "pass": true,
+      "expected": "no doc overflow, footer pinned",
+      "actual": "sw=820 sh=640 wx=0 footBottom=640 mainSH=917 mainCH=640",
+      "evidence": "state-add-light-820x640",
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "dialog-inside-add-light-820x640",
+      "pass": true,
+      "expected": "dialog inside viewport",
+      "actual": "{\"id\":\"editor\",\"open\":true,\"x\":170,\"y\":8.3,\"w\":480,\"h\":623.4,\"right\":650,\"bottom\":631.7}",
+      "evidence": "state-add-light-820x640",
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "state-helperdown-light-820x640",
+      "pass": true,
+      "expected": "no doc overflow, footer pinned",
+      "actual": "sw=820 sh=640 wx=0 footBottom=640 mainSH=1018 mainCH=640",
+      "evidence": "state-helperdown-light-820x640",
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "state-helperdown-add-light-820x640",
+      "pass": true,
+      "expected": "no doc overflow, footer pinned",
+      "actual": "sw=820 sh=640 wx=0 footBottom=640 mainSH=1018 mainCH=640",
+      "evidence": "state-helperdown-add-light-820x640",
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "dialog-inside-helperdown-add-light-820x640",
+      "pass": true,
+      "expected": "dialog inside viewport",
+      "actual": "{\"id\":\"editor\",\"open\":true,\"x\":170,\"y\":8.3,\"w\":480,\"h\":623.4,\"right\":650,\"bottom\":631.7}",
+      "evidence": "state-helperdown-add-light-820x640",
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "state-table-dark-820x640",
+      "pass": true,
+      "expected": "no doc overflow, footer pinned",
+      "actual": "sw=820 sh=640 wx=0 footBottom=640 mainSH=640 mainCH=640",
+      "evidence": "state-table-dark-820x640",
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "state-add-dark-820x640",
+      "pass": true,
+      "expected": "no doc overflow, footer pinned",
+      "actual": "sw=820 sh=640 wx=0 footBottom=640 mainSH=917 mainCH=640",
+      "evidence": "state-add-dark-820x640",
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "dialog-inside-add-dark-820x640",
+      "pass": true,
+      "expected": "dialog inside viewport",
+      "actual": "{\"id\":\"editor\",\"open\":true,\"x\":170,\"y\":8.3,\"w\":480,\"h\":623.4,\"right\":650,\"bottom\":631.7}",
+      "evidence": "state-add-dark-820x640",
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "state-helperdown-dark-820x640",
+      "pass": true,
+      "expected": "no doc overflow, footer pinned",
+      "actual": "sw=820 sh=640 wx=0 footBottom=640 mainSH=1018 mainCH=640",
+      "evidence": "state-helperdown-dark-820x640",
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "state-helperdown-add-dark-820x640",
+      "pass": true,
+      "expected": "no doc overflow, footer pinned",
+      "actual": "sw=820 sh=640 wx=0 footBottom=640 mainSH=1018 mainCH=640",
+      "evidence": "state-helperdown-add-dark-820x640",
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "dialog-inside-helperdown-add-dark-820x640",
+      "pass": true,
+      "expected": "dialog inside viewport",
+      "actual": "{\"id\":\"editor\",\"open\":true,\"x\":170,\"y\":8.3,\"w\":480,\"h\":623.4,\"right\":650,\"bottom\":631.7}",
+      "evidence": "state-helperdown-add-dark-820x640",
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "state-table-light-1440x900",
+      "pass": true,
+      "expected": "no doc overflow, footer pinned",
+      "actual": "sw=1440 sh=900 wx=0 footBottom=900 mainSH=900 mainCH=900",
+      "evidence": "state-table-light-1440x900",
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "state-add-light-1440x900",
+      "pass": true,
+      "expected": "no doc overflow, footer pinned",
+      "actual": "sw=1440 sh=900 wx=0 footBottom=900 mainSH=900 mainCH=900",
+      "evidence": "state-add-light-1440x900",
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "dialog-inside-add-light-1440x900",
+      "pass": true,
+      "expected": "dialog inside viewport",
+      "actual": "{\"id\":\"editor\",\"open\":true,\"x\":480,\"y\":138.3,\"w\":480,\"h\":623.4,\"right\":960,\"bottom\":761.7}",
+      "evidence": "state-add-light-1440x900",
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "state-helperdown-light-1440x900",
+      "pass": true,
+      "expected": "no doc overflow, footer pinned",
+      "actual": "sw=1440 sh=900 wx=0 footBottom=900 mainSH=900 mainCH=900",
+      "evidence": "state-helperdown-light-1440x900",
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "state-helperdown-add-light-1440x900",
+      "pass": true,
+      "expected": "no doc overflow, footer pinned",
+      "actual": "sw=1440 sh=900 wx=0 footBottom=900 mainSH=900 mainCH=900",
+      "evidence": "state-helperdown-add-light-1440x900",
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "dialog-inside-helperdown-add-light-1440x900",
+      "pass": true,
+      "expected": "dialog inside viewport",
+      "actual": "{\"id\":\"editor\",\"open\":true,\"x\":480,\"y\":138.3,\"w\":480,\"h\":623.4,\"right\":960,\"bottom\":761.7}",
+      "evidence": "state-helperdown-add-light-1440x900",
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "state-table-dark-1440x900",
+      "pass": true,
+      "expected": "no doc overflow, footer pinned",
+      "actual": "sw=1440 sh=900 wx=0 footBottom=900 mainSH=900 mainCH=900",
+      "evidence": "state-table-dark-1440x900",
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "state-add-dark-1440x900",
+      "pass": true,
+      "expected": "no doc overflow, footer pinned",
+      "actual": "sw=1440 sh=900 wx=0 footBottom=900 mainSH=900 mainCH=900",
+      "evidence": "state-add-dark-1440x900",
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "dialog-inside-add-dark-1440x900",
+      "pass": true,
+      "expected": "dialog inside viewport",
+      "actual": "{\"id\":\"editor\",\"open\":true,\"x\":480,\"y\":138.3,\"w\":480,\"h\":623.4,\"right\":960,\"bottom\":761.7}",
+      "evidence": "state-add-dark-1440x900",
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "state-helperdown-dark-1440x900",
+      "pass": true,
+      "expected": "no doc overflow, footer pinned",
+      "actual": "sw=1440 sh=900 wx=0 footBottom=900 mainSH=900 mainCH=900",
+      "evidence": "state-helperdown-dark-1440x900",
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "state-helperdown-add-dark-1440x900",
+      "pass": true,
+      "expected": "no doc overflow, footer pinned",
+      "actual": "sw=1440 sh=900 wx=0 footBottom=900 mainSH=900 mainCH=900",
+      "evidence": "state-helperdown-add-dark-1440x900",
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "dialog-inside-helperdown-add-dark-1440x900",
+      "pass": true,
+      "expected": "dialog inside viewport",
+      "actual": "{\"id\":\"editor\",\"open\":true,\"x\":480,\"y\":138.3,\"w\":480,\"h\":623.4,\"right\":960,\"bottom\":761.7}",
+      "evidence": "state-helperdown-add-dark-1440x900",
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "state-empty-375x812",
+      "pass": true,
+      "expected": "no overflow",
+      "actual": "sw=375 sh=812 wx=0",
+      "evidence": "state-empty-375x812",
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "state-cards-375x812",
+      "pass": true,
+      "expected": "no overflow",
+      "actual": "sw=375 sh=812 wx=0",
+      "evidence": "state-cards-375x812",
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "state-table2-375x812",
+      "pass": true,
+      "expected": "no overflow",
+      "actual": "sw=375 sh=812 wx=0",
+      "evidence": "state-table2-375x812",
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "state-empty-768x900",
+      "pass": true,
+      "expected": "no overflow",
+      "actual": "sw=768 sh=900 wx=0",
+      "evidence": "state-empty-768x900",
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "state-cards-768x900",
+      "pass": true,
+      "expected": "no overflow",
+      "actual": "sw=768 sh=900 wx=0",
+      "evidence": "state-cards-768x900",
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "state-table2-768x900",
+      "pass": true,
+      "expected": "no overflow",
+      "actual": "sw=768 sh=900 wx=0",
+      "evidence": "state-table2-768x900",
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "state-empty-820x640",
+      "pass": true,
+      "expected": "no overflow",
+      "actual": "sw=820 sh=640 wx=0",
+      "evidence": "state-empty-820x640",
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "state-cards-820x640",
+      "pass": true,
+      "expected": "no overflow",
+      "actual": "sw=820 sh=640 wx=0",
+      "evidence": "state-cards-820x640",
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "state-table2-820x640",
+      "pass": true,
+      "expected": "no overflow",
+      "actual": "sw=820 sh=640 wx=0",
+      "evidence": "state-table2-820x640",
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "state-empty-1440x900",
+      "pass": true,
+      "expected": "no overflow",
+      "actual": "sw=1440 sh=900 wx=0",
+      "evidence": "state-empty-1440x900",
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "state-cards-1440x900",
+      "pass": true,
+      "expected": "no overflow",
+      "actual": "sw=1440 sh=900 wx=0",
+      "evidence": "state-cards-1440x900",
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "state-table2-1440x900",
+      "pass": true,
+      "expected": "no overflow",
+      "actual": "sw=1440 sh=900 wx=0",
+      "evidence": "state-table2-1440x900",
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "tab-no-body-375",
+      "pass": true,
+      "expected": "no BODY stop in tab cycle",
+      "actual": "no BODY",
+      "evidence": "tab-storage-375x812",
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "tab-nav-before-content-375",
+      "pass": true,
+      "expected": "navigation reached before content controls",
+      "actual": "first=nav-storage navIndex=0 addIndex=3",
+      "evidence": "tab-storage-375x812",
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "tab-visits-all-nav-375",
+      "pass": true,
+      "expected": "all 3 nav items visited in cycle",
+      "actual": "storage=true general=true appearance=true",
+      "evidence": "tab-storage-375x812",
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "focus-after-retry-not-body-375",
+      "pass": true,
+      "expected": "focus not BODY after retry",
+      "actual": "BUTTON fk=nav-storage isBody=false",
+      "evidence": "tab-storage-375x812",
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "tab-no-body-820",
+      "pass": true,
+      "expected": "no BODY stop in tab cycle",
+      "actual": "no BODY",
+      "evidence": "tab-storage-820x640",
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "tab-nav-before-content-820",
+      "pass": true,
+      "expected": "navigation reached before content controls",
+      "actual": "first=nav-storage navIndex=0 addIndex=3",
+      "evidence": "tab-storage-820x640",
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "tab-visits-all-nav-820",
+      "pass": true,
+      "expected": "all 3 nav items visited in cycle",
+      "actual": "storage=true general=true appearance=true",
+      "evidence": "tab-storage-820x640",
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "focus-after-retry-not-body-820",
+      "pass": true,
+      "expected": "focus not BODY after retry",
+      "actual": "BUTTON fk=nav-storage isBody=false",
+      "evidence": "tab-storage-820x640",
+      "severity": "ok"
+    },
+    {
+      "area": "functionality",
+      "id": "forget-placeholder-honest",
+      "pass": true,
+      "expected": "placeholder must not claim saved password after forget",
+      "actual": "placeholder=\"Stored privately by Storage Studio KH\" hasForget=false",
+      "evidence": "forget-reopen",
+      "severity": "ok"
+    },
+    {
+      "area": "trust",
+      "id": "forget-placeholder-trust",
+      "pass": true,
+      "expected": "no false claim of existing credential",
+      "actual": "placeholder=\"Stored privately by Storage Studio KH\"",
+      "evidence": "forget-reopen",
+      "severity": "ok"
+    },
+    {
+      "area": "functionality",
+      "id": "forget-toast-mentions-forgotten",
+      "pass": true,
+      "expected": "toast names forgotten password",
+      "actual": "[\"Saved Studio NAS. The saved password was forgotten.\"]",
+      "evidence": "forget-after-save-toast",
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "appearance-no-dead-right-1440",
+      "pass": true,
+      "expected": "no ~70% dead right half at 1440",
+      "actual": "deadRight=45px (3.7%) mainW=1204 segW=330 rowW=1146",
+      "evidence": "appearance-1440-light",
+      "severity": "ok"
+    },
+    {
+      "area": "trust",
+      "id": "appearance-no-always-light",
+      "pass": true,
+      "expected": "no \"always uses\" overclaim (light)",
+      "actual": "none found",
+      "evidence": "appearance-1440-light",
+      "severity": "ok"
+    },
+    {
+      "area": "trust",
+      "id": "appearance-no-always-dark",
+      "pass": true,
+      "expected": "no \"always uses\" overclaim (dark)",
+      "actual": "none found",
+      "evidence": "appearance-1440-dark-selected",
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "table-no-pan-768",
+      "pass": true,
+      "expected": "no horizontal pan/overflow in table at 768",
+      "actual": "wrap scrollW-clientW=0 (474-474) sl=0",
+      "evidence": "table-768",
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "table-menu-visible-768",
+      "pass": true,
+      "expected": "row menu inside wrapper at 768",
+      "actual": "menuRight=727 wrapRight=740",
+      "evidence": "table-768",
+      "severity": "ok"
+    },
+    {
+      "area": "flow",
+      "id": "row-menu-opens",
+      "pass": true,
+      "expected": "row menu opens",
+      "actual": "true",
+      "evidence": "row-menu-open",
+      "severity": "ok"
+    },
+    {
+      "area": "flow",
+      "id": "row-menu-arrow-keys",
+      "pass": true,
+      "expected": "arrows move in row menu",
+      "actual": "{\"a1\":\"test\",\"a2\":\"edit\",\"ah\":\"unmount\",\"ae\":\"remove\"}",
+      "evidence": "row-menu-open",
+      "severity": "ok"
+    },
+    {
+      "area": "flow",
+      "id": "row-menu-escape-closes",
+      "pass": true,
+      "expected": "Escape closes row menu",
+      "actual": "true",
+      "evidence": null,
+      "severity": "ok"
+    },
+    {
+      "area": "flow",
+      "id": "row-menu-focus-returns",
+      "pass": true,
+      "expected": "focus returns to trigger/row",
+      "actual": "row-studio-nas-menu",
+      "evidence": null,
+      "severity": "ok"
+    },
+    {
+      "area": "flow",
+      "id": "row-menu-outside-closes",
+      "pass": true,
+      "expected": "outside click closes row menu",
+      "actual": "true",
+      "evidence": null,
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "add-tab-stays-in-sheet-375",
+      "pass": true,
+      "expected": "Tab stays inside add dialog",
+      "actual": "all in dialog",
+      "evidence": "add-open-375",
+      "severity": "ok"
+    },
+    {
+      "area": "flow",
+      "id": "add-escape-asks-discard",
+      "pass": true,
+      "expected": "Escape asks before discarding typed changes",
+      "actual": "true",
+      "evidence": "add-discard-ask-375",
+      "severity": "ok"
+    },
+    {
+      "area": "flow",
+      "id": "add-keep-editing-preserves",
+      "pass": true,
+      "expected": "Keep editing preserves input",
+      "actual": "Test share",
+      "evidence": null,
+      "severity": "ok"
+    },
+    {
+      "area": "flow",
+      "id": "add-save-invoked",
+      "pass": true,
+      "expected": "save_storage invoked",
+      "actual": "[\"get_snapshot\",\"save_storage\"]",
+      "evidence": "add-after-save-375",
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "add-after-save-doc-fits-375",
+      "pass": true,
+      "expected": "doc fits after save at 375",
+      "actual": "sw=375 sh=812 foot=812",
+      "evidence": "add-after-save-375",
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "add-focus-on-screen-375",
+      "pass": true,
+      "expected": "focus on screen after save",
+      "actual": "{\"tag\":\"BUTTON\",\"id\":null,\"fk\":\"row-s1794618210780-menu\",\"action\":null,\"name\":null,\"role\":null,\"ariaLabel\":\"More actions for Test share\",\"isBody\":false,\"text\":\"\",\"inDialog\":false,\"inNav\":false,\"inMain\":true,\"inFoot\":false,\"rect\":{\"x\":128,\"y\":571.2,\"w\":28,\"h\":28,\"bottom\":599.2,\"right\":156}}",
+      "evidence": "add-after-save-375",
+      "severity": "ok"
+    },
+    {
+      "area": "functionality",
+      "id": "helper-down-banner",
+      "pass": true,
+      "expected": "helper down banner with restart",
+      "actual": "true",
+      "evidence": "helper-down",
+      "severity": "ok"
+    },
+    {
+      "area": "flow",
+      "id": "helper-restart-invoked",
+      "pass": true,
+      "expected": "restart_helper invoked",
+      "actual": "[\"get_snapshot\",\"restart_helper\"]",
+      "evidence": "helper-restarted",
+      "severity": "ok"
+    },
+    {
+      "area": "flow",
+      "id": "helper-restart-clears",
+      "pass": true,
+      "expected": "banner clears or started shown",
+      "actual": "bannerGone=true",
+      "evidence": "helper-restarted",
+      "severity": "ok"
+    },
+    {
+      "area": "functionality",
+      "id": "test-invoked",
+      "pass": true,
+      "expected": "test_storage invoked",
+      "actual": "[\"get_snapshot\",\"test_storage\"]",
+      "evidence": "test-once",
+      "severity": "ok"
+    },
+    {
+      "area": "functionality",
+      "id": "test-repeat",
+      "pass": true,
+      "expected": "repeated Test still works",
+      "actual": "count=2",
+      "evidence": "test-twice",
+      "severity": "ok"
+    },
+    {
+      "area": "functionality",
+      "id": "unmount-invoked",
+      "pass": true,
+      "expected": "unmount_storage invoked",
+      "actual": "[\"get_snapshot\",\"test_storage\",\"test_storage\",\"unmount_storage\"]",
+      "evidence": "unmount",
+      "severity": "ok"
+    },
+    {
+      "area": "flow",
+      "id": "remove-reduces-row",
+      "pass": true,
+      "expected": "remove removes row",
+      "actual": "before=3 after=2",
+      "evidence": "remove-after",
+      "severity": "ok"
+    },
+    {
+      "area": "flow",
+      "id": "remove-offers-undo",
+      "pass": true,
+      "expected": "Undo offered",
+      "actual": "true",
+      "evidence": "remove-after",
+      "severity": "ok"
+    },
+    {
+      "area": "flow",
+      "id": "undo-restores-row",
+      "pass": true,
+      "expected": "Undo restores row",
+      "actual": "true",
+      "evidence": "remove-undone",
+      "severity": "ok"
+    },
+    {
+      "area": "functionality",
+      "id": "undo-restores-mounted-state",
+      "pass": true,
+      "expected": "Undo restores mounted share as Mounted",
+      "actual": "Studio NASSMB share , SMB share Mounted Mounted at /Volumes/studio Address smb://nas.local/studio Reconnects At login · after wake Open in Finder",
+      "evidence": "remove-undone",
+      "severity": "ok"
+    },
+    {
+      "area": "flow",
+      "id": "edit-opens",
+      "pass": true,
+      "expected": "edit dialog opens",
+      "actual": "true",
+      "evidence": "edit-open",
+      "severity": "ok"
+    },
+    {
+      "area": "flow",
+      "id": "edit-saves-name",
+      "pass": true,
+      "expected": "edit saves name",
+      "actual": "true",
+      "evidence": "edit-saved",
+      "severity": "ok"
+    },
+    {
+      "area": "flow",
+      "id": "editor-remove-undo-offered",
+      "pass": true,
+      "expected": "editor remove offers Undo",
+      "actual": "1",
+      "evidence": null,
+      "severity": "ok"
+    },
+    {
+      "area": "functionality",
+      "id": "credentials-prompt-opens",
+      "pass": true,
+      "expected": "credentials prompt opens",
+      "actual": "true",
+      "evidence": "credentials-prompt",
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "credentials-tab-stays",
+      "pass": true,
+      "expected": "Tab stays in credentials sheet",
+      "actual": "ok",
+      "evidence": "credentials-prompt",
+      "severity": "ok"
+    },
+    {
+      "area": "flow",
+      "id": "credentials-escape-closes",
+      "pass": true,
+      "expected": "Escape closes credentials",
+      "actual": "0",
+      "evidence": null,
+      "severity": "ok"
+    },
+    {
+      "area": "functionality",
+      "id": "duplicate-detected",
+      "pass": true,
+      "expected": "duplicate share blocked",
+      "actual": "disabled=true reason=[\"Version 0.2.0 is available\",\"\",\"This share is already added as Studio NAS.\"]",
+      "evidence": "duplicate-detection",
+      "severity": "ok"
+    },
+    {
+      "area": "functionality",
+      "id": "view-switch-to-table",
+      "pass": true,
+      "expected": "switch to table works",
+      "actual": "true",
+      "evidence": "view-table-switched",
+      "severity": "ok"
+    },
+    {
+      "area": "functionality",
+      "id": "view-switch-to-cards",
+      "pass": true,
+      "expected": "switch back to cards works",
+      "actual": null,
+      "evidence": "view-cards-switched",
+      "severity": "ok"
+    },
+    {
+      "area": "flow",
+      "id": "whatsnew-opens-inside",
+      "pass": true,
+      "expected": "Whats New inside viewport",
+      "actual": "{\"id\":\"whatsnew\",\"open\":true,\"x\":24,\"y\":8,\"w\":327,\"h\":796,\"right\":351,\"bottom\":804}",
+      "evidence": "whatsnew-375",
+      "severity": "ok"
+    },
+    {
+      "area": "flow",
+      "id": "whatsnew-focus-close",
+      "pass": true,
+      "expected": "Close focused",
+      "actual": "{\"tag\":\"BUTTON\",\"id\":null,\"fk\":null,\"action\":null,\"name\":null,\"role\":null,\"ariaLabel\":null,\"isBody\":false,\"text\":\"Close\",\"inDialog\":true,\"inNav\":false,\"inMain\":false,\"inFoot\":false,\"rect\":{\"x\":267.8,\"y\":764,\"w\":59.2,\"h\":28,\"bottom\":792,\"right\":327}}",
+      "evidence": "whatsnew-375",
+      "severity": "ok"
+    },
+    {
+      "area": "flow",
+      "id": "whatsnew-escape-closes",
+      "pass": true,
+      "expected": "Escape closes Whats New",
+      "actual": "0",
+      "evidence": null,
+      "severity": "ok"
+    },
+    {
+      "area": "functionality",
+      "id": "boot-fail-named",
+      "pass": true,
+      "expected": "boot failure named",
+      "actual": "Storage Studio KH\n\nThe settings window couldn't read the app's current state.\n\nStorage Studio KH couldn't start\n\nThe app couldn't read its settings.\n\nRetry",
+      "evidence": "boot-fail",
+      "severity": "ok"
+    },
+    {
+      "area": "functionality",
+      "id": "boot-retry-recovers",
+      "pass": true,
+      "expected": "retry recovers to storage list",
+      "actual": "3",
+      "evidence": "boot-retry-recovered",
+      "severity": "ok"
+    },
+    {
+      "area": "usability",
+      "id": "empty-names-next-step",
+      "pass": true,
+      "expected": "empty state names next step",
+      "actual": "Storage Shares and disks reconnect after login, after wake, and when the network changes. No storage yet Add your first share or disk to keep it connected automatically. Add storage",
+      "evidence": "empty-state",
+      "severity": "ok"
+    }
+  ],
+  "shots": [
+    "page-storage-light-375x812",
+    "page-general-light-375x812",
+    "page-appearance-light-375x812",
+    "page-support-light-375x812",
+    "page-storage-dark-375x812",
+    "page-general-dark-375x812",
+    "page-appearance-dark-375x812",
+    "page-support-dark-375x812",
+    "page-storage-light-768x900",
+    "page-general-light-768x900",
+    "page-appearance-light-768x900",
+    "page-support-light-768x900",
+    "page-storage-dark-768x900",
+    "page-general-dark-768x900",
+    "page-appearance-dark-768x900",
+    "page-support-dark-768x900",
+    "page-storage-light-820x640",
+    "page-general-light-820x640",
+    "page-appearance-light-820x640",
+    "page-support-light-820x640",
+    "page-storage-dark-820x640",
+    "page-general-dark-820x640",
+    "page-appearance-dark-820x640",
+    "page-support-dark-820x640",
+    "page-storage-light-1440x900",
+    "page-general-light-1440x900",
+    "page-appearance-light-1440x900",
+    "page-support-light-1440x900",
+    "page-storage-dark-1440x900",
+    "page-general-dark-1440x900",
+    "page-appearance-dark-1440x900",
+    "page-support-dark-1440x900",
+    "state-table-light-375x812",
+    "state-add-light-375x812",
+    "state-helperdown-light-375x812",
+    "state-helperdown-add-light-375x812",
+    "state-table-dark-375x812",
+    "state-add-dark-375x812",
+    "state-helperdown-dark-375x812",
+    "state-helperdown-add-dark-375x812",
+    "state-table-light-768x900",
+    "state-add-light-768x900",
+    "state-helperdown-light-768x900",
+    "state-helperdown-add-light-768x900",
+    "state-table-dark-768x900",
+    "state-add-dark-768x900",
+    "state-helperdown-dark-768x900",
+    "state-helperdown-add-dark-768x900",
+    "state-table-light-820x640",
+    "state-add-light-820x640",
+    "state-helperdown-light-820x640",
+    "state-helperdown-add-light-820x640",
+    "state-table-dark-820x640",
+    "state-add-dark-820x640",
+    "state-helperdown-dark-820x640",
+    "state-helperdown-add-dark-820x640",
+    "state-table-light-1440x900",
+    "state-add-light-1440x900",
+    "state-helperdown-light-1440x900",
+    "state-helperdown-add-light-1440x900",
+    "state-table-dark-1440x900",
+    "state-add-dark-1440x900",
+    "state-helperdown-dark-1440x900",
+    "state-helperdown-add-dark-1440x900",
+    "state-empty-375x812",
+    "state-cards-375x812",
+    "state-table2-375x812",
+    "state-empty-768x900",
+    "state-cards-768x900",
+    "state-table2-768x900",
+    "state-empty-820x640",
+    "state-cards-820x640",
+    "state-table2-820x640",
+    "state-empty-1440x900",
+    "state-cards-1440x900",
+    "state-table2-1440x900",
+    "tab-storage-375x812",
+    "tab-storage-820x640",
+    "forget-before",
+    "forget-after-save-toast",
+    "forget-reopen",
+    "appearance-1440-light",
+    "appearance-1440-dark-selected",
+    "table-768",
+    "row-menu-open",
+    "add-open-375",
+    "add-discard-ask-375",
+    "add-after-save-375",
+    "helper-down",
+    "helper-restarted",
+    "test-once",
+    "test-twice",
+    "unmount",
+    "remove-confirm",
+    "remove-after",
+    "remove-undone",
+    "edit-open",
+    "edit-saved",
+    "credentials-prompt",
+    "duplicate-detection",
+    "view-table-switched",
+    "view-cards-switched",
+    "whatsnew-375",
+    "boot-fail",
+    "boot-retry-recovered",
+    "empty-state"
+  ],
+  "traces": {
+    "tab-storage-375": [
+      {
+        "i": 1,
+        "tag": "BUTTON",
+        "id": null,
+        "fk": "nav-storage",
+        "action": null,
+        "name": null,
+        "role": null,
+        "isBody": false,
+        "inDialog": false,
+        "inNav": true,
+        "inFoot": false,
+        "label": "Storage",
+        "rect": {
+          "x": 12,
+          "y": 8,
+          "w": 89.9,
+          "h": 30,
+          "bottom": 38
+        }
+      },
+      {
+        "i": 2,
+        "tag": "BUTTON",
+        "id": null,
+        "fk": "nav-general",
+        "action": null,
+        "name": null,
+        "role": null,
+        "isBody": false,
+        "inDialog": false,
+        "inNav": true,
+        "inFoot": false,
+        "label": "General",
+        "rect": {
+          "x": 105.9,
+          "y": 8,
+          "w": 88.1,
+          "h": 30,
+          "bottom": 38
+        }
+      },
+      {
+        "i": 3,
+        "tag": "BUTTON",
+        "id": null,
+        "fk": "nav-appearance",
+        "action": null,
+        "name": null,
+        "role": null,
+        "isBody": false,
+        "inDialog": false,
+        "inNav": true,
+        "inFoot": false,
+        "label": "Appearance",
+        "rect": {
+          "x": 197.9,
+          "y": 8,
+          "w": 114.5,
+          "h": 30,
+          "bottom": 38
+        }
+      },
+      {
+        "i": 4,
+        "tag": "BUTTON",
+        "id": null,
+        "fk": "add-storage",
+        "action": "add-storage",
+        "name": null,
+        "role": null,
+        "isBody": false,
+        "inDialog": false,
+        "inNav": false,
+        "inFoot": false,
+        "label": "Add storage",
+        "rect": {
+          "x": 239.1,
+          "y": 63,
+          "w": 119.9,
+          "h": 28,
+          "bottom": 91
+        }
+      },
+      {
+        "i": 5,
+        "tag": "BUTTON",
+        "id": null,
+        "fk": null,
+        "action": "show-warning",
+        "name": null,
+        "role": null,
+        "isBody": false,
+        "inDialog": false,
+        "inNav": false,
+        "inFoot": false,
+        "label": "Needs attention: 1. Show the first one.",
+        "rect": {
+          "x": 16,
+          "y": 151.9,
+          "w": 160,
+          "h": 28,
+          "bottom": 179.9
+        }
+      },
+      {
+        "i": 6,
+        "tag": "BUTTON",
+        "id": null,
+        "fk": null,
+        "action": "show-warning",
+        "name": null,
+        "role": null,
+        "isBody": false,
+        "inDialog": false,
+        "inNav": false,
+        "inFoot": false,
+        "label": "Can't be reached: 1. Show the first one.",
+        "rect": {
+          "x": 180,
+          "y": 151.9,
+          "w": 166.7,
+          "h": 28,
+          "bottom": 179.9
+        }
+      },
+      {
+        "i": 7,
+        "tag": "INPUT",
+        "id": null,
+        "fk": "view-cards",
+        "action": null,
+        "name": "list-view",
+        "role": null,
+        "isBody": false,
+        "inDialog": false,
+        "inNav": false,
+        "inFoot": false,
+        "label": "",
+        "rect": {
+          "x": 207.4,
+          "y": 196.9,
+          "w": 71.3,
+          "h": 30,
+          "bottom": 226.9
+        }
+      },
+      {
+        "i": 8,
+        "tag": "BUTTON",
+        "id": null,
+        "fk": "row-studio-nas-reveal",
+        "action": "reveal",
+        "name": null,
+        "role": null,
+        "isBody": false,
+        "inDialog": false,
+        "inNav": false,
+        "inFoot": false,
+        "label": "Open Studio NAS in Finder",
+        "rect": {
+          "x": 33,
+          "y": 400.4,
+          "w": 131.9,
+          "h": 28,
+          "bottom": 428.4
+        }
+      },
+      {
+        "i": 9,
+        "tag": "BUTTON",
+        "id": null,
+        "fk": "row-studio-nas-menu",
+        "action": null,
+        "name": null,
+        "role": null,
+        "isBody": false,
+        "inDialog": false,
+        "inNav": false,
+        "inFoot": false,
+        "label": "More actions for Studio NAS",
+        "rect": {
+          "x": 168.9,
+          "y": 400.4,
+          "w": 28,
+          "h": 28,
+          "bottom": 428.4
+        }
+      },
+      {
+        "i": 10,
+        "tag": "BUTTON",
+        "id": null,
+        "fk": "row-archive-mount",
+        "action": "mount",
+        "name": null,
+        "role": null,
+        "isBody": false,
+        "inDialog": false,
+        "inNav": false,
+        "inFoot": false,
+        "label": "Mount now Archive Share",
+        "rect": {
+          "x": 33,
+          "y": 610,
+          "w": 91,
+          "h": 28,
+          "bottom": 638
+        }
+      },
+      {
+        "i": 11,
+        "tag": "BUTTON",
+        "id": null,
+        "fk": "row-archive-menu",
+        "action": null,
+        "name": null,
+        "role": null,
+        "isBody": false,
+        "inDialog": false,
+        "inNav": false,
+        "inFoot": false,
+        "label": "More actions for Archive Share",
+        "rect": {
+          "x": 128,
+          "y": 610,
+          "w": 28,
+          "h": 28,
+          "bottom": 638
+        }
+      },
+      {
+        "i": 12,
+        "tag": "BUTTON",
+        "id": null,
+        "fk": "row-editing-ssd-mount",
+        "action": "mount",
+        "name": null,
+        "role": null,
+        "isBody": false,
+        "inDialog": false,
+        "inNav": false,
+        "inFoot": false,
+        "label": "Mount now Editing SSD",
+        "rect": {
+          "x": 33,
+          "y": 554.6,
+          "w": 91,
+          "h": 28,
+          "bottom": 582.6
+        }
+      },
+      {
+        "i": 13,
+        "tag": "BUTTON",
+        "id": null,
+        "fk": "row-editing-ssd-menu",
+        "action": null,
+        "name": null,
+        "role": null,
+        "isBody": false,
+        "inDialog": false,
+        "inNav": false,
+        "inFoot": false,
+        "label": "More actions for Editing SSD",
+        "rect": {
+          "x": 128,
+          "y": 554.6,
+          "w": 28,
+          "h": 28,
+          "bottom": 582.6
+        }
+      },
+      {
+        "i": 14,
+        "tag": "BUTTON",
+        "id": null,
+        "fk": "nav-support",
+        "action": null,
+        "name": null,
+        "role": null,
+        "isBody": false,
+        "inDialog": false,
+        "inNav": false,
+        "inFoot": true,
+        "label": "Support this app",
+        "rect": {
+          "x": 12,
+          "y": 717.2,
+          "w": 136.3,
+          "h": 30,
+          "bottom": 747.2
+        }
+      },
+      {
+        "i": 15,
+        "tag": "BUTTON",
+        "id": null,
+        "fk": "pill",
+        "action": "whats-new",
+        "name": null,
+        "role": null,
+        "isBody": false,
+        "inDialog": false,
+        "inNav": false,
+        "inFoot": true,
+        "label": "What's New, Storage Studio KH v0.1.10",
+        "rect": {
+          "x": 12,
+          "y": 755.2,
+          "w": 168.8,
+          "h": 26,
+          "bottom": 781.2
+        }
+      },
+      {
+        "i": 16,
+        "tag": "BUTTON",
+        "id": null,
+        "fk": "check",
+        "action": "check-updates",
+        "name": null,
+        "role": null,
+        "isBody": false,
+        "inDialog": false,
+        "inNav": false,
+        "inFoot": true,
+        "label": "Check for Updates",
+        "rect": {
+          "x": 184.8,
+          "y": 757.2,
+          "w": 22,
+          "h": 22,
+          "bottom": 779.2
+        }
+      },
+      {
+        "i": 17,
+        "tag": "BUTTON",
+        "id": null,
+        "fk": "download",
+        "action": "download-update",
+        "name": null,
+        "role": null,
+        "isBody": false,
+        "inDialog": false,
+        "inNav": false,
+        "inFoot": true,
+        "label": "Download version 0.2.0",
+        "rect": {
+          "x": 210.8,
+          "y": 757.2,
+          "w": 22,
+          "h": 22,
+          "bottom": 779.2
+        }
+      },
+      {
+        "i": 18,
+        "tag": "BUTTON",
+        "id": null,
+        "fk": "nav-storage",
+        "action": null,
+        "name": null,
+        "role": null,
+        "isBody": false,
+        "inDialog": false,
+        "inNav": true,
+        "inFoot": false,
+        "label": "Storage",
+        "rect": {
+          "x": 12,
+          "y": 8,
+          "w": 89.9,
+          "h": 30,
+          "bottom": 38
+        }
+      }
+    ],
+    "tab-storage-820": [
+      {
+        "i": 1,
+        "tag": "BUTTON",
+        "id": null,
+        "fk": "nav-storage",
+        "action": null,
+        "name": null,
+        "role": null,
+        "isBody": false,
+        "inDialog": false,
+        "inNav": true,
+        "inFoot": false,
+        "label": "Storage",
+        "rect": {
+          "x": 6,
+          "y": 16,
+          "w": 223,
+          "h": 30,
+          "bottom": 46
+        }
+      },
+      {
+        "i": 2,
+        "tag": "BUTTON",
+        "id": null,
+        "fk": "nav-general",
+        "action": null,
+        "name": null,
+        "role": null,
+        "isBody": false,
+        "inDialog": false,
+        "inNav": true,
+        "inFoot": false,
+        "label": "General",
+        "rect": {
+          "x": 6,
+          "y": 50,
+          "w": 223,
+          "h": 30,
+          "bottom": 80
+        }
+      },
+      {
+        "i": 3,
+        "tag": "BUTTON",
+        "id": null,
+        "fk": "nav-appearance",
+        "action": null,
+        "name": null,
+        "role": null,
+        "isBody": false,
+        "inDialog": false,
+        "inNav": true,
+        "inFoot": false,
+        "label": "Appearance",
+        "rect": {
+          "x": 6,
+          "y": 84,
+          "w": 223,
+          "h": 30,
+          "bottom": 114
+        }
+      },
+      {
+        "i": 4,
+        "tag": "BUTTON",
+        "id": null,
+        "fk": "add-storage",
+        "action": "add-storage",
+        "name": null,
+        "role": null,
+        "isBody": false,
+        "inDialog": false,
+        "inNav": false,
+        "inFoot": false,
+        "label": "Add storage",
+        "rect": {
+          "x": 672.1,
+          "y": 28,
+          "w": 119.9,
+          "h": 28,
+          "bottom": 56
+        }
+      },
+      {
+        "i": 5,
+        "tag": "BUTTON",
+        "id": null,
+        "fk": null,
+        "action": "show-warning",
+        "name": null,
+        "role": null,
+        "isBody": false,
+        "inDialog": false,
+        "inNav": false,
+        "inFoot": false,
+        "label": "Needs attention: 1. Show the first one.",
+        "rect": {
+          "x": 264,
+          "y": 106,
+          "w": 160,
+          "h": 28,
+          "bottom": 134
+        }
+      },
+      {
+        "i": 6,
+        "tag": "BUTTON",
+        "id": null,
+        "fk": null,
+        "action": "show-warning",
+        "name": null,
+        "role": null,
+        "isBody": false,
+        "inDialog": false,
+        "inNav": false,
+        "inFoot": false,
+        "label": "Can't be reached: 1. Show the first one.",
+        "rect": {
+          "x": 428,
+          "y": 106,
+          "w": 166.7,
+          "h": 28,
+          "bottom": 134
+        }
+      },
+      {
+        "i": 7,
+        "tag": "INPUT",
+        "id": null,
+        "fk": "view-cards",
+        "action": null,
+        "name": "list-view",
+        "role": null,
+        "isBody": false,
+        "inDialog": false,
+        "inNav": false,
+        "inFoot": false,
+        "label": "",
+        "rect": {
+          "x": 269,
+          "y": 151,
+          "w": 71.3,
+          "h": 30,
+          "bottom": 181
+        }
+      },
+      {
+        "i": 8,
+        "tag": "BUTTON",
+        "id": null,
+        "fk": "row-studio-nas-reveal",
+        "action": "reveal",
+        "name": null,
+        "role": null,
+        "isBody": false,
+        "inDialog": false,
+        "inNav": false,
+        "inFoot": false,
+        "label": "Open Studio NAS in Finder",
+        "rect": {
+          "x": 281,
+          "y": 354.6,
+          "w": 131.9,
+          "h": 28,
+          "bottom": 382.6
+        }
+      },
+      {
+        "i": 9,
+        "tag": "BUTTON",
+        "id": null,
+        "fk": "row-studio-nas-menu",
+        "action": null,
+        "name": null,
+        "role": null,
+        "isBody": false,
+        "inDialog": false,
+        "inNav": false,
+        "inFoot": false,
+        "label": "More actions for Studio NAS",
+        "rect": {
+          "x": 416.9,
+          "y": 354.6,
+          "w": 28,
+          "h": 28,
+          "bottom": 382.6
+        }
+      },
+      {
+        "i": 10,
+        "tag": "BUTTON",
+        "id": null,
+        "fk": "row-archive-mount",
+        "action": "mount",
+        "name": null,
+        "role": null,
+        "isBody": false,
+        "inDialog": false,
+        "inNav": false,
+        "inFoot": false,
+        "label": "Mount now Archive Share",
+        "rect": {
+          "x": 281,
+          "y": 564.2,
+          "w": 91,
+          "h": 28,
+          "bottom": 592.2
+        }
+      },
+      {
+        "i": 11,
+        "tag": "BUTTON",
+        "id": null,
+        "fk": "row-archive-menu",
+        "action": null,
+        "name": null,
+        "role": null,
+        "isBody": false,
+        "inDialog": false,
+        "inNav": false,
+        "inFoot": false,
+        "label": "More actions for Archive Share",
+        "rect": {
+          "x": 376,
+          "y": 564.2,
+          "w": 28,
+          "h": 28,
+          "bottom": 592.2
+        }
+      },
+      {
+        "i": 12,
+        "tag": "BUTTON",
+        "id": null,
+        "fk": "row-editing-ssd-mount",
+        "action": "mount",
+        "name": null,
+        "role": null,
+        "isBody": false,
+        "inDialog": false,
+        "inNav": false,
+        "inFoot": false,
+        "label": "Mount now Editing SSD",
+        "rect": {
+          "x": 281,
+          "y": 474.8,
+          "w": 91,
+          "h": 28,
+          "bottom": 502.8
+        }
+      },
+      {
+        "i": 13,
+        "tag": "BUTTON",
+        "id": null,
+        "fk": "row-editing-ssd-menu",
+        "action": null,
+        "name": null,
+        "role": null,
+        "isBody": false,
+        "inDialog": false,
+        "inNav": false,
+        "inFoot": false,
+        "label": "More actions for Editing SSD",
+        "rect": {
+          "x": 376,
+          "y": 474.8,
+          "w": 28,
+          "h": 28,
+          "bottom": 502.8
+        }
+      },
+      {
+        "i": 14,
+        "tag": "BUTTON",
+        "id": null,
+        "fk": "nav-support",
+        "action": null,
+        "name": null,
+        "role": null,
+        "isBody": false,
+        "inDialog": false,
+        "inNav": false,
+        "inFoot": true,
+        "label": "Support this app",
+        "rect": {
+          "x": 6,
+          "y": 545.2,
+          "w": 223,
+          "h": 30,
+          "bottom": 575.2
+        }
+      },
+      {
+        "i": 15,
+        "tag": "BUTTON",
+        "id": null,
+        "fk": "pill",
+        "action": "whats-new",
+        "name": null,
+        "role": null,
+        "isBody": false,
+        "inDialog": false,
+        "inNav": false,
+        "inFoot": true,
+        "label": "What's New, Storage Studio KH v0.1.10",
+        "rect": {
+          "x": 14,
+          "y": 583.2,
+          "w": 168.8,
+          "h": 26,
+          "bottom": 609.2
+        }
+      },
+      {
+        "i": 16,
+        "tag": "BUTTON",
+        "id": null,
+        "fk": "check",
+        "action": "check-updates",
+        "name": null,
+        "role": null,
+        "isBody": false,
+        "inDialog": false,
+        "inNav": false,
+        "inFoot": true,
+        "label": "Check for Updates",
+        "rect": {
+          "x": 186.8,
+          "y": 585.2,
+          "w": 22,
+          "h": 22,
+          "bottom": 607.2
+        }
+      },
+      {
+        "i": 17,
+        "tag": "BUTTON",
+        "id": null,
+        "fk": "download",
+        "action": "download-update",
+        "name": null,
+        "role": null,
+        "isBody": false,
+        "inDialog": false,
+        "inNav": false,
+        "inFoot": true,
+        "label": "Download version 0.2.0",
+        "rect": {
+          "x": 212.8,
+          "y": 585.2,
+          "w": 22,
+          "h": 22,
+          "bottom": 607.2
+        }
+      },
+      {
+        "i": 18,
+        "tag": "BUTTON",
+        "id": null,
+        "fk": "nav-storage",
+        "action": null,
+        "name": null,
+        "role": null,
+        "isBody": false,
+        "inDialog": false,
+        "inNav": true,
+        "inFoot": false,
+        "label": "Storage",
+        "rect": {
+          "x": 6,
+          "y": 16,
+          "w": 223,
+          "h": 30,
+          "bottom": 46
+        }
+      }
+    ],
+    "forgetBefore": {
+      "hasForget": true,
+      "forgetVisible": true,
+      "forgetChecked": false,
+      "pwPlaceholder": "Leave blank to keep the saved one",
+      "dialogOpen": "editor",
+      "html": "Edit storage\n\nChange how this storage reconnects.\n\nName\nKind\nSMB share\nAttached disk\nShare address (host + share)\nBrowse…\nShare: studio\nUser name (optional)\nPassword (optional)\nForget the saved password\nMount point (optional)\nLeave blank and macOS chooses a folder in /Volumes.\nReconnect at login\nReconnect after wake\nRemove\nCancel\nTest\nSave"
+    },
+    "forgetAfter": {
+      "hasForget": false,
+      "pwPlaceholder": "Stored privately by Storage Studio KH",
+      "pwDisabled": false,
+      "dialogText": "Edit storage\n\nChange how this storage reconnects.\n\nName\nKind\nSMB share\nAttached disk\nShare address (host + share)\nBrowse…\nShare: studio\nUser name (optional)\nPassword (optional)\nMount point (optional)\nLeave blank and macOS chooses a folder in /Volumes.\nReconnect at login\nReconnect after wake\nRemove\nCancel\nTest\nSave"
+    },
+    "appearance1440": {
+      "main": {
+        "x": 236,
+        "w": 1204,
+        "right": 1440
+      },
+      "seg": {
+        "x": 1065,
+        "w": 330,
+        "right": 1395
+      },
+      "row": {
+        "x": 265,
+        "w": 1146,
+        "right": 1411
+      },
+      "segTag": "DIV",
+      "segClass": "segmented",
+      "rowTag": "DIV",
+      "rowClass": "setting-row"
+    },
+    "appearanceCopyLight": "Appearance\n\nChoose how Storage Studio KH looks.\n\nAppearance\n\nThis window is using the light look.\n\nSystem\nLight\nDark",
+    "appearanceCopyDark": "Appearance\n\nChoose how Storage Studio KH looks.\n\nAppearance\n\nThis window is using the dark look.\n\nSystem\nLight\nDark",
+    "table768": {
+      "wrap": {
+        "sel": "storage-table-wrap",
+        "sw": 474,
+        "cw": 474,
+        "sl": 0,
+        "x": 264,
+        "w": 476,
+        "right": 740
+      },
+      "table": {
+        "x": 265,
+        "w": 474,
+        "right": 739
+      },
+      "main": {
+        "x": 236,
+        "w": 532,
+        "right": 768
+      },
+      "menu": {
+        "x": 699,
+        "w": 28,
+        "right": 727
+      },
+      "candidates": [
+        {
+          "sel": "#main",
+          "sw": 532,
+          "cw": 532,
+          "sl": 0,
+          "x": 236,
+          "w": 532,
+          "right": 768
+        },
+        {
+          "sel": ".storage-table-wrap",
+          "sw": 474,
+          "cw": 474,
+          "sl": 0,
+          "x": 264,
+          "w": 476,
+          "right": 740
+        },
+        {
+          "sel": ".storage-table",
+          "sw": 474,
+          "cw": 474,
+          "sl": 0,
+          "x": 265,
+          "w": 474,
+          "right": 739
+        }
+      ],
+      "doc": {
+        "sw": 768,
+        "cw": 768
+      }
+    },
+    "rowMenuKeys": {
+      "a1": "test",
+      "a2": "edit",
+      "ah": "unmount",
+      "ae": "remove"
+    },
+    "addTab375": [
+      {
+        "i": 1,
+        "tag": "INPUT",
+        "id": null,
+        "fk": null,
+        "action": null,
+        "name": "kind",
+        "role": null,
+        "isBody": false,
+        "inDialog": true,
+        "inNav": false,
+        "inFoot": false,
+        "label": "",
+        "rect": {
+          "x": 53,
+          "y": 233.8,
+          "w": 132.5,
+          "h": 30,
+          "bottom": 263.8
+        }
+      },
+      {
+        "i": 2,
+        "tag": "BUTTON",
+        "id": null,
+        "fk": "connected-smb://studio@nas.local/Public%20Space-Media%20-%204TB%20-%20Music",
+        "action": null,
+        "name": null,
+        "role": null,
+        "isBody": false,
+        "inDialog": true,
+        "inNav": false,
+        "inFoot": false,
+        "label": "Public Space-Media - 4TB - Music /Volumes/Public Space-Media - 4TB - M",
+        "rect": {
+          "x": 49,
+          "y": 299.2,
+          "w": 277,
+          "h": 46.8,
+          "bottom": 346
+        }
+      },
+      {
+        "i": 3,
+        "tag": "INPUT",
+        "id": "share-target",
+        "fk": null,
+        "action": null,
+        "name": "target",
+        "role": null,
+        "isBody": false,
+        "inDialog": true,
+        "inNav": false,
+        "inFoot": false,
+        "label": "",
+        "rect": {
+          "x": 48,
+          "y": 376.4,
+          "w": 190.6,
+          "h": 30,
+          "bottom": 406.4
+        }
+      },
+      {
+        "i": 4,
+        "tag": "BUTTON",
+        "id": null,
+        "fk": "editor-browse",
+        "action": null,
+        "name": null,
+        "role": null,
+        "isBody": false,
+        "inDialog": true,
+        "inNav": false,
+        "inFoot": false,
+        "label": "Browse…",
+        "rect": {
+          "x": 246.6,
+          "y": 377.4,
+          "w": 80.4,
+          "h": 28,
+          "bottom": 405.4
+        }
+      },
+      {
+        "i": 5,
+        "tag": "INPUT",
+        "id": null,
+        "fk": null,
+        "action": null,
+        "name": "username",
+        "role": null,
+        "isBody": false,
+        "inDialog": true,
+        "inNav": false,
+        "inFoot": false,
+        "label": "",
+        "rect": {
+          "x": 48,
+          "y": 435.8,
+          "w": 279,
+          "h": 30,
+          "bottom": 465.8
+        }
+      },
+      {
+        "i": 6,
+        "tag": "INPUT",
+        "id": null,
+        "fk": null,
+        "action": null,
+        "name": "password",
+        "role": null,
+        "isBody": false,
+        "inDialog": true,
+        "inNav": false,
+        "inFoot": false,
+        "label": "",
+        "rect": {
+          "x": 48,
+          "y": 495.2,
+          "w": 279,
+          "h": 30,
+          "bottom": 525.2
+        }
+      },
+      {
+        "i": 7,
+        "tag": "INPUT",
+        "id": null,
+        "fk": null,
+        "action": null,
+        "name": "mountPoint",
+        "role": null,
+        "isBody": false,
+        "inDialog": true,
+        "inNav": false,
+        "inFoot": false,
+        "label": "",
+        "rect": {
+          "x": 48,
+          "y": 554.5,
+          "w": 279,
+          "h": 30,
+          "bottom": 584.5
+        }
+      },
+      {
+        "i": 8,
+        "tag": "INPUT",
+        "id": null,
+        "fk": null,
+        "action": null,
+        "name": "login",
+        "role": null,
+        "isBody": false,
+        "inDialog": true,
+        "inNav": false,
+        "inFoot": false,
+        "label": "",
+        "rect": {
+          "x": 48,
+          "y": 630.8,
+          "w": 14,
+          "h": 14,
+          "bottom": 644.8
+        }
+      },
+      {
+        "i": 9,
+        "tag": "INPUT",
+        "id": null,
+        "fk": null,
+        "action": null,
+        "name": "wake",
+        "role": null,
+        "isBody": false,
+        "inDialog": true,
+        "inNav": false,
+        "inFoot": false,
+        "label": "",
+        "rect": {
+          "x": 48,
+          "y": 657.7,
+          "w": 14,
+          "h": 14,
+          "bottom": 671.7
+        }
+      },
+      {
+        "i": 10,
+        "tag": "BUTTON",
+        "id": null,
+        "fk": "editor-cancel",
+        "action": null,
+        "name": null,
+        "role": null,
+        "isBody": false,
+        "inDialog": true,
+        "inNav": false,
+        "inFoot": false,
+        "label": "Cancel",
+        "rect": {
+          "x": 139.1,
+          "y": 703.1,
+          "w": 66.5,
+          "h": 28,
+          "bottom": 731.1
+        }
+      },
+      {
+        "i": 11,
+        "tag": "INPUT",
+        "id": null,
+        "fk": "editor-name",
+        "action": null,
+        "name": "name",
+        "role": null,
+        "isBody": false,
+        "inDialog": true,
+        "inNav": false,
+        "inFoot": false,
+        "label": "",
+        "rect": {
+          "x": 48,
+          "y": 175.4,
+          "w": 279,
+          "h": 30,
+          "bottom": 205.4
+        }
+      },
+      {
+        "i": 12,
+        "tag": "INPUT",
+        "id": null,
+        "fk": null,
+        "action": null,
+        "name": "kind",
+        "role": null,
+        "isBody": false,
+        "inDialog": true,
+        "inNav": false,
+        "inFoot": false,
+        "label": "",
+        "rect": {
+          "x": 53,
+          "y": 233.8,
+          "w": 132.5,
+          "h": 30,
+          "bottom": 263.8
+        }
+      }
+    ],
+    "credentialsTab": [
+      {
+        "i": 1,
+        "tag": "INPUT",
+        "id": null,
+        "fk": "credentials-password",
+        "action": null,
+        "name": "credential-password",
+        "role": null,
+        "isBody": false,
+        "inDialog": true,
+        "inNav": false,
+        "inFoot": false,
+        "label": "",
+        "rect": {
+          "x": 194,
+          "y": 370.8,
+          "w": 432,
+          "h": 30,
+          "bottom": 400.8
+        }
+      },
+      {
+        "i": 2,
+        "tag": "BUTTON",
+        "id": null,
+        "fk": null,
+        "action": null,
+        "name": null,
+        "role": null,
+        "isBody": false,
+        "inDialog": true,
+        "inNav": false,
+        "inFoot": false,
+        "label": "Cancel",
+        "rect": {
+          "x": 497.2,
+          "y": 425.8,
+          "w": 66.5,
+          "h": 28,
+          "bottom": 453.8
+        }
+      },
+      {
+        "i": 3,
+        "tag": "BUTTON",
+        "id": null,
+        "fk": null,
+        "action": null,
+        "name": null,
+        "role": null,
+        "isBody": false,
+        "inDialog": true,
+        "inNav": false,
+        "inFoot": false,
+        "label": "Save",
+        "rect": {
+          "x": 571.7,
+          "y": 425.8,
+          "w": 54.3,
+          "h": 28,
+          "bottom": 453.8
+        }
+      },
+      {
+        "i": 4,
+        "tag": "INPUT",
+        "id": null,
+        "fk": "credentials-username",
+        "action": null,
+        "name": "credential-username",
+        "role": null,
+        "isBody": false,
+        "inDialog": true,
+        "inNav": false,
+        "inFoot": false,
+        "label": "",
+        "rect": {
+          "x": 194,
+          "y": 311.5,
+          "w": 432,
+          "h": 30,
+          "bottom": 341.5
+        }
+      },
+      {
+        "i": 5,
+        "tag": "INPUT",
+        "id": null,
+        "fk": "credentials-password",
+        "action": null,
+        "name": "credential-password",
+        "role": null,
+        "isBody": false,
+        "inDialog": true,
+        "inNav": false,
+        "inFoot": false,
+        "label": "",
+        "rect": {
+          "x": 194,
+          "y": 370.8,
+          "w": 432,
+          "h": 30,
+          "bottom": 400.8
+        }
+      },
+      {
+        "i": 6,
+        "tag": "BUTTON",
+        "id": null,
+        "fk": null,
+        "action": null,
+        "name": null,
+        "role": null,
+        "isBody": false,
+        "inDialog": true,
+        "inNav": false,
+        "inFoot": false,
+        "label": "Cancel",
+        "rect": {
+          "x": 497.2,
+          "y": 425.8,
+          "w": 66.5,
+          "h": 28,
+          "bottom": 453.8
+        }
+      }
+    ]
+  }
+}

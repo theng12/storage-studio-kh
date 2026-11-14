@@ -1,6 +1,6 @@
 # Storage Studio KH 0.1.10 — release evidence
 
-Status: **in progress** (last updated 2026-11-14 00:20Z). Everything below is measured; the
+Status: **in progress** (last updated 2026-11-14 01:05Z). Everything below is measured; the
 unfilled rows are pending and are never to be read as passed.
 
 ## Source
@@ -13,7 +13,7 @@ unfilled rows are pending and are never to be read as passed.
 
 ## Page acceptance (`tests/acceptance/run.cjs`)
 
-- Last run: **294/294 checks passed**, metered `PEAK storage-ui 686 MB over 105s` (runs ranged 609–794 MB).
+- Last run: **298/298 checks passed**, metered `PEAK storage-ui 707 MB over 107s` (runs ranged 609–794 MB).
 - Layout measured at 375/768/820/1440 in light and dark, both Cards and Table views.
 - Contrast measured from rendered styles: body 16.33:1 light / 12.60:1 dark; quiet footer
   5.13:1 / 7.14:1; chips 5.10:1 / 7.91:1; primary 6.41:1 / 8.92:1. Full tables in
@@ -41,7 +41,8 @@ unfilled rows are pending and are never to be read as passed.
 | 6 | FAIL 2/3/3/2/3 — 8 findings, fixed at 6b5df20 (first attempt died and was restarted) | `critic-round6.md` |
 | 7 | FAIL 3/3/3/3/3 — 8 findings, fixed at 158349f | `critic-round7.md` |
 | 8 | FAIL 3/3/4/2/3 — 5 findings, fixed at f9e8148 | `critic-round8.md` |
-| 9 | running on f9e8148 | — |
+| 9 | FAIL 4/4/3/3/3 — 5 findings, fixed at 3b005c6 | `critic-round9.md` |
+| 10 | running on 3b005c6 (release verdict) | — |
 
 ## Native gate (story-mini, macmini-angkor)
 

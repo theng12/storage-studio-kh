@@ -1,0 +1,438 @@
+{
+  "meta": {},
+  "checks": [
+    {
+      "area": "craft",
+      "id": "nav-icons-all",
+      "pass": true,
+      "expected": "every nav item has icon",
+      "actual": "{\"navCount\":3,\"navIcons\":3,\"nav\":[{\"text\":\"Storage\",\"hasSvg\":true,\"fk\":\"nav-storage\"},{\"text\":\"General\",\"hasSvg\":true,\"fk\":\"nav-general\"},{\"text\":\"Appearance\",\"hasSvg\":true,\"fk\":\"nav-appearance\"}]}",
+      "evidence": null,
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "footer-support-present",
+      "pass": true,
+      "expected": "Support present",
+      "actual": "{\"support\":{\"text\":\"Support this app\",\"hasSvg\":true,\"tag\":\"BUTTON\"},\"supportAny\":{\"text\":\"Support this app\",\"hasSvg\":true,\"tag\":\"BUTTON\",\"inFoot\":true}}",
+      "evidence": null,
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "pill-present",
+      "pass": true,
+      "expected": "version pill present with version",
+      "actual": "{\"text\":\"Storage Studio KH v0.1.10\",\"hasSvg\":true,\"rect\":{\"x\":14,\"y\":583.2,\"bottom\":609.2}}",
+      "evidence": null,
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "check-accessible",
+      "pass": true,
+      "expected": "check for updates accessible/icon",
+      "actual": "{\"text\":\"\",\"aria\":\"Check for Updates\",\"hasSvg\":true}",
+      "evidence": null,
+      "severity": "ok"
+    },
+    {
+      "area": "functionality",
+      "id": "appearance-exactly-three",
+      "pass": true,
+      "expected": "exactly System/Light/Dark",
+      "actual": "[\"dark\",\"light\",\"system\"]",
+      "evidence": null,
+      "severity": "ok"
+    },
+    {
+      "area": "trust",
+      "id": "appearance-copy-honest-system",
+      "pass": true,
+      "expected": "no \"always\" overclaim in system copy",
+      "actual": "ok",
+      "evidence": "appearance-choices",
+      "severity": "ok"
+    },
+    {
+      "area": "trust",
+      "id": "appearance-copy-honest-light",
+      "pass": true,
+      "expected": "no \"always\" overclaim in light copy",
+      "actual": "ok",
+      "evidence": "appearance-choices",
+      "severity": "ok"
+    },
+    {
+      "area": "trust",
+      "id": "appearance-copy-honest-dark",
+      "pass": true,
+      "expected": "no \"always\" overclaim in dark copy",
+      "actual": "ok",
+      "evidence": "appearance-choices",
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "contrast-body-light",
+      "pass": true,
+      "expected": ">=4.5:1",
+      "actual": "14.19:1",
+      "evidence": null,
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "contrast-h1-light",
+      "pass": true,
+      "expected": ">=4.5:1",
+      "actual": "15.65:1",
+      "evidence": null,
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "contrast-nav-light",
+      "pass": true,
+      "expected": ">=4.5:1",
+      "actual": "5.36:1",
+      "evidence": null,
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "contrast-muted-light",
+      "pass": true,
+      "expected": ">=4.5:1",
+      "actual": "7.3:1",
+      "evidence": null,
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "contrast-rowText-light",
+      "pass": true,
+      "expected": ">=4.5:1",
+      "actual": "16.33:1",
+      "evidence": null,
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "contrast-quiet-light",
+      "pass": true,
+      "expected": ">=4.5:1",
+      "actual": "5.13:1",
+      "evidence": null,
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "contrast-body-dark",
+      "pass": true,
+      "expected": ">=4.5:1",
+      "actual": "15.86:1",
+      "evidence": null,
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "contrast-h1-dark",
+      "pass": true,
+      "expected": ">=4.5:1",
+      "actual": "13.96:1",
+      "evidence": null,
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "contrast-nav-dark",
+      "pass": true,
+      "expected": ">=4.5:1",
+      "actual": "6.69:1",
+      "evidence": null,
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "contrast-muted-dark",
+      "pass": true,
+      "expected": ">=4.5:1",
+      "actual": "8.01:1",
+      "evidence": null,
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "contrast-rowText-dark",
+      "pass": true,
+      "expected": ">=4.5:1",
+      "actual": "12.6:1",
+      "evidence": null,
+      "severity": "ok"
+    },
+    {
+      "area": "craft",
+      "id": "contrast-quiet-dark",
+      "pass": true,
+      "expected": ">=4.5:1",
+      "actual": "7.14:1",
+      "evidence": null,
+      "severity": "ok"
+    },
+    {
+      "area": "functionality",
+      "id": "open-in-finder",
+      "pass": true,
+      "expected": "reveal_storage invoked",
+      "actual": "[\"get_snapshot\",\"reveal_storage\"]",
+      "evidence": null,
+      "severity": "ok"
+    },
+    {
+      "area": "functionality",
+      "id": "mount-invoked",
+      "pass": true,
+      "expected": "mount_storage invoked",
+      "actual": "[\"get_snapshot\",\"mount_storage\"]",
+      "evidence": "mount-archive",
+      "severity": "ok"
+    }
+  ],
+  "shots": [
+    "chrome-audit-820",
+    "appearance-choices",
+    "mount-archive"
+  ],
+  "traces": {
+    "chromeAudit": {
+      "navCount": 3,
+      "navIcons": 3,
+      "nav": [
+        {
+          "text": "Storage",
+          "hasSvg": true,
+          "fk": "nav-storage"
+        },
+        {
+          "text": "General",
+          "hasSvg": true,
+          "fk": "nav-general"
+        },
+        {
+          "text": "Appearance",
+          "hasSvg": true,
+          "fk": "nav-appearance"
+        }
+      ],
+      "support": {
+        "text": "Support this app",
+        "hasSvg": true,
+        "tag": "BUTTON"
+      },
+      "supportAny": {
+        "text": "Support this app",
+        "hasSvg": true,
+        "tag": "BUTTON",
+        "inFoot": true
+      },
+      "pill": {
+        "text": "Storage Studio KH v0.1.10",
+        "hasSvg": true,
+        "rect": {
+          "x": 14,
+          "y": 583.2,
+          "bottom": 609.2
+        }
+      },
+      "check": {
+        "text": "",
+        "aria": "Check for Updates",
+        "hasSvg": true
+      },
+      "download": true,
+      "footText": "Support this app\nStorage Studio KH v0.1.10\n\nVersion 0.2.0 is available"
+    },
+    "appearanceChoices": [
+      "dark",
+      "light",
+      "system"
+    ],
+    "appearanceCopy_system": "Appearance Choose how Storage Studio KH looks. Appearance This window follows your Mac's light or dark appearance. System Light Dark",
+    "appearanceCopy_light": "Appearance Choose how Storage Studio KH looks. Appearance This window is using the light look. System Light Dark",
+    "appearanceCopy_dark": "Appearance Choose how Storage Studio KH looks. Appearance This window is using the dark look. System Light Dark",
+    "contrast_light": {
+      "body": {
+        "sel": "body",
+        "ratio": 14.19,
+        "fg": [
+          32,
+          32,
+          29
+        ],
+        "bg": [
+          240,
+          239,
+          234
+        ]
+      },
+      "h1": {
+        "sel": "h1",
+        "ratio": 15.65,
+        "fg": [
+          32,
+          32,
+          29
+        ],
+        "bg": [
+          251,
+          250,
+          247
+        ]
+      },
+      "nav": {
+        "sel": ".nav-item",
+        "ratio": 5.36,
+        "fg": [
+          13,
+          107,
+          92
+        ],
+        "bg": [
+          223,
+          238,
+          233
+        ]
+      },
+      "muted": {
+        "sel": ".lede",
+        "ratio": 7.3,
+        "fg": [
+          84,
+          84,
+          78
+        ],
+        "bg": [
+          251,
+          250,
+          247
+        ]
+      },
+      "rowText": {
+        "sel": ".storage-row h3,.storage-row .row-name,.storage-card h3",
+        "ratio": 16.33,
+        "fg": [
+          32,
+          32,
+          29
+        ],
+        "bg": [
+          255,
+          255,
+          255
+        ]
+      },
+      "quiet": {
+        "sel": ".update-line,.foot-meta,.foot-version",
+        "ratio": 5.13,
+        "fg": [
+          95,
+          94,
+          88
+        ],
+        "bg": [
+          231,
+          228,
+          222
+        ]
+      }
+    },
+    "contrast_dark": {
+      "body": {
+        "sel": "body",
+        "ratio": 15.86,
+        "fg": [
+          241,
+          240,
+          234
+        ],
+        "bg": [
+          22,
+          22,
+          21
+        ]
+      },
+      "h1": {
+        "sel": "h1",
+        "ratio": 13.96,
+        "fg": [
+          241,
+          240,
+          234
+        ],
+        "bg": [
+          34,
+          34,
+          32
+        ]
+      },
+      "nav": {
+        "sel": ".nav-item",
+        "ratio": 6.69,
+        "fg": [
+          110,
+          207,
+          188
+        ],
+        "bg": [
+          23,
+          58,
+          52
+        ]
+      },
+      "muted": {
+        "sel": ".lede",
+        "ratio": 8.01,
+        "fg": [
+          185,
+          184,
+          177
+        ],
+        "bg": [
+          34,
+          34,
+          32
+        ]
+      },
+      "rowText": {
+        "sel": ".storage-row h3,.storage-row .row-name,.storage-card h3",
+        "ratio": 12.6,
+        "fg": [
+          241,
+          240,
+          234
+        ],
+        "bg": [
+          42,
+          42,
+          40
+        ]
+      },
+      "quiet": {
+        "sel": ".update-line,.foot-meta,.foot-version",
+        "ratio": 7.14,
+        "fg": [
+          169,
+          168,
+          160
+        ],
+        "bg": [
+          28,
+          28,
+          27
+        ]
+      }
+    }
+  }
+}
