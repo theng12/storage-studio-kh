@@ -1,0 +1,711 @@
+{
+  "tabOrder375": [
+    {
+      "tag": "BUTTON",
+      "cls": "btn btn-primary",
+      "fk": "add-storage",
+      "text": "Add storage",
+      "box": {
+        "x": 239,
+        "y": 63,
+        "w": 120,
+        "h": 28,
+        "right": 359,
+        "bottom": 91
+      },
+      "insideDialog": false
+    },
+    {
+      "tag": "BUTTON",
+      "cls": "warning-group",
+      "fk": null,
+      "text": "Needs attention 1 Show",
+      "box": {
+        "x": 16,
+        "y": 152,
+        "w": 160,
+        "h": 28,
+        "right": 176,
+        "bottom": 180
+      },
+      "insideDialog": false
+    },
+    {
+      "tag": "BUTTON",
+      "cls": "warning-group",
+      "fk": null,
+      "text": "Can't be reached 1 Show",
+      "box": {
+        "x": 180,
+        "y": 152,
+        "w": 167,
+        "h": 28,
+        "right": 347,
+        "bottom": 180
+      },
+      "insideDialog": false
+    },
+    {
+      "tag": "INPUT",
+      "cls": "",
+      "fk": "view-cards",
+      "text": "",
+      "box": {
+        "x": 207,
+        "y": 197,
+        "w": 71,
+        "h": 30,
+        "right": 279,
+        "bottom": 227
+      },
+      "insideDialog": false
+    },
+    {
+      "tag": "BUTTON",
+      "cls": "row-primary",
+      "fk": "row-studio-nas-reveal",
+      "text": "Open in Finder",
+      "box": {
+        "x": 33,
+        "y": 400,
+        "w": 132,
+        "h": 28,
+        "right": 165,
+        "bottom": 428
+      },
+      "insideDialog": false
+    },
+    {
+      "tag": "BUTTON",
+      "cls": "row-menu-btn",
+      "fk": "row-studio-nas-menu",
+      "text": "More actions for Studio NAS",
+      "box": {
+        "x": 169,
+        "y": 400,
+        "w": 28,
+        "h": 28,
+        "right": 197,
+        "bottom": 428
+      },
+      "insideDialog": false
+    },
+    {
+      "tag": "BUTTON",
+      "cls": "row-primary row-primary-accent",
+      "fk": "row-archive-mount",
+      "text": "Mount now",
+      "box": {
+        "x": 33,
+        "y": 610,
+        "w": 91,
+        "h": 28,
+        "right": 124,
+        "bottom": 638
+      },
+      "insideDialog": false
+    },
+    {
+      "tag": "BUTTON",
+      "cls": "row-menu-btn",
+      "fk": "row-archive-menu",
+      "text": "More actions for Archive Share",
+      "box": {
+        "x": 128,
+        "y": 610,
+        "w": 28,
+        "h": 28,
+        "right": 156,
+        "bottom": 638
+      },
+      "insideDialog": false
+    },
+    {
+      "tag": "BUTTON",
+      "cls": "row-primary row-primary-accent",
+      "fk": "row-editing-ssd-mount",
+      "text": "Mount now",
+      "box": {
+        "x": 33,
+        "y": 555,
+        "w": 91,
+        "h": 28,
+        "right": 124,
+        "bottom": 583
+      },
+      "insideDialog": false
+    },
+    {
+      "tag": "BUTTON",
+      "cls": "row-menu-btn",
+      "fk": "row-editing-ssd-menu",
+      "text": "More actions for Editing SSD",
+      "box": {
+        "x": 128,
+        "y": 555,
+        "w": 28,
+        "h": 28,
+        "right": 156,
+        "bottom": 583
+      },
+      "insideDialog": false
+    },
+    {
+      "tag": "BUTTON",
+      "cls": "foot-support",
+      "fk": "nav-support",
+      "text": "Support this app",
+      "box": {
+        "x": 12,
+        "y": 717,
+        "w": 136,
+        "h": 30,
+        "right": 148,
+        "bottom": 747
+      },
+      "insideDialog": false
+    },
+    {
+      "tag": "BUTTON",
+      "cls": "pill",
+      "fk": "pill",
+      "text": "Storage Studio KH v0.1.10",
+      "box": {
+        "x": 12,
+        "y": 755,
+        "w": 169,
+        "h": 26,
+        "right": 181,
+        "bottom": 781
+      },
+      "insideDialog": false
+    },
+    {
+      "tag": "BUTTON",
+      "cls": "icon-btn",
+      "fk": "check",
+      "text": "Check for Updates",
+      "box": {
+        "x": 185,
+        "y": 757,
+        "w": 22,
+        "h": 22,
+        "right": 207,
+        "bottom": 779
+      },
+      "insideDialog": false
+    },
+    {
+      "tag": "BUTTON",
+      "cls": "icon-btn icon-btn-accent",
+      "fk": "download",
+      "text": "Download version 0.2.0",
+      "box": {
+        "x": 211,
+        "y": 757,
+        "w": 22,
+        "h": 22,
+        "right": 233,
+        "bottom": 779
+      },
+      "insideDialog": false
+    },
+    {
+      "tag": "BODY",
+      "cls": "",
+      "fk": null,
+      "text": "Storage General Appearance Storage 1 of 3 storages mounted, ",
+      "box": {
+        "x": 0,
+        "y": 0,
+        "w": 375,
+        "h": 812,
+        "right": 375,
+        "bottom": 812
+      },
+      "insideDialog": false
+    },
+    {
+      "tag": "BUTTON",
+      "cls": "nav-item is-active",
+      "fk": "nav-storage",
+      "text": "Storage",
+      "box": {
+        "x": 12,
+        "y": 8,
+        "w": 90,
+        "h": 30,
+        "right": 102,
+        "bottom": 38
+      },
+      "insideDialog": false
+    },
+    {
+      "tag": "BUTTON",
+      "cls": "nav-item",
+      "fk": "nav-general",
+      "text": "General",
+      "box": {
+        "x": 106,
+        "y": 8,
+        "w": 88,
+        "h": 30,
+        "right": 194,
+        "bottom": 38
+      },
+      "insideDialog": false
+    },
+    {
+      "tag": "BUTTON",
+      "cls": "nav-item",
+      "fk": "nav-appearance",
+      "text": "Appearance",
+      "box": {
+        "x": 198,
+        "y": 8,
+        "w": 115,
+        "h": 30,
+        "right": 312,
+        "bottom": 38
+      },
+      "insideDialog": false
+    }
+  ],
+  "focusRing": [
+    {
+      "fk": "nav-appearance",
+      "outline": "solid 2px rgb(13, 107, 92)",
+      "offset": "2px",
+      "boxShadow": "none",
+      "rect": {
+        "x": 197.9375,
+        "y": 8,
+        "w": 114.546875,
+        "h": 30
+      }
+    }
+  ],
+  "add375": {
+    "dialog": {
+      "x": 24,
+      "y": 69,
+      "w": 327,
+      "h": 674,
+      "bottom": 743,
+      "vw": 375,
+      "vh": 812
+    },
+    "footTop": 708,
+    "scroll": {
+      "sh": 554,
+      "ch": 554,
+      "st": 0
+    },
+    "actions": {
+      "y": 690,
+      "bottom": 743,
+      "inView": true
+    }
+  },
+  "add375saved": {
+    "toasts": [
+      {
+        "text": "Added Pocket Share. Mount now",
+        "top": 668,
+        "bottom": 708
+      }
+    ],
+    "footTop": 708,
+    "active": {
+      "tag": "BUTTON",
+      "cls": "btn btn-primary",
+      "fk": "add-storage",
+      "text": "Add storage",
+      "box": {
+        "x": 239,
+        "y": -349,
+        "w": 120,
+        "h": 28,
+        "right": 359,
+        "bottom": -321
+      },
+      "insideDialog": false
+    },
+    "doc": {
+      "sh": 882,
+      "ch": 812,
+      "mainSh": 1089,
+      "mainCh": 661
+    }
+  },
+  "browse": {
+    "choices": [
+      "Public Space-Media - 4TB - Music",
+      "Public Space-System pool",
+      "Studio Projects",
+      "Dismiss"
+    ],
+    "panel": "Shares on media.local Public Space-Media - 4TB - Music Public Space-System pool Studio Projects Dismiss",
+    "active": {
+      "tag": "BUTTON",
+      "cls": "share-choice",
+      "fk": "share-Public Space-Media - 4TB - Music",
+      "text": "Public Space-Media - 4TB - Music",
+      "box": {
+        "x": 199,
+        "y": 378,
+        "w": 422,
+        "h": 27,
+        "right": 621,
+        "bottom": 405
+      },
+      "insideDialog": true
+    }
+  },
+  "browseEscape": {
+    "panel": false,
+    "dialogOpen": true,
+    "active": {
+      "tag": "INPUT",
+      "cls": "",
+      "fk": null,
+      "text": "",
+      "box": {
+        "x": 194,
+        "y": 312,
+        "w": 344,
+        "h": 30,
+        "right": 538,
+        "bottom": 342
+      },
+      "insideDialog": true
+    }
+  },
+  "browsePick": {
+    "target": "smb://media.local/Public%20Space-Media%20-%204TB%20-%20Music",
+    "dialogOpen": true,
+    "active": {
+      "tag": "INPUT",
+      "cls": "",
+      "fk": null,
+      "text": "",
+      "box": {
+        "x": 194,
+        "y": 311,
+        "w": 344,
+        "h": 30,
+        "right": 538,
+        "bottom": 341
+      },
+      "insideDialog": true
+    }
+  },
+  "table768": {
+    "before": {
+      "wrap": {
+        "x": 264,
+        "y": 217,
+        "w": 476,
+        "h": 271,
+        "right": 740,
+        "bottom": 487
+      },
+      "wrapScroll": {
+        "sw": 510,
+        "cw": 474,
+        "sl": 0
+      },
+      "table": {
+        "x": 265,
+        "y": 218,
+        "w": 510,
+        "h": 269,
+        "right": 775,
+        "bottom": 486
+      },
+      "rows": [
+        {
+          "row": {
+            "x": 265,
+            "y": 250,
+            "w": 510,
+            "h": 63,
+            "right": 775,
+            "bottom": 313
+          },
+          "primary": {
+            "x": 599,
+            "y": 261,
+            "w": 132,
+            "h": 28,
+            "right": 731,
+            "bottom": 289
+          },
+          "menu": {
+            "x": 735,
+            "y": 261,
+            "w": 28,
+            "h": 28,
+            "right": 763,
+            "bottom": 289
+          }
+        },
+        {
+          "row": {
+            "x": 265,
+            "y": 313,
+            "w": 510,
+            "h": 95,
+            "right": 775,
+            "bottom": 408
+          },
+          "primary": {
+            "x": 640,
+            "y": 324,
+            "w": 91,
+            "h": 28,
+            "right": 731,
+            "bottom": 352
+          },
+          "menu": {
+            "x": 735,
+            "y": 324,
+            "w": 28,
+            "h": 28,
+            "right": 763,
+            "bottom": 352
+          }
+        },
+        {
+          "row": {
+            "x": 265,
+            "y": 408,
+            "w": 510,
+            "h": 78,
+            "right": 775,
+            "bottom": 486
+          },
+          "primary": {
+            "x": 640,
+            "y": 419,
+            "w": 91,
+            "h": 28,
+            "right": 731,
+            "bottom": 447
+          },
+          "menu": {
+            "x": 735,
+            "y": 419,
+            "w": 28,
+            "h": 28,
+            "right": 763,
+            "bottom": 447
+          }
+        }
+      ],
+      "viewport": {
+        "w": 768,
+        "h": 900
+      },
+      "doc": {
+        "sw": 768,
+        "cw": 768
+      }
+    },
+    "after": {
+      "sl": 36,
+      "rows": [
+        {
+          "primary": {
+            "x": 563,
+            "right": 695,
+            "w": 132
+          },
+          "menu": {
+            "x": 699,
+            "right": 727,
+            "w": 28
+          }
+        },
+        {
+          "primary": {
+            "x": 604,
+            "right": 695,
+            "w": 91
+          },
+          "menu": {
+            "x": 699,
+            "right": 727,
+            "w": 28
+          }
+        },
+        {
+          "primary": {
+            "x": 604,
+            "right": 695,
+            "w": 91
+          },
+          "menu": {
+            "x": 699,
+            "right": 727,
+            "w": 28
+          }
+        }
+      ]
+    }
+  },
+  "table820": {
+    "before": {
+      "wrap": {
+        "x": 264,
+        "y": 198,
+        "w": 528,
+        "h": 255,
+        "right": 792,
+        "bottom": 453
+      },
+      "wrapScroll": {
+        "sw": 526,
+        "cw": 526,
+        "sl": 0
+      },
+      "table": {
+        "x": 265,
+        "y": 199,
+        "w": 526,
+        "h": 253,
+        "right": 791,
+        "bottom": 452
+      },
+      "rows": [
+        {
+          "row": {
+            "x": 265,
+            "y": 231,
+            "w": 526,
+            "h": 63,
+            "right": 791,
+            "bottom": 294
+          },
+          "primary": {
+            "x": 615,
+            "y": 242,
+            "w": 132,
+            "h": 28,
+            "right": 747,
+            "bottom": 270
+          },
+          "menu": {
+            "x": 751,
+            "y": 242,
+            "w": 28,
+            "h": 28,
+            "right": 779,
+            "bottom": 270
+          }
+        },
+        {
+          "row": {
+            "x": 265,
+            "y": 294,
+            "w": 526,
+            "h": 79,
+            "right": 791,
+            "bottom": 373
+          },
+          "primary": {
+            "x": 656,
+            "y": 305,
+            "w": 91,
+            "h": 28,
+            "right": 747,
+            "bottom": 333
+          },
+          "menu": {
+            "x": 751,
+            "y": 305,
+            "w": 28,
+            "h": 28,
+            "right": 779,
+            "bottom": 333
+          }
+        },
+        {
+          "row": {
+            "x": 265,
+            "y": 373,
+            "w": 526,
+            "h": 78,
+            "right": 791,
+            "bottom": 452
+          },
+          "primary": {
+            "x": 656,
+            "y": 384,
+            "w": 91,
+            "h": 28,
+            "right": 747,
+            "bottom": 412
+          },
+          "menu": {
+            "x": 751,
+            "y": 384,
+            "w": 28,
+            "h": 28,
+            "right": 779,
+            "bottom": 412
+          }
+        }
+      ],
+      "viewport": {
+        "w": 820,
+        "h": 640
+      },
+      "doc": {
+        "sw": 820,
+        "cw": 820
+      }
+    },
+    "after": {
+      "sl": 0,
+      "rows": [
+        {
+          "primary": {
+            "x": 615,
+            "right": 747,
+            "w": 132
+          },
+          "menu": {
+            "x": 751,
+            "right": 779,
+            "w": 28
+          }
+        },
+        {
+          "primary": {
+            "x": 656,
+            "right": 747,
+            "w": 91
+          },
+          "menu": {
+            "x": 751,
+            "right": 779,
+            "w": 28
+          }
+        },
+        {
+          "primary": {
+            "x": 656,
+            "right": 747,
+            "w": 91
+          },
+          "menu": {
+            "x": 751,
+            "right": 779,
+            "w": 28
+          }
+        }
+      ]
+    }
+  }
+}

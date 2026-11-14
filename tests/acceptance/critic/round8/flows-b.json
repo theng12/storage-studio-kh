@@ -1,0 +1,203 @@
+{
+  "credentialPrompt": {
+    "dialogs": [
+      {
+        "open": false,
+        "text": ""
+      },
+      {
+        "open": false,
+        "text": ""
+      },
+      {
+        "open": true,
+        "title": "Sign in to Archive Share",
+        "text": "Sign in to Archive Share Storage Studio KH needs a user name and password for this share. It is saved privately at ~/Library/Application Support/Storage Studio KH/secrets.json. User name Password Cancel Save"
+      }
+    ],
+    "active": {
+      "tag": "INPUT",
+      "cls": "",
+      "fk": "credentials-username",
+      "name": "credential-username",
+      "text": "",
+      "insideDialog": true
+    },
+    "archive": "Archive ShareSMB share , SMB share Needs attention Sign in to this share to continue. Mounted at Not mounted Address smb://archive.local/backups Reconnects At login · not after wake Mount now"
+  },
+  "credentialEscape": {
+    "dialogs": [
+      {
+        "open": false,
+        "text": ""
+      },
+      {
+        "open": false,
+        "text": ""
+      },
+      {
+        "open": false,
+        "title": "Sign in to Archive Share",
+        "text": " Sign in to Archive Share Storage Studio KH needs a user name and password for this share. It is saved privately at ~/Library/Application Support/Storage Studio KH/secrets.json. User name Password Cancel Save "
+      }
+    ],
+    "active": {
+      "tag": "BUTTON",
+      "cls": "row-menu-btn",
+      "fk": "row-archive-menu",
+      "name": null,
+      "text": "More actions for Archive Share",
+      "insideDialog": false
+    }
+  },
+  "credSavedImmediate": {
+    "toasts": [
+      "Password saved. Trying Archive Share…"
+    ],
+    "active": {
+      "tag": "BUTTON",
+      "cls": "row-menu-btn",
+      "fk": "row-archive-menu",
+      "name": null,
+      "text": "More actions for Archive Share",
+      "insideDialog": false
+    },
+    "archive": "Archive ShareSMB share , SMB share Needs attention Sign in to this share to continue. Mounted at Not mounted Address smb://archive.local/backups Reconnects At login · not after wake Mount now",
+    "dialogs": [
+      {
+        "open": false,
+        "text": ""
+      },
+      {
+        "open": false,
+        "text": ""
+      },
+      {
+        "open": false,
+        "title": "Sign in to Archive Share",
+        "text": " Sign in to Archive Share Storage Studio KH needs a user name and password for this share. It is saved privately at ~/Library/Application Support/Storage Studio KH/secrets.json. User name Password Cancel Saving… "
+      }
+    ]
+  },
+  "credSavedAfter": {
+    "toasts": [],
+    "active": {
+      "tag": "BUTTON",
+      "cls": "row-menu-btn",
+      "fk": "row-archive-menu",
+      "name": null,
+      "text": "More actions for Archive Share",
+      "insideDialog": false
+    },
+    "archive": "Archive ShareSMB share , SMB share Mounted Connected. Mounted at /Volumes/Archive Share Address smb://archive.local/backups Reconnects At login · not after wake Open in Finder",
+    "statusline": "2 of 3 storages mounted, 1 unreachable."
+  },
+  "menuOpenActive": {
+    "tag": "BUTTON",
+    "cls": "row-menu-item",
+    "fk": "row-archive-unmount",
+    "name": null,
+    "text": "Unmount",
+    "insideDialog": false
+  },
+  "menuKeys": [
+    "Test",
+    "Edit",
+    "Remove…",
+    "Unmount",
+    "Remove…"
+  ],
+  "menuEscape": {
+    "active": {
+      "tag": "BUTTON",
+      "cls": "row-menu-btn",
+      "fk": "row-archive-menu",
+      "name": null,
+      "text": "More actions for Archive Share",
+      "insideDialog": false
+    },
+    "menusOpen": 0
+  },
+  "menuOutside": {
+    "menusOpen": 0,
+    "active": {
+      "tag": "MAIN",
+      "cls": "main",
+      "fk": null,
+      "name": null,
+      "text": "Storage 2 of 3 storages mounted, 1 unreachable. Add storage Can't be r",
+      "insideDialog": false
+    }
+  },
+  "test1": {
+    "toasts": [
+      "Test: Connected at /Volumes/Archive Share."
+    ],
+    "active": {
+      "tag": "BUTTON",
+      "cls": "row-menu-btn",
+      "fk": "row-archive-menu",
+      "name": null,
+      "text": "More actions for Archive Share",
+      "insideDialog": false
+    },
+    "archive": "Archive ShareSMB share , SMB share Mounted Connected at /Volumes/Archive Share. Mounted at /Volumes/Archive Share Address smb://archive.local/backups Reconnects At login · not after wake Open in Finder"
+  },
+  "test2": {
+    "toasts": [
+      "Test: Connected at /Volumes/Archive Share."
+    ],
+    "active": {
+      "tag": "BUTTON",
+      "cls": "row-menu-btn",
+      "fk": "row-archive-menu",
+      "name": null,
+      "text": "More actions for Archive Share",
+      "insideDialog": false
+    }
+  },
+  "unmount": {
+    "active": {
+      "tag": "BUTTON",
+      "cls": "row-primary row-primary-accent",
+      "fk": "row-archive-mount",
+      "name": null,
+      "text": "Mount now",
+      "insideDialog": false
+    },
+    "archive": "Archive ShareSMB share , SMB share Not mounted Mounted at Not mounted Address smb://archive.local/backups Reconnects At login · not after wake Mount now",
+    "statusline": "1 of 3 storages mounted, 1 unreachable, 1 not mounted."
+  },
+  "forgetPassword": {
+    "pwDisabledBefore": false,
+    "pwDisabledAfter": true,
+    "toasts": [
+      "Saved Studio NAS. The saved password was forgotten.",
+      "Test: Connected at /Volumes/Archive Share."
+    ],
+    "active": {
+      "tag": "BUTTON",
+      "cls": "row-menu-btn",
+      "fk": "row-studio-nas-menu",
+      "name": null,
+      "text": "More actions for Studio NAS",
+      "insideDialog": false
+    },
+    "studio": "Studio NASSMB share , SMB share Mounted Connected as studio. Mounted at /Volumes/studio Address smb://nas.local/studio Reconnects At login · after wake Open in Finder"
+  },
+  "forgetGone": {
+    "forgetBoxes": 0,
+    "text": "Edit storage Change how this storage reconnects. Name Kind SMB share Attached disk Share address (host + share) Browse… Share: studio User name (optional) Password (optional) Mount point (optional) Leave blank and macOS chooses a folder in /Volumes. Reconnect at login Reconnect after wake Remove Cancel Test Save"
+  },
+  "credFailure": {
+    "text": "Sign in to Archive Share Storage Studio KH needs a user name and password for this share. It is saved privately at ~/Library/Application Support/Storage Studio KH/secrets.json. Storage Studio KH couldn't save the password. User name Password Cancel Save",
+    "active": {
+      "tag": "INPUT",
+      "cls": "",
+      "fk": "credentials-password",
+      "name": "credential-password",
+      "text": "",
+      "insideDialog": true
+    }
+  }
+}

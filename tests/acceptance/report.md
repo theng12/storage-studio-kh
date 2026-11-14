@@ -1,6 +1,6 @@
 # Storage Studio KH — page acceptance
 
-Run: 2026-11-13T23:29:53.738Z · app 0.1.10 · 289/289 checks passed
+Run: 2026-11-14T00:08:25.885Z · app 0.1.10 · 294/294 checks passed
 
 | Page | Check | Expected | Actual | Result |
 | --- | --- | --- | --- | --- |
@@ -39,7 +39,7 @@ Run: 2026-11-13T23:29:53.738Z · app 0.1.10 · 289/289 checks passed
 | Audit | attention no overflow at 700x520 | no horizontal overflow | 0 | PASS |
 | Engine | banner on Storage | helper stopped sentence | true | PASS |
 | Engine | status line admits the helper is down | Helper isn't running | true | PASS |
-| Engine | status line shows when the state was last received | Last update | true | PASS |
+| Engine | status line shows when the helper last reported | Helper last reported | true | PASS |
 | Engine | banner offers a way out | Restart helper button | true | PASS |
 | Engine | banner on General | helper stopped sentence | true | PASS |
 | Engine | banner on Appearance | helper stopped sentence | true | PASS |
@@ -226,7 +226,7 @@ Run: 2026-11-13T23:29:53.738Z · app 0.1.10 · 289/289 checks passed
 | Dialog | Browse dismissal returns focus to the address | target field | true | PASS |
 | Dialog | Remove return focuses the form | editor-name | true | PASS |
 | Dialog | closing the password prompt focuses the row | row menu control | true | PASS |
-| Dialog | saving returns focus to the opener | add-storage | true | PASS |
+| Dialog | saving focuses the new row, not an off-screen opener | row menu | true | PASS |
 | Dialog | closing What's New focuses the pill | pill | true | PASS |
 | Layout | 375 Tab order is nav, content, footer | DOM order matches the screen | true | PASS |
 | Keys | arrow keys move between sections | General focused and shown | true | PASS |
@@ -260,7 +260,7 @@ Run: 2026-11-13T23:29:53.738Z · app 0.1.10 · 289/289 checks passed
 | Remove | the row menu offers Remove | a confirmation | true | PASS |
 | Remove | menu Remove removes the row | 3 | 3 | PASS |
 | Remove | menu Remove can be undone | Public Space-Media - 4TB - Music returned | true | PASS |
-| Storage | the list says when it was checked | Checked | true | PASS |
+| Storage | the list says what was checked and when | Storage list checked | true | PASS |
 | Footer | the version pill carries an icon | an svg | true | PASS |
 | Add | a missing disk is not called connected | isn't connected | true | PASS |
 | View | at 375 the table shows a row action at rest | menu inside the wrap | true | PASS |
@@ -284,6 +284,11 @@ Run: 2026-11-13T23:29:53.738Z · app 0.1.10 · 289/289 checks passed
 | Boot | the boot error hides navigation | 0 | 0 | PASS |
 | Boot | the navigation comes back after Retry | 3 | 3 | PASS |
 | Remove | a timed-out Undo leaves focus on a real control | add-storage | true | PASS |
+| Layout | adding at 375 keeps the window pinned | document height equals the viewport | true | PASS |
+| Layout | focus after saving is on screen at 375 | the focused control is visible | true | PASS |
+| Layout | adding at 820 keeps the window pinned | document height equals the viewport | true | PASS |
+| View | at 768 the table fits and shows the row menu | no horizontal overflow, menu inside | true | PASS |
+| Remove | Undo restores a still-mounted share as mounted | Mounted chip | true | PASS |
 | Layout | long name wraps instead of clipping | 0 | 0 | PASS |
 | Layout | long name adds no page overflow at 375 | 0 | 0 | PASS |
 | Footer | download control stays inside at 768 | right edge within the window | true | PASS |

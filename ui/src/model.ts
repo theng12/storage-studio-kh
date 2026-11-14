@@ -199,12 +199,12 @@ export function sameStorageIdentity(
 }
 
 export function checkedAgo(lastChecked: number | null, now = Date.now()): string {
-  if (!lastChecked) return "Not checked yet";
+  if (!lastChecked) return "Storage list not checked yet";
   const seconds = Math.max(0, Math.round((now - lastChecked) / 1000));
-  if (seconds < 60) return "Checked just now";
+  if (seconds < 60) return "Storage list checked just now";
   const minutes = Math.round(seconds / 60);
-  if (minutes < 60) return `Checked ${minutes} min ago`;
-  return `Checked ${Math.round(minutes / 60)} h ago`;
+  if (minutes < 60) return `Storage list checked ${minutes} min ago`;
+  return `Storage list checked ${Math.round(minutes / 60)} h ago`;
 }
 
 export interface WarningGroup {

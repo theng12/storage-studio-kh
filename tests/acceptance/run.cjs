@@ -318,7 +318,7 @@ async function noOverflow(page, id) {
       const storageText = await downPage.locator("main, .content").first().innerText();
       truthy("Engine", "banner on Storage", "helper stopped sentence", storageText.includes("It stopped unexpectedly"), null);
       truthy("Engine", "status line admits the helper is down", "Helper isn't running", storageText.includes("Helper isn't running"), null);
-      truthy("Engine", "status line shows when the state was last received", "Last update", storageText.includes("Last update"), null);
+      truthy("Engine", "status line shows when the helper last reported", "Helper last reported", storageText.includes("Helper last reported"), null);
       truthy("Engine", "banner offers a way out", "Restart helper button", (await downPage.locator('[data-fk="restart-helper"]').count()) === 1, null);
       await downPage.locator('[data-fk="nav-general"]').click();
       truthy("Engine", "banner on General", "helper stopped sentence", (await downPage.locator("main, .content").first().innerText()).includes("It stopped unexpectedly"), null);
@@ -975,7 +975,8 @@ async function noOverflow(page, id) {
       await page.locator('input[name="target"]').fill("smb://nas.local/focus");
       await page.locator('input[name="target"]').press("Enter");
       await page.waitForTimeout(250);
-      truthy("Dialog", "saving returns focus to the opener", "add-storage", (await page.evaluate(() => document.activeElement?.getAttribute("data-fk"))) === "add-storage", null);
+      const savedFocus = await page.evaluate(() => document.activeElement?.getAttribute("data-fk") || "");
+      truthy("Dialog", "saving focuses the new row, not an off-screen opener", "row menu", savedFocus.startsWith("row-") && savedFocus.endsWith("-menu"), savedFocus);
 
       // Closing What's New returns focus to the pill.
       await page.locator('[data-fk="pill"]').click();
@@ -1315,7 +1316,7 @@ async function noOverflow(page, id) {
     /* -------------------------------------------- Round-7: disk hint, table, check, removal */
     {
       const page = await open(browser, live);
-      truthy("Storage", "the list says when it was checked", "Checked", (await page.locator(".checked-line").innerText()).includes("Checked"), await page.locator(".checked-line").innerText());
+      truthy("Storage", "the list says what was checked and when", "Storage list checked", (await page.locator(".checked-line").innerText()).includes("Storage list checked"), await page.locator(".checked-line").innerText());
       truthy("Footer", "the version pill carries an icon", "an svg", (await page.locator('[data-fk="pill"] svg').count()) === 1, null);
 
       // A missing saved disk is described as missing, not "connected now".
@@ -1557,6 +1558,70 @@ async function noOverflow(page, id) {
         (await page.evaluate(() => document.activeElement?.getAttribute("data-fk"))) === "add-storage",
         await page.evaluate(() => document.activeElement?.getAttribute("data-fk") || document.activeElement?.tagName),
       );
+      await page.close();
+    }
+
+    /* ------------------------------------------- Round-8: root height, 768 table, undo state */
+    {
+      const page = await open(browser, live, { width: 375, height: 812 });
+      await page.locator('[data-fk="add-storage"]').click();
+      await page.locator('input[name="name"]').fill("Height check");
+      await page.locator('input[name="target"]').fill("smb://nas.local/height");
+      await page.locator('input[name="target"]').press("Enter");
+      await page.waitForTimeout(350);
+      const heights = await page.evaluate(() => ({ doc: document.documentElement.scrollHeight, view: window.innerHeight }));
+      truthy("Layout", "adding at 375 keeps the window pinned", "document height equals the viewport", heights.doc === heights.view, JSON.stringify(heights));
+      const focusedVisible = await page.evaluate(() => {
+        const el = document.activeElement;
+        if (!el) return null;
+        const r = el.getBoundingClientRect();
+        return { fk: el.getAttribute("data-fk"), top: Math.round(r.top), bottom: Math.round(r.bottom), h: window.innerHeight };
+      });
+      truthy("Layout", "focus after saving is on screen at 375", "the focused control is visible", Boolean(focusedVisible) && focusedVisible.top >= 0 && focusedVisible.bottom <= focusedVisible.h, JSON.stringify(focusedVisible));
+      await page.close();
+    }
+
+    {
+      const page = await open(browser, live, { width: 820, height: 640 });
+      await page.locator('[data-fk="add-storage"]').click();
+      await page.locator('input[name="name"]').fill("Height check");
+      await page.locator('input[name="target"]').fill("smb://nas.local/height");
+      await page.locator('input[name="target"]').press("Enter");
+      await page.waitForTimeout(350);
+      const heights = await page.evaluate(() => ({ doc: document.documentElement.scrollHeight, view: window.innerHeight }));
+      truthy("Layout", "adding at 820 keeps the window pinned", "document height equals the viewport", heights.doc === heights.view, JSON.stringify(heights));
+      await page.close();
+    }
+
+    {
+      const page = await open(browser, live, { width: 768, height: 900 });
+      await page.locator('[data-list-view="table"]').check();
+      await page.waitForTimeout(300);
+      const table = await page.evaluate(() => {
+        const wrap = document.querySelector(".storage-table-wrap");
+        const button = document.querySelector(".storage-table .cell-actions [data-row-menu]");
+        const r = button.getBoundingClientRect();
+        return {
+          wrapRight: Math.round(wrap.getBoundingClientRect().right),
+          buttonRight: Math.round(r.right),
+          overflow: wrap.scrollWidth - wrap.clientWidth,
+        };
+      });
+      truthy("View", "at 768 the table fits and shows the row menu", "no horizontal overflow, menu inside", table.overflow === 0 && table.buttonRight <= table.wrapRight, JSON.stringify(table));
+      await page.close();
+    }
+
+    {
+      // Undo of a share that is still mounted comes back mounted, not Not mounted.
+      const page = await open(browser, live);
+      await rowAction(page, live.storages[0].id, "remove");
+      await page.locator('[data-editor-action="confirm-remove"]').click();
+      await page.waitForTimeout(250);
+      await page.locator("[data-toast-action]").click();
+      await page.waitForTimeout(300);
+      const row = page.locator(`[data-storage="${live.storages[0].id}"]`);
+      const text = await row.innerText().catch(() => "");
+      truthy("Remove", "Undo restores a still-mounted share as mounted", "Mounted chip", text.includes("Mounted"), text.replace(/\n/g, " | "));
       await page.close();
     }
 

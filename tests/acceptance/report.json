@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-13T23:29:53.738Z",
+  "generatedAt": "2026-11-14T00:08:25.885Z",
   "appVersion": "0.1.10",
   "checks": [
     {
@@ -284,8 +284,8 @@
     },
     {
       "page": "Engine",
-      "id": "status line shows when the state was last received",
-      "expected": "Last update",
+      "id": "status line shows when the helper last reported",
+      "expected": "Helper last reported",
       "actual": "true",
       "pass": true,
       "evidence": null
@@ -1783,11 +1783,11 @@
     },
     {
       "page": "Dialog",
-      "id": "saving returns focus to the opener",
-      "expected": "add-storage",
+      "id": "saving focuses the new row, not an off-screen opener",
+      "expected": "row menu",
       "actual": "true",
       "pass": true,
-      "evidence": null
+      "evidence": "row-s1794614864690-menu"
     },
     {
       "page": "Dialog",
@@ -2055,11 +2055,11 @@
     },
     {
       "page": "Storage",
-      "id": "the list says when it was checked",
-      "expected": "Checked",
+      "id": "the list says what was checked and when",
+      "expected": "Storage list checked",
       "actual": "true",
       "pass": true,
-      "evidence": "Checked 41 min ago"
+      "evidence": "Storage list checked 1 h ago"
     },
     {
       "page": "Footer",
@@ -2115,7 +2115,7 @@
       "expected": "primary and menu share a top",
       "actual": "true",
       "pass": true,
-      "evidence": "{\"cellWidth\":200,\"sameLine\":true,\"primaryRight\":747,\"menuLeft\":751}"
+      "evidence": "{\"cellWidth\":196,\"sameLine\":true,\"primaryRight\":747,\"menuLeft\":751}"
     },
     {
       "page": "Keys",
@@ -2247,6 +2247,46 @@
     },
     {
       "page": "Layout",
+      "id": "adding at 375 keeps the window pinned",
+      "expected": "document height equals the viewport",
+      "actual": "true",
+      "pass": true,
+      "evidence": "{\"doc\":812,\"view\":812}"
+    },
+    {
+      "page": "Layout",
+      "id": "focus after saving is on screen at 375",
+      "expected": "the focused control is visible",
+      "actual": "true",
+      "pass": true,
+      "evidence": "{\"fk\":\"row-s1794614901673-menu\",\"top\":606,\"bottom\":634,\"h\":812}"
+    },
+    {
+      "page": "Layout",
+      "id": "adding at 820 keeps the window pinned",
+      "expected": "document height equals the viewport",
+      "actual": "true",
+      "pass": true,
+      "evidence": "{\"doc\":640,\"view\":640}"
+    },
+    {
+      "page": "View",
+      "id": "at 768 the table fits and shows the row menu",
+      "expected": "no horizontal overflow, menu inside",
+      "actual": "true",
+      "pass": true,
+      "evidence": "{\"wrapRight\":740,\"buttonRight\":727,\"overflow\":0}"
+    },
+    {
+      "page": "Remove",
+      "id": "Undo restores a still-mounted share as mounted",
+      "expected": "Mounted chip",
+      "actual": "true",
+      "pass": true,
+      "evidence": "Public Space-Media - 4TB - MusicSMB share | , SMB share | Mounted | Mounted at | /Volumes/Public Space-Media - 4TB - Music | Address | smb://vengtheng@100.69.137.42/Public Space-Media - 4TB - Music | Reconnects | At login · after wake | Open in Finder"
+    },
+    {
+      "page": "Layout",
       "id": "long name wraps instead of clipping",
       "expected": 0,
       "actual": "0",
@@ -2371,8 +2411,8 @@
     "tests/acceptance/screenshots/appearance/appearance-light-820x640.png"
   ],
   "summary": {
-    "total": 289,
-    "passed": 289,
+    "total": 294,
+    "passed": 294,
     "failed": 0
   }
 }

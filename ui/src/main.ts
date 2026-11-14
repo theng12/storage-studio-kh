@@ -358,7 +358,9 @@ function storageStatusLine(groups: { storage: { status: string } }[]): string {
   const checked = snapshot.lastChecked
     ? new Date(snapshot.lastChecked).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
     : null;
-  return checked ? `Helper isn't running. Last update ${checked}. ${summary}` : `Helper isn't running. ${summary}`;
+  return checked
+    ? `Helper isn't running. Helper last reported ${checked}. ${summary}`
+    : `Helper isn't running. ${summary}`;
 }
 
 function renderStorage(): string {
@@ -389,7 +391,13 @@ function renderStorage(): string {
                 ? `<div class="warning-groups" aria-label="Warnings">${warnings.map(renderWarningGroup).join("")}</div>`
                 : ""
             }
-            ${s.lastChecked ? `<span class="checked-line">${checkedAgo(s.lastChecked)}</span>` : ""}
+            ${
+              s.lastChecked
+                ? `<span class="checked-line" title="Storage list last read ${esc(
+                    new Date(s.lastChecked).toLocaleString(),
+                  )}">${checkedAgo(s.lastChecked)}</span>`
+                : ""
+            }
             ${renderViewSwitch(mode)}
           </div>
           ${mode === "table" ? renderStorageTable(groups) : renderStorageCards(groups)}`
@@ -1311,6 +1319,7 @@ async function saveEditor(): Promise<void> {
       saved.storages.find((item) => d.id && item.id === d.id) ??
       saved.storages.find((item) => item.name === input.name && item.target === input.target && item.kind === input.kind);
     flashRow(row?.id);
+    if (row) restoreFocus(`row-${row.id}-menu`);
     if (isEdit) {
       toast(d.removeCredentials ? `Saved ${input.name}. The saved password was forgotten.` : `Saved ${input.name}.`);
     } else {

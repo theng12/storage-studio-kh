@@ -1,0 +1,605 @@
+{
+  "addSheet": {
+    "dialogs": [
+      {
+        "cls": "sheet",
+        "open": true,
+        "title": "Add storage",
+        "text": "Add storage A share or disk that reconnects on its own. Name Kind SMB share Attached disk From a connected share Public Space-Media - 4TB - Music /Volumes/Public Space-Media - 4TB - Music Add Share address (host + share) Browse… User name (optional) Password (optional) Mount point (optional) Leave blank and macOS chooses a folder in /Volumes. Reconnect at login Reconnect after wake Cancel Test Save",
+        "box": {
+          "x": 170,
+          "y": 8,
+          "w": 480,
+          "h": 623
+        }
+      },
+      {
+        "cls": "sheet",
+        "open": false,
+        "text": "",
+        "box": {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0
+        }
+      },
+      {
+        "cls": "sheet",
+        "open": false,
+        "text": "",
+        "box": {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0
+        }
+      }
+    ],
+    "active": {
+      "tag": "INPUT",
+      "cls": "",
+      "fk": "editor-name",
+      "name": "name",
+      "text": "name",
+      "insideDialog": true
+    }
+  },
+  "tabContainment": {
+    "allInside": true,
+    "stops": [
+      "INPUT:kind",
+      "connected-smb://studio@nas.local/Public%20Space-Media%20-%204TB%20-%20Music",
+      "INPUT:target",
+      "editor-browse",
+      "INPUT:username",
+      "INPUT:password",
+      "INPUT:mountPoint",
+      "INPUT:login",
+      "INPUT:wake",
+      "editor-cancel",
+      "editor-name",
+      "INPUT:kind",
+      "connected-smb://studio@nas.local/Public%20Space-Media%20-%204TB%20-%20Music",
+      "INPUT:target",
+      "editor-browse",
+      "INPUT:username",
+      "INPUT:password",
+      "INPUT:mountPoint",
+      "INPUT:login",
+      "INPUT:wake",
+      "editor-cancel",
+      "editor-name"
+    ]
+  },
+  "afterSave250": {
+    "dialogs": [
+      {
+        "cls": "sheet",
+        "open": false,
+        "title": "Add storage",
+        "text": " Add storage A share or disk that reconnects on its own. Name Kind SMB share Attached disk From a connected share Public Space-Media - 4TB - Music /Volumes/Public Space-Media - 4TB - Music Add Share address (host + share) Browse… Share: library User name (optional) Password (optional) Mount point (optional) Leave blank and macOS chooses a folder in /Volumes. Reconnect at login Reconnect after wake Cancel Test Saving… ",
+        "box": {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0
+        }
+      },
+      {
+        "cls": "sheet",
+        "open": false,
+        "text": "",
+        "box": {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0
+        }
+      },
+      {
+        "cls": "sheet",
+        "open": false,
+        "text": "",
+        "box": {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0
+        }
+      }
+    ],
+    "toasts": [
+      {
+        "text": "Added Media Library. Mount now",
+        "box": {
+          "x": 484,
+          "y": 584,
+          "w": 320,
+          "h": 40,
+          "bottom": 624
+        }
+      }
+    ],
+    "active": {
+      "tag": "BUTTON",
+      "cls": "btn btn-primary",
+      "fk": "add-storage",
+      "name": null,
+      "text": "Add storage",
+      "insideDialog": false
+    },
+    "saveDisabled": false
+  },
+  "afterSave750": {
+    "toasts": [
+      {
+        "text": "Added Media Library. Mount now",
+        "box": {
+          "x": 484,
+          "y": 584,
+          "w": 320,
+          "h": 40,
+          "bottom": 624
+        }
+      }
+    ],
+    "active": {
+      "tag": "BUTTON",
+      "cls": "btn btn-primary",
+      "fk": "add-storage",
+      "name": null,
+      "text": "Add storage",
+      "insideDialog": false
+    },
+    "rows": [
+      {
+        "text": "Studio NASSMB share , SMB share Mounted Connected as studio. Mounted at /Volumes",
+        "box": {
+          "y": -217,
+          "bottom": -20
+        }
+      },
+      {
+        "text": "Archive ShareSMB share , SMB share Needs attention The share couldn't be reached",
+        "box": {
+          "y": -8,
+          "bottom": 190
+        }
+      },
+      {
+        "text": "Editing SSDAttached disk , Attached disk Unreachable The disk isn't connected ri",
+        "box": {
+          "y": 202,
+          "bottom": 378
+        }
+      },
+      {
+        "text": "Media LibrarySMB share , SMB share Not mounted Mounted at Not mounted Address sm",
+        "box": {
+          "y": 390,
+          "bottom": 544
+        }
+      }
+    ],
+    "statusline": "1 of 4 storages mounted, 1 needs attention, 1 unreachable, 1 not mounted."
+  },
+  "toastVsFooter": {
+    "toastBottom": 624,
+    "toastTop": 584,
+    "footTop": 532
+  },
+  "menu": [
+    {
+      "text": "Unmount",
+      "fk": "row-studio-nas-unmount",
+      "box": {
+        "x": 270,
+        "y": 343,
+        "w": 170,
+        "h": 28,
+        "right": 440
+      }
+    },
+    {
+      "text": "Test",
+      "fk": "row-studio-nas-test",
+      "box": {
+        "x": 270,
+        "y": 371,
+        "w": 170,
+        "h": 28,
+        "right": 440
+      }
+    },
+    {
+      "text": "Edit",
+      "fk": "row-studio-nas-edit",
+      "box": {
+        "x": 270,
+        "y": 399,
+        "w": 170,
+        "h": 28,
+        "right": 440
+      }
+    },
+    {
+      "text": "Remove…",
+      "fk": "row-studio-nas-remove",
+      "box": {
+        "x": 270,
+        "y": 427,
+        "w": 170,
+        "h": 28,
+        "right": 440
+      }
+    }
+  ],
+  "editConnected": {
+    "dialogs": [
+      {
+        "cls": "sheet",
+        "open": true,
+        "title": "Edit storage",
+        "text": "Edit storage Change how this storage reconnects. Name Kind SMB share Attached disk Share address (host + share) Browse… Share: studio User name (optional) Password (optional) Forget the saved password Mount point (optional) Leave blank and macOS chooses a folder in /Volumes. Reconnect at login Reconnect after wake Remove Cancel Test Save",
+        "box": {
+          "x": 170,
+          "y": 24,
+          "w": 480,
+          "h": 592
+        }
+      },
+      {
+        "cls": "sheet",
+        "open": false,
+        "text": "",
+        "box": {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0
+        }
+      },
+      {
+        "cls": "sheet",
+        "open": false,
+        "text": "",
+        "box": {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0
+        }
+      }
+    ],
+    "active": {
+      "tag": "INPUT",
+      "cls": "",
+      "fk": "editor-name",
+      "name": "name",
+      "text": "name",
+      "insideDialog": true
+    },
+    "hint": [
+      "Leave blank and macOS chooses a folder in /Volumes."
+    ]
+  },
+  "editEscape": {
+    "dialogs": [
+      {
+        "cls": "sheet",
+        "open": false,
+        "title": "Edit storage",
+        "text": " Edit storage Change how this storage reconnects. Name Kind SMB share Attached disk Share address (host + share) Browse… Share: studio User name (optional) Password (optional) Forget the saved password Mount point (optional) Leave blank and macOS chooses a folder in /Volumes. Reconnect at login Reconnect after wake Remove Cancel Test Save ",
+        "box": {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0
+        }
+      },
+      {
+        "cls": "sheet",
+        "open": false,
+        "text": "",
+        "box": {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0
+        }
+      },
+      {
+        "cls": "sheet",
+        "open": false,
+        "text": "",
+        "box": {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0
+        }
+      }
+    ],
+    "active": {
+      "tag": "BUTTON",
+      "cls": "row-menu-btn",
+      "fk": "row-studio-nas-menu",
+      "name": null,
+      "text": "More actions for Studio NAS",
+      "insideDialog": false
+    }
+  },
+  "editMissingDisk": {
+    "dialogs": [
+      {
+        "cls": "sheet",
+        "open": true,
+        "title": "Edit storage",
+        "text": "Edit storage Change how this storage reconnects. Name Kind SMB share Attached disk Disk Choose a disk Saved disk — /Volumes/Editing SSD Backup Disk — /Volumes/Backup Disk Editing SSD isn't connected. Reconnect it, then reopen this window. Reconnects at /Volumes/Editing SSD Reconnect at login Reconnect after wake Remove Cancel Test Save",
+        "box": {
+          "x": 170,
+          "y": 112,
+          "w": 480,
+          "h": 415
+        }
+      },
+      {
+        "cls": "sheet",
+        "open": false,
+        "text": "",
+        "box": {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0
+        }
+      },
+      {
+        "cls": "sheet",
+        "open": false,
+        "text": "",
+        "box": {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0
+        }
+      }
+    ],
+    "hint": [
+      "Editing SSD isn't connected. Reconnect it, then reopen this window.",
+      "Reconnects at /Volumes/Editing SSD"
+    ],
+    "select": {
+      "value": "5C2A-9F1E",
+      "options": [
+        "Choose a disk",
+        "Saved disk — /Volumes/Editing SSD",
+        "Backup Disk — /Volumes/Backup Disk"
+      ]
+    }
+  },
+  "discardAsk": {
+    "dialogs": [
+      {
+        "cls": "sheet",
+        "open": true,
+        "title": "Discard changes?",
+        "text": "Discard changes? Your edits to this storage haven't been saved. Closing now loses them. Keep editing to go back. Discard changes Keep editing",
+        "box": {
+          "x": 170,
+          "y": 239,
+          "w": 480,
+          "h": 163
+        }
+      },
+      {
+        "cls": "sheet",
+        "open": false,
+        "text": "",
+        "box": {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0
+        }
+      },
+      {
+        "cls": "sheet",
+        "open": false,
+        "text": "",
+        "box": {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0
+        }
+      }
+    ],
+    "active": {
+      "tag": "BUTTON",
+      "cls": "btn btn-primary",
+      "fk": "editor-keep-editing",
+      "name": null,
+      "text": "Keep editing",
+      "insideDialog": true
+    }
+  },
+  "discardEscapeAgain": {
+    "dialogs": [
+      {
+        "cls": "sheet",
+        "open": true,
+        "title": "Edit storage",
+        "text": "Edit storage Change how this storage reconnects. Name Kind SMB share Attached disk Share address (host + share) Browse… Share: backups User name (optional) Password (optional) Mount point (optional) Leave blank and macOS chooses a folder in /Volumes. Reconnect at login Reconnect after wake Remove Cancel Test Save",
+        "box": {
+          "x": 170,
+          "y": 36,
+          "w": 480,
+          "h": 567
+        }
+      },
+      {
+        "cls": "sheet",
+        "open": false,
+        "text": "",
+        "box": {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0
+        }
+      },
+      {
+        "cls": "sheet",
+        "open": false,
+        "text": "",
+        "box": {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0
+        }
+      }
+    ],
+    "active": {
+      "tag": "INPUT",
+      "cls": "",
+      "fk": "editor-name",
+      "name": "name",
+      "text": "name",
+      "insideDialog": true
+    }
+  },
+  "removeConfirm": {
+    "dialogs": [
+      {
+        "cls": "sheet",
+        "open": true,
+        "title": "Remove Studio NAS?",
+        "text": "Remove Studio NAS? Storage Studio KH will stop reconnecting it. The files stay where they are. This removes the storage from Storage Studio KH, forgets its saved password and clears any duplicate entries. Nothing is deleted from the share or disk. Remove Studio NAS Keep",
+        "box": {
+          "x": 170,
+          "y": 220,
+          "w": 480,
+          "h": 201
+        }
+      },
+      {
+        "cls": "sheet",
+        "open": false,
+        "text": "",
+        "box": {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0
+        }
+      },
+      {
+        "cls": "sheet",
+        "open": false,
+        "text": "",
+        "box": {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0
+        }
+      }
+    ],
+    "active": {
+      "tag": "BUTTON",
+      "cls": "btn btn-primary",
+      "fk": "editor-keep",
+      "name": null,
+      "text": "Keep",
+      "insideDialog": true
+    }
+  },
+  "removeDone": {
+    "dialogs": [
+      {
+        "cls": "sheet",
+        "open": false,
+        "title": "Remove Studio NAS?",
+        "text": " Remove Studio NAS? Storage Studio KH will stop reconnecting it. The files stay where they are. This removes the storage from Storage Studio KH, forgets its saved password and clears any duplicate entries. Nothing is deleted from the share or disk. Remove Studio NAS Keep ",
+        "box": {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0
+        }
+      },
+      {
+        "cls": "sheet",
+        "open": false,
+        "text": "",
+        "box": {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0
+        }
+      },
+      {
+        "cls": "sheet",
+        "open": false,
+        "text": "",
+        "box": {
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0
+        }
+      }
+    ],
+    "toasts": [
+      {
+        "text": "Removed Studio NAS. Undo",
+        "box": {
+          "x": 484,
+          "y": 584,
+          "w": 320,
+          "h": 40,
+          "bottom": 624
+        }
+      }
+    ],
+    "active": {
+      "tag": "BUTTON",
+      "cls": "toast-action",
+      "fk": null,
+      "name": null,
+      "text": "Undo",
+      "insideDialog": false
+    },
+    "rows": 2,
+    "statusline": "2 storages, none mounted, 1 needs attention, 1 unreachable."
+  },
+  "undo": {
+    "toasts": [
+      {
+        "text": "Restored Studio NAS.",
+        "box": {
+          "x": 484,
+          "y": 589,
+          "w": 320,
+          "h": 35,
+          "bottom": 624
+        }
+      }
+    ],
+    "active": {
+      "tag": "BUTTON",
+      "cls": "row-menu-btn",
+      "fk": "row-studio-nas-menu",
+      "name": null,
+      "text": "More actions for Studio NAS",
+      "insideDialog": false
+    },
+    "rows": 3,
+    "statusline": "3 storages, none mounted, 1 needs attention, 1 unreachable."
+  }
+}

@@ -1,0 +1,99 @@
+{
+  "viewSwitch": {
+    "active": {
+      "tag": "INPUT",
+      "fk": "view-table",
+      "text": "",
+      "insideDialog": false
+    },
+    "cmds": [
+      "set_list_view"
+    ],
+    "table": 1,
+    "cards": 0
+  },
+  "showWarning": {
+    "active": {
+      "tag": "BUTTON",
+      "fk": "row-archive-mount",
+      "text": "Mount now",
+      "insideDialog": false
+    },
+    "scrollTop": 61,
+    "row": {
+      "y": 347,
+      "bottom": 544
+    }
+  },
+  "diskForm": {
+    "select": {
+      "disabled": false,
+      "options": [
+        "Choose a disk",
+        "Backup Disk — /Volumes/Backup Disk"
+      ]
+    },
+    "hint": [
+      "These disks are connected now."
+    ]
+  },
+  "diskSaveEnabled": true,
+  "diskAdded": {
+    "rows": [
+      "Studio NASSMB share , SMB share Mounted Connected as studio. Mounted at /Volumes",
+      "Archive ShareSMB share , SMB share Needs attention The share couldn't be reached",
+      "Editing SSDAttached disk , Attached disk Unreachable The disk isn't connected ri",
+      "Backup DiskAttached disk , Attached disk Not mounted Mounted at Not mounted Reco"
+    ],
+    "cmds": [
+      "save_storage"
+    ],
+    "toasts": [
+      "Added Backup Disk.\nMount now"
+    ],
+    "active": {
+      "tag": "BUTTON",
+      "fk": "add-storage",
+      "text": "Add storage",
+      "insideDialog": false
+    }
+  },
+  "editorRemoveAsk": {
+    "active": {
+      "tag": "BUTTON",
+      "fk": "editor-keep",
+      "text": "Keep",
+      "insideDialog": true
+    },
+    "text": "Remove Archive Share? Storage Studio KH will stop reconnecting it. The files stay where they are. This removes the storage from Storage Studio KH, forgets its saved password and clears any duplicate entries. Nothing is deleted from the share or disk. Remove Archive Share Keep"
+  },
+  "editorRemoveDone": {
+    "active": {
+      "tag": "BUTTON",
+      "fk": null,
+      "text": "Undo",
+      "insideDialog": false
+    },
+    "toasts": [
+      "Removed Archive Share.\nUndo",
+      "Added Backup Disk.\nMount now"
+    ]
+  },
+  "editorRemoveUndo": {
+    "active": {
+      "tag": "BUTTON",
+      "fk": "row-archive-menu",
+      "text": "More actions for Archive Share",
+      "insideDialog": false
+    },
+    "rows": 4,
+    "toasts": [
+      "Restored Archive Share.",
+      "Added Backup Disk.\nMount now"
+    ]
+  },
+  "loginError": {
+    "text": "General How Storage Studio KH behaves on this Mac. Notifications Tell me when a storage reconnects or stops trying. Launch at login Start Storage Studio KH when you log in, so your storage reconnects without opening the app. Storage Studio KH is not allowed to open at login. Launch at login is currently off. Check System Settings › General › Login Items & Extensions, then try again. Retries before it stops Choose from 1 to 8. The default is 3. 1 2 3 4 5 6 7 8 After a failure it tries again after 5 s, 15 s and 60 s, then stops and marks the storage Needs attention until you choose Mount now.",
+    "launchChecked": false
+  }
+}

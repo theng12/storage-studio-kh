@@ -219,6 +219,14 @@ export function createDevBackend(hash: string): {
       case "save_storage": {
         const input = (args?.input ?? {}) as StorageInput;
         const existing = input.id ? snapshot.storages.find((item) => item.id === input.id) : undefined;
+        // The helper reads the mount table on configure; an Undo of a still-mounted share comes
+        // back mounted rather than pretending it was disconnected.
+        const stillMounted = snapshot.mountedShares.find((share) =>
+          sameStorageIdentity(
+            { id: "", kind: "smb", target: share.url, volumeUUID: null },
+            { id: "", kind: input.kind, target: input.target, volumeUUID: input.volumeUUID ?? null },
+          ),
+        );
         const view: StorageView = {
           id: input.id ?? existing?.id ?? `s${Date.now()}`,
           name: input.name,
@@ -229,9 +237,9 @@ export function createDevBackend(hash: string): {
           reconnectAtLogin: input.reconnectAtLogin,
           reconnectAfterWake: input.reconnectAfterWake,
           username: input.username ?? existing?.username ?? null,
-          status: existing?.status ?? "not_mounted",
+          status: existing?.status ?? (stillMounted ? "mounted" : "not_mounted"),
           detail: existing?.detail ?? null,
-          mountedPath: existing?.mountedPath ?? null,
+          mountedPath: existing?.mountedPath ?? stillMounted?.mountPoint ?? null,
           hasCredentials: input.removeCredentials ? false : Boolean(existing?.hasCredentials || input.password),
         };
         if (existing) {

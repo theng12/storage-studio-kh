@@ -1,0 +1,64 @@
+{
+  "dupes": {
+    "rows": [
+      "Movies×2SMB share , SMB share Mounted Connected. Mounted at /Volumes/movies Address smb://nas.local/movies Reconnects At login · not after wake Open in Finder",
+      "TV ShowSMB share , SMB share Not mounted Mounted at Not mounted Address smb://nas.local/tv Reconnects At login · not after wake Mount now"
+    ],
+    "statusline": "1 of 2 storages mounted, 1 not mounted."
+  },
+  "dupeRemoved": {
+    "rows": [
+      "TV ShowSMB share , SMB share Not mounted Mounted at Not moun"
+    ],
+    "commands": [
+      {
+        "command": "remove_storage",
+        "args": {
+          "id": "a"
+        }
+      }
+    ],
+    "toasts": [
+      "Removed Movies.\nUndo"
+    ],
+    "statusline": "1 storage, none mounted."
+  },
+  "missingVolume": {
+    "text": "Edit storage Change how this storage reconnects. Name Kind SMB share Attached disk Disk Choose a disk Saved disk — /Volumes/Editing SSD Backup Disk — /Volumes/Backup Disk Editing SSD isn't connected. Reconnect it, then reopen this window. Reconnects at /Volumes/Editing SSD Reconnect at login Reconnect after wake Remove Cancel Test Save",
+    "select": {
+      "value": "GONE-0000",
+      "options": [
+        "Choose a disk",
+        "Saved disk — /Volumes/Editing SSD",
+        "Backup Disk — /Volumes/Backup Disk"
+      ]
+    },
+    "active": {
+      "tag": "INPUT",
+      "fk": "editor-name"
+    }
+  },
+  "duplicateForms": [
+    {
+      "target": "smb://nas.local:445/studio",
+      "disabled": true,
+      "text": [
+        "This share is already added as Studio NAS."
+      ]
+    },
+    {
+      "target": "smb://nas.local/studio?x=1",
+      "disabled": true,
+      "text": [
+        "This share is already added as Studio NAS."
+      ]
+    },
+    {
+      "target": "smb://nas.local/./studio",
+      "disabled": true,
+      "text": [
+        "This share is already added as Studio NAS."
+      ]
+    }
+  ]
+}

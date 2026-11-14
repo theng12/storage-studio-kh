@@ -1,0 +1,295 @@
+{
+  "general": {
+    "notifications": {
+      "before": true,
+      "after": false,
+      "toasts": []
+    },
+    "retriesValue": {
+      "tag": "SELECT",
+      "value": "5",
+      "text": "1\n2\n3\n4\n5\n6\n7\n8"
+    },
+    "cmds": [
+      "set_general",
+      "set_general"
+    ]
+  },
+  "appearance": {
+    "radios": [
+      {
+        "fk": "appearance-system",
+        "text": ""
+      },
+      {
+        "fk": "appearance-light",
+        "text": ""
+      },
+      {
+        "fk": "appearance-dark",
+        "text": ""
+      }
+    ],
+    "firstFocus": {
+      "tag": "INPUT",
+      "cls": "",
+      "fk": "appearance-light",
+      "text": "",
+      "insideDialog": false
+    },
+    "theme1": {
+      "attr": "light",
+      "bg": "rgb(240, 239, 234)",
+      "fg": "rgb(32, 32, 29)",
+      "active": "appearance-light"
+    },
+    "theme2": {
+      "attr": "dark",
+      "bg": "rgb(22, 22, 21)",
+      "fg": "rgb(241, 240, 234)",
+      "active": "appearance-dark"
+    },
+    "cmds": [
+      "set_appearance"
+    ]
+  },
+  "updateCheck": {
+    "fBefore": {
+      "tag": "BUTTON",
+      "cls": "icon-btn",
+      "fk": "check",
+      "text": "Check for Updates",
+      "insideDialog": false
+    },
+    "fDuring": {
+      "tag": "BUTTON",
+      "cls": "icon-btn is-spinning",
+      "fk": "check",
+      "text": "Checking for Updates",
+      "insideDialog": false
+    },
+    "fAfter": {
+      "tag": "BUTTON",
+      "cls": "icon-btn",
+      "fk": "check",
+      "text": "Check for Updates",
+      "insideDialog": false
+    },
+    "busy": {
+      "label": "Checking for Updates",
+      "ariaDisabled": "true",
+      "ariaBusy": "true",
+      "disabled": false,
+      "update": "Checking for updates…"
+    },
+    "update": {
+      "text": "Version 0.2.0 is available",
+      "label": "Check for Updates",
+      "checked": "Checked just now"
+    }
+  },
+  "whatsNew": {
+    "active": {
+      "tag": "BUTTON",
+      "cls": "btn btn-primary",
+      "fk": null,
+      "text": "Close",
+      "insideDialog": true
+    },
+    "dialog": "What's New Storage Studio KH 0.1.10 Version 0.2.0 is available. Its notes appear here after it is installed. 0.1.10 Current version 2026-11-13 Only the installed app adds a Login Items entry, once: a development copy or a rebuild no longer registers a second \"Storage Studio KH\". Storage can be shown as cards or a table, and the choice is remembered. Cards are equal height with labelled values; the table keeps its first column pinned in a narrow window. Each storage has one primary action (Mount now or Open in Finder); Test, Edit and Unmount are in its menu. Warnings are grouped by kind with co",
+    "inside": {
+      "x": 170,
+      "y": 8,
+      "w": 480,
+      "h": 624,
+      "vw": 820,
+      "vh": 640,
+      "scroll": {
+        "sh": 1400,
+        "ch": 504
+      }
+    }
+  },
+  "whatsNewAfter": {
+    "active": {
+      "tag": "BUTTON",
+      "cls": "pill",
+      "fk": "pill",
+      "text": "Storage Studio KH v0.1.10",
+      "insideDialog": false
+    },
+    "open": false
+  },
+  "empty": {
+    "text": "Storage Shares and disks reconnect after login, after wake, and when the network changes. No storage yet Add your first share or disk to keep it connected automatically. Add storage",
+    "doc": {
+      "sw": 375,
+      "cw": 375,
+      "sh": 812,
+      "ch": 812,
+      "foot": {
+        "y": 708,
+        "bottom": 812,
+        "h": 104
+      },
+      "mainScroll": {
+        "sh": 661,
+        "ch": 661,
+        "st": 0
+      }
+    },
+    "active": {
+      "tag": "MAIN",
+      "cls": "main",
+      "fk": null,
+      "text": "Storage Shares and disks reconnect after login, after wake, and when the network",
+      "insideDialog": false
+    }
+  },
+  "engineDown375": {
+    "doc": {
+      "sw": 375,
+      "cw": 375,
+      "sh": 832,
+      "ch": 812,
+      "foot": {
+        "y": 708,
+        "bottom": 812,
+        "h": 104
+      },
+      "mainScroll": {
+        "sh": 1060,
+        "ch": 661,
+        "st": 0
+      }
+    },
+    "banner": "The background helper isn't running The helper stopped responding. Restart helper",
+    "after": {
+      "active": {
+        "tag": "BUTTON",
+        "cls": "nav-item is-active",
+        "fk": "nav-storage",
+        "text": "Storage",
+        "insideDialog": false
+      },
+      "banner": null,
+      "toasts": [
+        "Helper started."
+      ],
+      "cmds": [
+        "restart_helper"
+      ],
+      "doc": {
+        "sw": 375,
+        "cw": 375,
+        "sh": 812,
+        "ch": 812,
+        "foot": {
+          "y": 708,
+          "bottom": 812,
+          "h": 104
+        },
+        "mainScroll": {
+          "sh": 904,
+          "ch": 661,
+          "st": 0
+        }
+      }
+    }
+  },
+  "engineDown1440": {
+    "doc": {
+      "sw": 1440,
+      "cw": 1440,
+      "sh": 900,
+      "ch": 900,
+      "foot": {
+        "y": 792,
+        "bottom": 900,
+        "h": 108
+      },
+      "mainScroll": {
+        "sh": 900,
+        "ch": 900,
+        "st": 0
+      }
+    },
+    "banner": "The background helper isn't running The helper stopped responding. Restart helper",
+    "after": {
+      "active": {
+        "tag": "BUTTON",
+        "cls": "nav-item is-active",
+        "fk": "nav-storage",
+        "text": "Storage",
+        "insideDialog": false
+      },
+      "banner": null,
+      "toasts": [
+        "Helper started."
+      ],
+      "cmds": [
+        "restart_helper"
+      ],
+      "doc": {
+        "sw": 1440,
+        "cw": 1440,
+        "sh": 900,
+        "ch": 900,
+        "foot": {
+          "y": 792,
+          "bottom": 900,
+          "h": 108
+        },
+        "mainScroll": {
+          "sh": 900,
+          "ch": 900,
+          "st": 0
+        }
+      }
+    }
+  },
+  "bootFail": {
+    "text": "Storage Studio KH The settings window couldn't read the app's current state. Storage Studio KH couldn't start The app couldn't read its settings. Retry",
+    "active": {
+      "tag": "BUTTON",
+      "cls": "btn btn-primary",
+      "fk": "retry-boot",
+      "text": "Retry",
+      "insideDialog": false
+    },
+    "nav": ""
+  },
+  "bootRetry": {
+    "active": {
+      "tag": "MAIN",
+      "cls": "main",
+      "fk": null,
+      "text": "Storage 1 of 3 storages mounted, 1 needs attention, 1 unreachable. Add storage N",
+      "insideDialog": false
+    },
+    "text": "Storage 1 of 3 storages mounted, 1 needs attention, 1 unreachable. Add storage Needs attention 1 Show Can't be reached 1 Show Checked just now Cards Table Studio NASSMB share , SMB share Mounted Connected as studio. Mounted at /Volumes/studio Address smb://nas.local/studio Reconnects At login · afte",
+    "doc": {
+      "sw": 820,
+      "cw": 820,
+      "sh": 640,
+      "ch": 640,
+      "foot": {
+        "y": 532,
+        "bottom": 640,
+        "h": 108
+      },
+      "mainScroll": {
+        "sh": 917,
+        "ch": 640,
+        "st": 0
+      }
+    }
+  },
+  "secondInstance": {
+    "toasts": [
+      "Storage Studio KH is already running. This window is the running copy."
+    ],
+    "text": "Storage 1 of 3 storages mounted, 1 needs attention, 1 unreachable. Add storage Needs attention 1 Show Can't be reached 1 Show Checked just now Cards Table Studio NASSMB share , SMB share Mounted Connected as studio. Mounted at /Volumes/studio Address smb://nas.local/studio Reconnects At login · afte"
+  },
+  "consoleErrors": []
+}
