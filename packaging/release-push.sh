@@ -26,12 +26,16 @@ if [ -n "${KHU_HOLD_URL:-}" ]; then HOLD_ARGS="--hold-url '$KHU_HOLD_URL'"; fi
 "${SSH[@]}" "K=\$HOME/Library/KHUpdater; \"\$K/bin/khu\" publish --feed \"\$K/feed\" --key \"\$K/keys/private.key\" \
   --app '$APP' --version '$VERSION' --artifact \"\$HOME/$STAGE/$BASE\" --changelog \"\$HOME/$STAGE/changelogs/$APP.md\" $HOLD_ARGS"
 
-/usr/bin/python3 -I - "$HOST" "$APP" "$VERSION" <<'PY'
+/usr/bin/python3 -I - "$HOST" "$APP" "$VERSION" "${KHU_HOLD_URL:-}" <<'PY'
 import base64, json, sys, urllib.request
-host, app, want = sys.argv[1].split("@")[-1], sys.argv[2], sys.argv[3]
+host, app, want, hold = sys.argv[1].split("@")[-1], sys.argv[2], sys.argv[3], sys.argv[4]
 feed = json.loads(base64.b64decode(json.load(urllib.request.urlopen(f"http://{host}:8790/release.json", timeout=20))["feed"]))
-got = feed["apps"].get(app, {}).get("version")
+entry = feed["apps"].get(app, {})
+got = entry.get("version")
 previous = (feed.get("previous") or {}).get(app, {}).get("version")
 print(f"feed offers {app} {got} (previous {previous}); expected {want}")
-raise SystemExit(0 if got == want else 1)
+print(f"served artifact sha256 {entry.get('sha256')} bytes {entry.get('bytes')}")
+print(f"served holdURL {entry.get('holdURL')!r}; expected {hold!r}")
+ok = got == want and (not hold or entry.get("holdURL") == hold)
+raise SystemExit(0 if ok else 1)
 PY
