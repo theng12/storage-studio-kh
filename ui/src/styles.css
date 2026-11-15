@@ -534,6 +534,15 @@ h3 {
   flex: 0 0 auto;
 }
 
+/* An update is installing: informational, not a warning. */
+.banner-hold {
+  background: var(--surface-2, var(--warn-bg));
+}
+
+.banner-hold > .icon {
+  color: var(--text-2);
+}
+
 .banner-title {
   margin: 0;
   color: var(--text);

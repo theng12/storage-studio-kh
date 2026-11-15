@@ -354,6 +354,18 @@ function renderEngineBannerIfNeeded(): string {
   return snapshot && !snapshot.engineRunning ? renderEngineBanner(snapshot) : "";
 }
 
+function renderHoldBannerIfNeeded(): string {
+  if (!snapshot?.holding) return "";
+  return `
+    <div class="banner banner-hold" role="status">
+      ${icons.clock}
+      <div>
+        <p class="banner-title">Holding new work for an update</p>
+        <p class="banner-text">Nothing new starts until the update finishes. Storage Studio KH resumes by itself, and anything already running finishes or is picked up again.</p>
+      </div>
+    </div>`;
+}
+
 function storageStatusLine(groups: { storage: { status: string } }[]): string {
   if (!groups.length) return "Shares and disks reconnect after login, after wake, and when the network changes.";
   const summary = storageSummary(groups.map((group) => group.storage));
@@ -385,6 +397,7 @@ function renderStorage(): string {
           : ""
       }
     </header>
+    ${renderHoldBannerIfNeeded()}
     ${renderEngineBannerIfNeeded()}
     ${
       groups.length

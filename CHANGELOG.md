@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.11 — 2026-11-15
+
+- Storage Studio KH can now be updated while it runs: Studio Launcher asks it to hold first, it finishes or parks what it was doing within 20 seconds, and the update happens in that gap.
+- While an update installs, the window says "Holding new work for an update" and Mount now is greyed out, instead of a button that would do nothing.
+- It takes work again by itself: after the update, or after two minutes if the update never happens. Nothing to click, and quitting during the pause never leaves it stuck.
+
 ## 0.1.10 — 2026-11-13
 
 - Only the installed app adds a Login Items entry, once: a development copy or a rebuild no longer registers a second "Storage Studio KH".

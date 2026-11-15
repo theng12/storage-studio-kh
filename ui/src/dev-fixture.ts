@@ -157,6 +157,7 @@ function buildSnapshot(hash: string): Snapshot {
     engineError: params.get("engine-down") === "1" ? "The helper stopped responding." : null,
     lastChecked: Date.now(),
     secondInstance: params.get("second") === "1",
+    holding: params.get("holding") === "1",
   };
 }
 

@@ -18,6 +18,9 @@ public final class Engine {
     private var retries = 3
     private var configured = false
     private var inFlight = Set<String>()
+    /// Held for an update: no new mount attempt starts. In memory only, so a restart takes work again.
+    private var paused = false
+    private var deferred = Set<String>()
 
     private var ticker: DispatchSourceTimer?
     private var monitor: NWPathMonitor?
@@ -111,6 +114,10 @@ public final class Engine {
                 }
                 announce()
             }
+        case "hold":
+            hold()
+        case "resume":
+            resume()
         case "quit":
             exit(0)
         default:
@@ -168,6 +175,28 @@ public final class Engine {
 
     // MARK: actions
 
+    /// An update is about to replace this app: claim nothing new until `resume`.
+    private func hold() {
+        guard !paused else { return }
+        paused = true
+        emit(Event.log(level: "info", message: "holding new work for an update").json)
+        announce()
+    }
+
+    /// The pause ended (the installer said so, or it expired). Work it deferred starts again
+    /// by itself — no operator step, and a restart is just as unpaused.
+    private func resume() {
+        guard paused else { return }
+        paused = false
+        let waiting = deferred.sorted()
+        deferred.removeAll()
+        emit(Event.log(level: "info", message: "resumed; new work is accepted again").json)
+        announce()
+        for id in waiting {
+            if let storage = storage(id), states[id]?.status != .mounted { begin(storage) }
+        }
+    }
+
     private func mountNow(_ storage: Storage) {
         attempts[storage.id] = 0
         scheduled[storage.id]?.cancel()
@@ -177,6 +206,12 @@ public final class Engine {
 
     private func begin(_ storage: Storage) {
         guard !inFlight.contains(storage.id) else { return }
+        if paused {
+            // Held for an update: nothing starts. The storage id is kept and re-run on resume.
+            deferred.insert(storage.id)
+            announce()
+            return
+        }
         if let entry = mountedEntry(storage, in: MountTable.current()) {
             markMounted(storage, path: entry.mountPoint)
             return
@@ -349,6 +384,8 @@ public final class Engine {
             set(storage, retryState, detail: "\(reason) \(when)")
             let work = DispatchWorkItem { [weak self] in
                 guard let self, let current = self.storage(storage.id) else { return }
+                // It has fired: it is no longer queued (a held retry lands in `deferred` instead).
+                self.scheduled[storage.id] = nil
                 if self.states[storage.id]?.status != .mounted { self.begin(current) }
             }
             scheduled[storage.id]?.cancel()
@@ -507,6 +544,8 @@ public final class Engine {
             state.hasCredentials = hasCredentials(storage)
             return state
         }
-        emit(Event.state(items).json)
+        // What is really running, and what is still owed: the update hold reports both.
+        let queued = Set(scheduled.keys).union(deferred).sorted()
+        emit(Event.state(items, inFlight: inFlight.sorted(), queued: queued).json)
     }
 }

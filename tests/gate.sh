@@ -28,6 +28,8 @@ export STORAGE_STUDIO_TEST_DATA_DIR="$DATA"
 export STORAGE_STUDIO_NO_NOTIFICATIONS=1
 export STORAGE_STUDIO_NO_LOGIN_ITEM=1
 export STORAGE_STUDIO_RETRY_DELAYS=0.2,0.3
+# Its own loopback port for the update hold, so a running copy of the app never collides.
+export STORAGE_STUDIO_HOLD_PORT=8913
 
 pass() { printf 'PASS  %s\n' "$1"; }
 fail() { printf 'FAIL  %s\n' "$1" >&2; exit 1; }

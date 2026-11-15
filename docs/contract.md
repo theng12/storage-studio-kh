@@ -111,6 +111,23 @@ Errors come back as a rejected promise with a plain sentence; show it, never swa
   `address` may be `smb://host` or `smb://host/share`; the host is what gets listed. Share names
   come back readable (spaces and dashes intact); the app stores them percent-encoded in `target`.
 
+## Update hold (installer ↔ app)
+
+`_orchestra/youtube-stack/update-hold/CONTRACT.md`. Plain HTTP on `127.0.0.1:8910`
+(`STORAGE_STUDIO_HOLD_PORT` overrides it for a test instance):
+
+```
+POST   /api/maintenance/hold?timeout_s=20&pause_s=120
+DELETE /api/maintenance/hold
+```
+
+POST pauses new work at once, waits up to `timeout_s` (default 20, max 30) for a mount attempt
+already running, and answers `{ "safe", "unsettled", "dispatch_paused_s", "in_flight" }`.
+`in_flight` is the helper's own running set; `unsettled` names what a restart right now would
+strand. DELETE resumes at once; without it the pause expires after `pause_s`. The pause is memory
+only, so a restart always takes work again. While held, `mount_storage`, `mount_all` and
+`test_storage` refuse in plain words; unmount, refresh and Open in Finder still work.
+
 ## Copy rules
 
 - Say what happened and what to do: "The share couldn't be mounted (code 13)." →

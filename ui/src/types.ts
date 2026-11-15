@@ -77,6 +77,8 @@ export interface Snapshot {
   engineError: string | null;
   lastChecked: number | null;
   secondInstance: boolean;
+  /** An update is installing: nothing new starts until it finishes. */
+  holding: boolean;
 }
 
 export interface StorageInput {

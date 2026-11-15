@@ -213,6 +213,16 @@ test("the second-instance note is shown once", () => {
   assert.match(mainSource, /Storage Studio KH is already running\. This window is the running copy\./);
 });
 
+test("an update hold says so instead of looking stuck", () => {
+  assert.match(mainSource, /function renderHoldBannerIfNeeded[\s\S]{0,120}if \(!snapshot\?\.holding\) return ""/);
+  assert.match(mainSource, /Holding new work for an update/);
+  assert.match(mainSource, /resumes by itself/);
+  // The banner is a status with nothing to click: no button, no dismiss.
+  const start = mainSource.indexOf("function renderHoldBannerIfNeeded");
+  const banner = mainSource.slice(start, mainSource.indexOf("\nfunction ", start + 1));
+  assert.doesNotMatch(banner, /<button/);
+});
+
 test("share addresses parse hosts and decode readable names", () => {
   assert.equal(parseShareHost("smb://192.168.0.217"), "192.168.0.217");
   assert.equal(parseShareHost("smb://192.168.0.217/Share"), "192.168.0.217");

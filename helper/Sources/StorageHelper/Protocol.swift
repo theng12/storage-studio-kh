@@ -12,7 +12,9 @@ public struct Command: Decodable {
 }
 
 public enum Event {
-    case state([StorageState])
+    /// `inFlight` is a mount attempt running now; `queued` is work the helper will retry or
+    /// re-run on resume. The update hold reports both, so the app never guesses what is running.
+    case state([StorageState], inFlight: [String], queued: [String])
     case volumes([VolumeCandidate])
     case attention(id: String, name: String, reason: String)
     case recovered(id: String, name: String)
@@ -24,8 +26,10 @@ public enum Event {
     public var json: Data {
         var object: [String: Any] = [:]
         switch self {
-        case .state(let items):
+        case .state(let items, let inFlight, let queued):
             object["type"] = "state"
+            object["inFlight"] = inFlight
+            object["queued"] = queued
             object["items"] = items.map { item -> [String: Any] in
                 var value: [String: Any] = [
                     "id": item.id,

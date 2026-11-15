@@ -9,10 +9,11 @@
 
 use std::collections::HashMap;
 use std::io::{BufRead, BufReader, Write};
+use std::net::{TcpListener, TcpStream};
 use std::path::{Path, PathBuf};
 use std::process::{Child, ChildStdin, Command, Stdio};
 use std::sync::Mutex;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use serde::{Deserialize, Serialize};
 use tauri::menu::{Menu, MenuItem, PredefinedMenuItem, Submenu};
@@ -221,6 +222,8 @@ struct Snapshot {
     engine_error: Option<String>,
     last_checked: Option<u64>,
     second_instance: bool,
+    /// True while an update holds new work; the window says so instead of looking stuck.
+    holding: bool,
 }
 
 #[derive(Serialize, Clone)]
@@ -235,6 +238,32 @@ struct StorageView {
 }
 
 // ---------------------------------------------------------------- app state
+
+/// The update hold's pause. Memory only, and it expires by itself: a restart always takes work.
+#[derive(Default)]
+struct Hold {
+    until: Option<Instant>,
+    generation: u64,
+}
+
+impl Hold {
+    fn paused(&self) -> bool {
+        self.until.map(|until| until > Instant::now()).unwrap_or(false)
+    }
+
+    fn seconds_left(&self) -> u64 {
+        self.until
+            .map(|until| until.saturating_duration_since(Instant::now()).as_secs() + 1)
+            .unwrap_or(0)
+    }
+}
+
+/// What the helper last reported: a mount attempt running now, and work it still owes.
+#[derive(Default, Clone)]
+struct Work {
+    in_flight: Vec<String>,
+    queued: Vec<String>,
+}
 
 struct Helper {
     child: Child,
@@ -252,6 +281,8 @@ struct AppState {
     engine_error: Mutex<Option<String>>,
     last_checked: Mutex<Option<u64>>,
     second_instance: Mutex<bool>,
+    hold: Mutex<Hold>,
+    work: Mutex<Work>,
 }
 
 impl AppState {
@@ -267,6 +298,8 @@ impl AppState {
             engine_error: Mutex::new(None),
             last_checked: Mutex::new(None),
             second_instance: Mutex::new(false),
+            hold: Mutex::new(Hold::default()),
+            work: Mutex::new(Work::default()),
         }
     }
 }
@@ -316,6 +349,7 @@ fn snapshot(app: &AppHandle) -> Snapshot {
     let launch_at_login_error = state.login_error.lock().unwrap().clone();
     let engine_running = state.helper.lock().unwrap().is_some();
     let last_checked = *state.last_checked.lock().unwrap();
+    let holding = state.hold.lock().unwrap().paused();
     Snapshot {
         app_name: APP_NAME.into(),
         version: APP_VERSION.into(),
@@ -333,6 +367,7 @@ fn snapshot(app: &AppHandle) -> Snapshot {
         last_checked,
         engine_error,
         second_instance,
+        holding,
     }
 }
 
@@ -375,7 +410,11 @@ fn build_tray_menu(app: &AppHandle, snap: &Snapshot) -> tauri::Result<Menu<tauri
         }
     }
     menu.append(&PredefinedMenuItem::separator(app)?)?;
-    let any_unmounted = snap.storages.iter().any(|s| s.status != "mounted");
+    if snap.holding {
+        // Say it, rather than leave a button that would refuse.
+        menu.append(&MenuItem::with_id(app, "holding", "Holding new work for an update", false, None::<&str>)?)?;
+    }
+    let any_unmounted = !snap.holding && snap.storages.iter().any(|s| s.status != "mounted");
     menu.append(&MenuItem::with_id(app, "mount-all", "Mount now", any_unmounted, None::<&str>)?)?;
     let any_mounted = snap.storages.iter().any(|s| s.status == "mounted");
     menu.append(&MenuItem::with_id(app, "reveal", "Open in Finder", any_mounted, None::<&str>)?)?;
@@ -448,6 +487,11 @@ fn start_helper(app: &AppHandle) -> Result<(), String> {
     app.state::<AppState>().helper.lock().unwrap().replace(Helper { child, stdin });
     app.state::<AppState>().engine_error.lock().unwrap().take();
 
+    // A helper restarted during an update hold is held first, so configuring it starts nothing.
+    if app.state::<AppState>().hold.lock().unwrap().paused() {
+        let _ = send_to_helper(&app.state::<AppState>(), &serde_json::json!({ "type": "hold" }));
+    }
+
     // Configure it with the saved storages straight away.
     let settings = app.state::<AppState>().settings.lock().unwrap().clone();
     let _ = send_to_helper(&app.state::<AppState>(), &helper_config(&settings));
@@ -465,6 +509,8 @@ fn start_helper(app: &AppHandle) -> Result<(), String> {
         let state = app_handle.state::<AppState>();
         let gone = state.helper.lock().unwrap().take().is_some();
         if gone {
+            // Nothing is running any more, and the hold must not report a stale in-flight count.
+            *state.work.lock().unwrap() = Work::default();
             log("The background helper stopped.");
             *state.engine_error.lock().unwrap() =
                 Some("It stopped unexpectedly. Restart it here.".into());
@@ -479,7 +525,13 @@ fn start_helper(app: &AppHandle) -> Result<(), String> {
 #[allow(dead_code)]
 enum HelperEvent {
     #[serde(rename = "state")]
-    State { items: Vec<HelperItem> },
+    State {
+        items: Vec<HelperItem>,
+        #[serde(default, rename = "inFlight")]
+        in_flight: Vec<String>,
+        #[serde(default)]
+        queued: Vec<String>,
+    },
     #[serde(rename = "volumes")]
     Volumes { items: Vec<VolumeCandidate> },
     #[serde(rename = "attention")]
@@ -520,7 +572,8 @@ fn handle_helper_line(app: &AppHandle, line: &str) {
     };
     let state = app.state::<AppState>();
     match event {
-        HelperEvent::State { items } => {
+        HelperEvent::State { items, in_flight, queued } => {
+            *state.work.lock().unwrap() = Work { in_flight, queued };
             let mut statuses = state.statuses.lock().unwrap();
             statuses.clear();
             for item in items {
@@ -726,6 +779,224 @@ fn hide_settings(window: &tauri::Window) {
 
 fn is_test_mode() -> bool {
     std::env::var("STORAGE_STUDIO_TEST_DATA_DIR").is_ok()
+}
+
+// ---------------------------------------------------------------- update hold
+
+// `_orchestra/youtube-stack/update-hold/CONTRACT.md`: before an install the app holds new work,
+// settles what is already running inside a bounded window, the update happens in that gap, and
+// the app takes work again by itself. The pause lives in memory, so a restart is never held.
+
+const HOLD_PATH: &str = "/api/maintenance/hold";
+const HOLD_PORT: u16 = 8910;
+const HOLD_TIMEOUT_DEFAULT_S: u64 = 20;
+const HOLD_TIMEOUT_MAX_S: u64 = 30;
+const HOLD_PAUSE_DEFAULT_S: u64 = 120;
+/// A pause is a gap, not a latch: even a wild `pause_s` ends within an hour.
+const HOLD_PAUSE_MAX_S: u64 = 3600;
+
+fn hold_seconds(raw: Option<String>, default: u64, max: u64) -> u64 {
+    raw.and_then(|value| value.trim().parse::<u64>().ok()).unwrap_or(default).min(max)
+}
+
+fn query_value(query: &str, key: &str) -> Option<String> {
+    query.split('&').find_map(|pair| {
+        let (name, value) = pair.split_once('=')?;
+        (name == key).then(|| value.to_string())
+    })
+}
+
+/// New work is refused while held, in plain words that say it is not a failure.
+fn refuse_new_work(state: &AppState) -> Result<(), String> {
+    let hold = state.hold.lock().unwrap();
+    if !hold.paused() {
+        return Ok(());
+    }
+    Err(format!(
+        "Storage Studio KH is holding new work while an update installs. Nothing was started; it takes work again by itself in about {} s.",
+        hold.seconds_left()
+    ))
+}
+
+/// What a restart right now would strand: a mount running now, and a queued retry whose storage
+/// the next start would not pick up again (only a login reconnect re-dispatches work).
+fn unsettled(state: &AppState) -> Vec<String> {
+    let work = state.work.lock().unwrap().clone();
+    let settings = state.settings.lock().unwrap();
+    let name = |id: &str| {
+        settings
+            .storages
+            .iter()
+            .find(|storage| storage.id == id)
+            .map(|storage| storage.name.clone())
+            .unwrap_or_else(|| id.to_string())
+    };
+    let mut out: Vec<String> = work
+        .in_flight
+        .iter()
+        .map(|id| format!("{} (mounting)", name(id)))
+        .collect();
+    for id in &work.queued {
+        let follows_next_start = settings
+            .storages
+            .iter()
+            .any(|storage| &storage.id == id && storage.reconnect_at_login);
+        if !follows_next_start {
+            out.push(format!("{} (retry pending)", name(id)));
+        }
+    }
+    out
+}
+
+fn tell_helper(app: &AppHandle, kind: &str) {
+    let state = app.state::<AppState>();
+    if let Err(error) = send_to_helper(&state, &serde_json::json!({ "type": kind })) {
+        log(&format!("hold: the helper did not take '{kind}': {error}"));
+    }
+}
+
+/// POST: pause new work now, settle running work up to `timeout_s`, answer whether a restart is safe.
+fn hold_request(app: &AppHandle, query: &str) -> String {
+    let timeout_s = hold_seconds(query_value(query, "timeout_s"), HOLD_TIMEOUT_DEFAULT_S, HOLD_TIMEOUT_MAX_S);
+    let pause_s = hold_seconds(query_value(query, "pause_s"), HOLD_PAUSE_DEFAULT_S, HOLD_PAUSE_MAX_S).max(1);
+    let state = app.state::<AppState>();
+    let generation = {
+        let mut hold = state.hold.lock().unwrap();
+        hold.generation += 1;
+        hold.until = Some(Instant::now() + Duration::from_secs(pause_s));
+        hold.generation
+    };
+    arm_resume(app.clone(), generation, pause_s);
+    tell_helper(app, "hold");
+    log(&format!("held new work for an update (paused {pause_s} s)"));
+    emit_snapshot(app);
+
+    // Bounded settle: a mount attempt already running may finish; the queue is never waited for.
+    let deadline = Instant::now() + Duration::from_secs(timeout_s);
+    while !unsettled(&state).is_empty() && Instant::now() < deadline {
+        std::thread::sleep(Duration::from_millis(50));
+    }
+    let unsettled = unsettled(&state);
+    let in_flight = state.work.lock().unwrap().in_flight.len();
+    serde_json::json!({
+        "safe": unsettled.is_empty(),
+        "unsettled": unsettled,
+        "dispatch_paused_s": pause_s,
+        "in_flight": in_flight,
+    })
+    .to_string()
+}
+
+/// DELETE: resume at once. Never required — the pause expires by itself.
+fn resume_request(app: &AppHandle) -> String {
+    let state = app.state::<AppState>();
+    {
+        let mut hold = state.hold.lock().unwrap();
+        hold.generation += 1;
+        hold.until = None;
+    }
+    tell_helper(app, "resume");
+    log("resumed; new work is accepted again");
+    emit_snapshot(app);
+    let in_flight = state.work.lock().unwrap().in_flight.len();
+    serde_json::json!({
+        "safe": true,
+        "unsettled": Vec::<String>::new(),
+        "dispatch_paused_s": 0,
+        "in_flight": in_flight,
+    })
+    .to_string()
+}
+
+/// An install that never comes back must not leave the app refusing work: the pause ends itself.
+fn arm_resume(app: AppHandle, generation: u64, pause_s: u64) {
+    std::thread::spawn(move || {
+        std::thread::sleep(Duration::from_secs(pause_s));
+        let state = app.state::<AppState>();
+        let expired = {
+            let mut hold = state.hold.lock().unwrap();
+            let current = hold.generation == generation;
+            if current {
+                hold.until = None;
+            }
+            current
+        };
+        if !expired {
+            return; // a newer hold renewed the pause
+        }
+        if let Err(error) = send_to_helper(&state, &serde_json::json!({ "type": "resume" })) {
+            log(&format!("hold: the pause expired but the helper did not hear it: {error}"));
+        }
+        log("the update pause expired; new work is accepted again");
+        emit_snapshot(&app);
+    });
+}
+
+fn start_hold_server(app: AppHandle) {
+    let port = std::env::var("STORAGE_STUDIO_HOLD_PORT")
+        .ok()
+        .and_then(|value| value.trim().parse::<u16>().ok())
+        .unwrap_or(HOLD_PORT);
+    let listener = match TcpListener::bind(("127.0.0.1", port)) {
+        Ok(listener) => listener,
+        Err(error) => {
+            log(&format!("the update hold is not listening on 127.0.0.1:{port}: {error}"));
+            return;
+        }
+    };
+    log(&format!("update hold listening on http://127.0.0.1:{port}{HOLD_PATH}"));
+    std::thread::spawn(move || {
+        for stream in listener.incoming() {
+            match stream {
+                // One thread per request: a settle must never block a DELETE.
+                Ok(stream) => {
+                    let app = app.clone();
+                    std::thread::spawn(move || handle_hold_connection(&app, stream));
+                }
+                Err(error) => log(&format!("update hold: {error}")),
+            }
+        }
+    });
+}
+
+fn handle_hold_connection(app: &AppHandle, mut stream: TcpStream) {
+    let _ = stream.set_read_timeout(Some(Duration::from_secs(2)));
+    let _ = stream.set_write_timeout(Some(Duration::from_secs(5)));
+    let Ok(reader_stream) = stream.try_clone() else { return };
+    let mut reader = BufReader::new(reader_stream);
+    let mut request_line = String::new();
+    if reader.read_line(&mut request_line).is_err() {
+        return;
+    }
+    // Only the request line matters: the contract's requests carry no body.
+    loop {
+        let mut line = String::new();
+        match reader.read_line(&mut line) {
+            Ok(0) => break,
+            Ok(_) if line.trim().is_empty() => break,
+            Ok(_) => {}
+            Err(_) => break,
+        }
+    }
+    let mut parts = request_line.split_whitespace();
+    let method = parts.next().unwrap_or("");
+    let target = parts.next().unwrap_or("");
+    let (path, query) = target.split_once('?').unwrap_or((target, ""));
+    let (status, body) = if path != HOLD_PATH {
+        ("404 Not Found", r#"{"error":"no such route"}"#.to_string())
+    } else {
+        match method {
+            "POST" => ("200 OK", hold_request(app, query)),
+            "DELETE" => ("200 OK", resume_request(app)),
+            _ => ("405 Method Not Allowed", r#"{"error":"use POST or DELETE"}"#.to_string()),
+        }
+    };
+    let response = format!(
+        "HTTP/1.1 {status}\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}",
+        body.len()
+    );
+    let _ = stream.write_all(response.as_bytes());
+    let _ = stream.flush();
 }
 
 // ---------------------------------------------------------------- commands
@@ -963,11 +1234,13 @@ fn remove_storage(app: AppHandle, state: State<'_, AppState>, id: String) -> Res
 
 #[tauri::command]
 fn mount_storage(state: State<'_, AppState>, id: String) -> Result<(), String> {
+    refuse_new_work(&state)?;
     send_to_helper(&state, &serde_json::json!({ "type": "mount", "id": id }))
 }
 
 #[tauri::command]
 fn mount_all(state: State<'_, AppState>) -> Result<(), String> {
+    refuse_new_work(&state)?;
     send_to_helper(&state, &serde_json::json!({ "type": "mount_all" }))
 }
 
@@ -978,6 +1251,7 @@ fn unmount_storage(state: State<'_, AppState>, id: String) -> Result<(), String>
 
 #[tauri::command]
 fn test_storage(state: State<'_, AppState>, id: String) -> Result<(), String> {
+    refuse_new_work(&state)?;
     send_to_helper(&state, &serde_json::json!({ "type": "test", "id": id }))
 }
 
@@ -1285,7 +1559,12 @@ fn unix_millis() -> u128 {
 #[cfg(test)]
 mod tests {
     use super::feed::{is_newer, parse_version};
-    use super::{validate_input, StorageInput};
+    use super::{
+        hold_seconds, query_value, refuse_new_work, unsettled, validate_input, AppState, Hold,
+        Storage, StorageInput, Work, HOLD_PAUSE_DEFAULT_S, HOLD_PAUSE_MAX_S, HOLD_TIMEOUT_DEFAULT_S,
+        HOLD_TIMEOUT_MAX_S,
+    };
+    use std::time::{Duration, Instant};
 
     fn input(kind: &str, target: &str, mount_point: &str) -> StorageInput {
         StorageInput {
@@ -1422,6 +1701,88 @@ mod tests {
             assert!(parse_version(value).is_none(), "{value:?} must be rejected");
             assert!(!is_newer(value, "1.0").unwrap_or(false));
         }
+    }
+
+    // ------------------------------------------------------------ update hold
+
+    fn storage(id: &str, reconnect_at_login: bool) -> Storage {
+        Storage {
+            id: id.into(),
+            name: format!("Storage {id}"),
+            kind: "smb".into(),
+            target: format!("smb://nas.local/{id}"),
+            mount_point: String::new(),
+            volume_uuid: None,
+            reconnect_at_login,
+            reconnect_after_wake: false,
+            username: None,
+        }
+    }
+
+    #[test]
+    fn the_settle_window_is_twenty_seconds_and_never_past_thirty() {
+        let (default, max) = (HOLD_TIMEOUT_DEFAULT_S, HOLD_TIMEOUT_MAX_S);
+        assert_eq!(hold_seconds(None, default, max), 20);
+        assert_eq!(hold_seconds(Some("0".into()), default, max), 0);
+        assert_eq!(hold_seconds(Some("5".into()), default, max), 5);
+        assert_eq!(hold_seconds(Some("99".into()), default, max), 30);
+        assert_eq!(hold_seconds(Some("soon".into()), default, max), 20);
+    }
+
+    #[test]
+    fn a_pause_is_a_gap_and_never_a_latch() {
+        let long = hold_seconds(Some("999999999".into()), HOLD_PAUSE_DEFAULT_S, HOLD_PAUSE_MAX_S);
+        assert_eq!(long, 3600);
+        assert_eq!(hold_seconds(None, HOLD_PAUSE_DEFAULT_S, HOLD_PAUSE_MAX_S), 120);
+    }
+
+    #[test]
+    fn the_hold_reads_its_two_query_values_by_name() {
+        let query = "timeout_s=20&pause_s=120";
+        assert_eq!(query_value(query, "timeout_s"), Some("20".into()));
+        assert_eq!(query_value(query, "pause_s"), Some("120".into()));
+        assert_eq!(query_value(query, "other"), None);
+        assert_eq!(query_value("", "timeout_s"), None);
+    }
+
+    #[test]
+    fn a_pause_expires_by_itself_and_a_restart_starts_unheld() {
+        let mut hold = Hold::default();
+        assert!(!hold.paused(), "a fresh app takes work");
+        hold.until = Some(Instant::now() + Duration::from_secs(120));
+        assert!(hold.paused());
+        assert!(hold.seconds_left() > 0);
+        hold.until = Some(Instant::now() - Duration::from_secs(1));
+        assert!(!hold.paused(), "an elapsed pause never latches");
+        assert_eq!(hold.seconds_left(), 0);
+    }
+
+    #[test]
+    fn a_held_app_refuses_new_work_in_plain_words() {
+        let state = AppState::new(super::Settings::default());
+        assert!(refuse_new_work(&state).is_ok());
+        state.hold.lock().unwrap().until = Some(Instant::now() + Duration::from_secs(60));
+        let reason = refuse_new_work(&state).unwrap_err();
+        assert!(reason.contains("holding new work"), "{reason}");
+        assert!(reason.contains("by itself"), "the reason says it ends on its own: {reason}");
+    }
+
+    #[test]
+    fn unsettled_names_a_running_mount_and_a_retry_a_restart_would_strand() {
+        let mut settings = super::Settings::default();
+        settings.storages = vec![storage("follows", true), storage("orphan", false)];
+        let state = AppState::new(settings);
+        *state.work.lock().unwrap() = Work {
+            in_flight: vec!["follows".into()],
+            queued: vec!["follows".into(), "orphan".into()],
+        };
+        let names = unsettled(&state);
+        assert_eq!(names, vec!["Storage follows (mounting)", "Storage orphan (retry pending)"]);
+        // Only a retry a restart picks up again (login reconnect) is not a stranding.
+        *state.work.lock().unwrap() = Work { in_flight: vec![], queued: vec!["follows".into()] };
+        assert!(unsettled(&state).is_empty());
+        *state.work.lock().unwrap() = Work::default();
+        assert!(unsettled(&state).is_empty(), "an idle app is safe");
     }
 }
 
@@ -1582,7 +1943,9 @@ fn main() {
                 .on_menu_event(|app, event| match event.id().as_ref() {
                     "mount-all" => {
                         let state = app.state::<AppState>();
-                        if let Err(error) = send_to_helper(&state, &serde_json::json!({ "type": "mount_all" })) {
+                        let sent = refuse_new_work(&state)
+                            .and_then(|_| send_to_helper(&state, &serde_json::json!({ "type": "mount_all" })));
+                        if let Err(error) = sent {
                             log(&error);
                         }
                     }
@@ -1610,6 +1973,10 @@ fn main() {
                     _ => {}
                 })
                 .build(app)?;
+
+            // The update hold answers on loopback so Studio Launcher can hold this app's work
+            // before it installs; the address is in the signed feed entry.
+            start_hold_server(handle.clone());
 
             if dump_snapshot {
                 // Acceptance capture: let the helper settle, print the real state, close.

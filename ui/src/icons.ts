@@ -34,6 +34,7 @@ export const icons = {
   ),
   moon: svg('<path d="M13.2 9.6A5.6 5.6 0 0 1 6.4 2.8a5.5 5.5 0 1 0 6.8 6.8Z"/>'),
   close: svg('<path d="m4.2 4.2 7.6 7.6M11.8 4.2l-7.6 7.6"/>'),
+  clock: svg('<circle cx="8" cy="8" r="5.6"/><path d="M8 4.9V8l2.2 1.4"/>'),
   more: svg(
     '<circle cx="3.4" cy="8" r="1.15" fill="currentColor" stroke="none"/><circle cx="8" cy="8" r="1.15" fill="currentColor" stroke="none"/><circle cx="12.6" cy="8" r="1.15" fill="currentColor" stroke="none"/>',
   ),

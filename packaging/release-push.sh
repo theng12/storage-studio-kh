@@ -19,8 +19,12 @@ SSH=(ssh -i "$KEY" -o BatchMode=yes -o ConnectTimeout=10 "$HOST")
 "${SSH[@]}" "mkdir -p ~/$STAGE/changelogs"
 scp -i "$KEY" -o BatchMode=yes "$DMG" "$HOST:$STAGE/$BASE"
 scp -i "$KEY" -o BatchMode=yes "$LOG" "$HOST:$STAGE/changelogs/$APP.md"
+# The signed feed names where a running copy takes an update hold (owner rule 2026-11-15).
+HOLD_ARGS=""
+if [ -n "${KHU_HOLD_URL:-}" ]; then HOLD_ARGS="--hold-url '$KHU_HOLD_URL'"; fi
+
 "${SSH[@]}" "K=\$HOME/Library/KHUpdater; \"\$K/bin/khu\" publish --feed \"\$K/feed\" --key \"\$K/keys/private.key\" \
-  --app '$APP' --version '$VERSION' --artifact \"\$HOME/$STAGE/$BASE\" --changelog \"\$HOME/$STAGE/changelogs/$APP.md\""
+  --app '$APP' --version '$VERSION' --artifact \"\$HOME/$STAGE/$BASE\" --changelog \"\$HOME/$STAGE/changelogs/$APP.md\" $HOLD_ARGS"
 
 /usr/bin/python3 -I - "$HOST" "$APP" "$VERSION" <<'PY'
 import base64, json, sys, urllib.request
