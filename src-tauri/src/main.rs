@@ -252,9 +252,10 @@ impl Hold {
     }
 
     fn seconds_left(&self) -> u64 {
-        self.until
-            .map(|until| until.saturating_duration_since(Instant::now()).as_secs() + 1)
-            .unwrap_or(0)
+        match self.until {
+            Some(until) if until > Instant::now() => (until - Instant::now()).as_secs() + 1,
+            _ => 0,
+        }
     }
 }
 
