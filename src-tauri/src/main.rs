@@ -789,7 +789,9 @@ fn is_test_mode() -> bool {
 // the app takes work again by itself. The pause lives in memory, so a restart is never held.
 
 const HOLD_PATH: &str = "/api/maintenance/hold";
-const HOLD_PORT: u16 = 8910;
+/// This app's row in the contract's port table. Fixed, because the signed feed names it as a
+/// literal URL; `STORAGE_STUDIO_HOLD_PORT` only exists so a test instance can avoid the live one.
+const HOLD_PORT: u16 = 8646;
 const HOLD_TIMEOUT_DEFAULT_S: u64 = 20;
 const HOLD_TIMEOUT_MAX_S: u64 = 30;
 const HOLD_PAUSE_DEFAULT_S: u64 = 120;

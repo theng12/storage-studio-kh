@@ -113,7 +113,7 @@ Errors come back as a rejected promise with a plain sentence; show it, never swa
 
 ## Update hold (installer ↔ app)
 
-`_orchestra/youtube-stack/update-hold/CONTRACT.md`. Plain HTTP on `127.0.0.1:8910`
+`_orchestra/youtube-stack/update-hold/CONTRACT.md`. Plain HTTP on `127.0.0.1:8646` (the contract's port table row for this app)
 (`STORAGE_STUDIO_HOLD_PORT` overrides it for a test instance):
 
 ```

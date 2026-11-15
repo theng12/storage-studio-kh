@@ -21,7 +21,7 @@ update no longer interrupts a mount. Everything from 0.1.10 is carried unchanged
 The hold's only knobs are the contract's two query values: `timeout_s` (default 20, ceiling 30) and
 `pause_s` (default 120). Both are enforced in code and shown in the reply (`dispatch_paused_s`).
 There is no app setting to add, disable or persist the hold: it is an installer-facing contract,
-on by default, and a person never has to switch it on. The port is `127.0.0.1:8910`, overridable
+on by default, and a person never has to switch it on. The port is `127.0.0.1:8646` (its row in the contract's port table), overridable
 for a test instance with `STORAGE_STUDIO_HOLD_PORT`.
 
 ## Standard-practice comparison

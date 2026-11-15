@@ -2,7 +2,7 @@
 # The update hold (`_orchestra/youtube-stack/update-hold/CONTRACT.md`), proven headless:
 # loopback POST/DELETE, real in-flight work, a held app that claims nothing, a pause that
 # expires by itself, and a restart that takes work again with no operator step.
-# No window, no desktop, its own data folder and its own port (the live app keeps 8910).
+# No window, no desktop, its own data folder and its own port (the live app keeps the contract's 8646).
 #
 #   bash tests/hold.sh [path/to/Storage Studio KH.app]
 set -euo pipefail
