@@ -12,9 +12,9 @@ public struct Command: Decodable {
 }
 
 public enum Event {
-    /// `inFlight` is a mount attempt running now; `queued` is work the helper will retry or
-    /// re-run on resume. The update hold reports both, so the app never guesses what is running.
-    case state([StorageState], inFlight: [String], queued: [String])
+    /// `inFlight` is a mount attempt running now; `queued` is work this process will try again;
+    /// `deferred` names the subset held only because an update asked. The hold never guesses.
+    case state([StorageState], inFlight: [String], queued: [String], deferred: [String])
     case volumes([VolumeCandidate])
     case attention(id: String, name: String, reason: String)
     case recovered(id: String, name: String)
@@ -26,10 +26,11 @@ public enum Event {
     public var json: Data {
         var object: [String: Any] = [:]
         switch self {
-        case .state(let items, let inFlight, let queued):
+        case .state(let items, let inFlight, let queued, let deferred):
             object["type"] = "state"
             object["inFlight"] = inFlight
             object["queued"] = queued
+            object["deferred"] = deferred
             object["items"] = items.map { item -> [String: Any] in
                 var value: [String: Any] = [
                     "id": item.id,

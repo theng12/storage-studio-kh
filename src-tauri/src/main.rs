@@ -259,11 +259,20 @@ impl Hold {
     }
 }
 
-/// What the helper last reported: a mount attempt running now, and work it still owes.
+/// What the helper last reported: running mounts, scheduled retries, and claims held for resume.
 #[derive(Default, Clone)]
 struct Work {
     in_flight: Vec<String>,
+    /// Scheduled retries: this process will try them again, even without a reconnect setting.
     queued: Vec<String>,
+    /// Claims deferred by the hold: the helper will try them again on resume.
+    deferred: Vec<String>,
+}
+
+#[derive(Clone, Copy)]
+enum HoldWork {
+    Settled,
+    Held,
 }
 
 struct Helper {
@@ -284,6 +293,11 @@ struct AppState {
     second_instance: Mutex<bool>,
     hold: Mutex<Hold>,
     work: Mutex<Work>,
+    /// Bumped when the helper processes a hold, so the reply observes its pause.
+    work_revision: Mutex<u64>,
+    work_version: Mutex<u64>,
+    work_pending: Mutex<Option<HoldWork>>,
+    work_type: Mutex<&'static str>,
 }
 
 impl AppState {
@@ -301,6 +315,10 @@ impl AppState {
             second_instance: Mutex::new(false),
             hold: Mutex::new(Hold::default()),
             work: Mutex::new(Work::default()),
+            work_revision: Mutex::new(0),
+            work_version: Mutex::new(0),
+            work_pending: Mutex::new(None),
+            work_type: Mutex::new("hold"),
         }
     }
 }
@@ -510,8 +528,8 @@ fn start_helper(app: &AppHandle) -> Result<(), String> {
         let state = app_handle.state::<AppState>();
         let gone = state.helper.lock().unwrap().take().is_some();
         if gone {
-            // Nothing is running any more, and the hold must not report a stale in-flight count.
             *state.work.lock().unwrap() = Work::default();
+            *state.work_version.lock().unwrap() += 1;
             log("The background helper stopped.");
             *state.engine_error.lock().unwrap() =
                 Some("It stopped unexpectedly. Restart it here.".into());
@@ -532,6 +550,8 @@ enum HelperEvent {
         in_flight: Vec<String>,
         #[serde(default)]
         queued: Vec<String>,
+        #[serde(default)]
+        deferred: Vec<String>,
     },
     #[serde(rename = "volumes")]
     Volumes { items: Vec<VolumeCandidate> },
@@ -573,8 +593,14 @@ fn handle_helper_line(app: &AppHandle, line: &str) {
     };
     let state = app.state::<AppState>();
     match event {
-        HelperEvent::State { items, in_flight, queued } => {
-            *state.work.lock().unwrap() = Work { in_flight, queued };
+        HelperEvent::State { items, in_flight, queued, deferred } => {
+            let version = {
+                let mut version = state.work_version.lock().unwrap();
+                *version += 1;
+                *version
+            };
+            *state.work.lock().unwrap() = Work { in_flight, queued, deferred };
+            acknowledge_hold(app, *state.work_type.lock().unwrap(), version);
             let mut statuses = state.statuses.lock().unwrap();
             statuses.clear();
             for item in items {
@@ -623,7 +649,14 @@ fn handle_helper_line(app: &AppHandle, line: &str) {
             *state.smb_mounts.lock().unwrap() = items;
             emit_snapshot(app);
         }
-        HelperEvent::Log { level, message } => log(&format!("helper [{level}]: {message}")),
+        HelperEvent::Log { level, message } => {
+            log(&format!("helper [{level}]: {message}"));
+            if message == "holding new work for an update" {
+                acknowledge_hold(app, "hold", 0);
+            } else if message == "resumed; new work is accepted again" {
+                *app.state::<AppState>().work_pending.lock().unwrap() = Some(HoldWork::Settled);
+            }
+        }
     }
 }
 
@@ -839,22 +872,47 @@ fn unsettled(state: &AppState) -> Vec<String> {
         .iter()
         .map(|id| format!("{} (mounting)", name(id)))
         .collect();
+    // A hold-deferred claim is resumable by this helper. Only a still-pending retry may be
+    // dropped by a restart: a new launch does not normally re-dispatch it.
     for id in &work.queued {
-        let follows_next_start = settings
-            .storages
-            .iter()
-            .any(|storage| &storage.id == id && storage.reconnect_at_login);
-        if !follows_next_start {
-            out.push(format!("{} (retry pending)", name(id)));
-        }
+        out.push(format!("{} (retry pending)", name(id)));
     }
     out
 }
 
 fn tell_helper(app: &AppHandle, kind: &str) {
     let state = app.state::<AppState>();
+    *state.work_type.lock().unwrap() = if kind == "resume" { "resume" } else { "hold" };
     if let Err(error) = send_to_helper(&state, &serde_json::json!({ "type": kind })) {
+        if kind == "hold" || kind == "resume" {
+            // Without a helper, no mount is running and the hold can answer from that truth.
+            let version = {
+                let mut version = state.work_version.lock().unwrap();
+                *version += 1;
+                *version
+            };
+            *state.work.lock().unwrap() = Work::default();
+            acknowledge_hold(app, kind, version);
+        }
         log(&format!("hold: the helper did not take '{kind}': {error}"));
+    }
+}
+
+/// A state report without a new revision is the helper's own outcome, not its echoed command.
+fn acknowledge_hold(app: &AppHandle, kind: &str, version: u64) {
+    let state = app.state::<AppState>();
+    if *state.work_revision.lock().unwrap() == version {
+        return;
+    }
+    let work = state.work.lock().unwrap().clone();
+    let pending = if work.in_flight.is_empty() { HoldWork::Settled } else { HoldWork::Held };
+    let mut awaiting = state.work_pending.lock().unwrap();
+    let is_resume = kind == "resume";
+    let previous = awaiting.replace(if is_resume { HoldWork::Settled } else { pending });
+    let held = pending == HoldWork::Held || previous == Some(HoldWork::Held);
+    *state.work_revision.lock().unwrap() = version;
+    if kind == "hold" {
+        log(if held { "the helper has paused new work" } else { "the helper has already paused new work" });
     }
 }
 
@@ -863,6 +921,10 @@ fn hold_request(app: &AppHandle, query: &str) -> String {
     let timeout_s = hold_seconds(query_value(query, "timeout_s"), HOLD_TIMEOUT_DEFAULT_S, HOLD_TIMEOUT_MAX_S);
     let pause_s = hold_seconds(query_value(query, "pause_s"), HOLD_PAUSE_DEFAULT_S, HOLD_PAUSE_MAX_S).max(1);
     let state = app.state::<AppState>();
+    {
+        let mut awaiting = state.work_pending.lock().unwrap();
+        *awaiting = None;
+    }
     let generation = {
         let mut hold = state.hold.lock().unwrap();
         hold.generation += 1;
@@ -874,13 +936,33 @@ fn hold_request(app: &AppHandle, query: &str) -> String {
     log(&format!("held new work for an update (paused {pause_s} s)"));
     emit_snapshot(app);
 
-    // Bounded settle: a mount attempt already running may finish; the queue is never waited for.
-    let deadline = Instant::now() + Duration::from_secs(timeout_s);
-    while !unsettled(&state).is_empty() && Instant::now() < deadline {
-        std::thread::sleep(Duration::from_millis(50));
+    // Wait for the helper's own pause outcome, never a pre-hold cache or the retry queue.
+    let fresh_deadline = Instant::now() + Duration::from_secs(1);
+    while state.work_pending.lock().unwrap().is_none() {
+        if state.helper.lock().unwrap().is_none() || Instant::now() >= fresh_deadline {
+            log("the update hold could not confirm the helper paused its new work");
+            return serde_json::json!({
+                "safe": false,
+                "unsettled": ["the helper did not pause (retry or restart it)".to_string()],
+                "dispatch_paused_s": pause_s,
+                "in_flight": 0,
+            }).to_string();
+        }
+        std::thread::sleep(Duration::from_millis(20));
     }
-    let unsettled = unsettled(&state);
+    let mut awaiting = state.work_pending.lock().unwrap();
+    let paused = matches!(*awaiting, Some(HoldWork::Held));
+    *awaiting = None;
+    drop(awaiting);
+    if paused {
+        // The newest mount attempt may finish; the retry queue is never waited for.
+        let settle_deadline = Instant::now() + Duration::from_secs(timeout_s);
+        while !state.work.lock().unwrap().in_flight.is_empty() && Instant::now() < settle_deadline {
+            std::thread::sleep(Duration::from_millis(50));
+        }
+    }
     let in_flight = state.work.lock().unwrap().in_flight.len();
+    let unsettled = unsettled(&state);
     serde_json::json!({
         "safe": unsettled.is_empty(),
         "unsettled": unsettled,
@@ -956,6 +1038,7 @@ fn start_hold_server(app: AppHandle) {
                     let app = app.clone();
                     std::thread::spawn(move || handle_hold_connection(&app, stream));
                 }
+                Err(error) if error.kind() == std::io::ErrorKind::Interrupted => continue,
                 Err(error) => log(&format!("update hold: {error}")),
             }
         }
@@ -1778,16 +1861,57 @@ mod tests {
         *state.work.lock().unwrap() = Work {
             in_flight: vec!["follows".into()],
             queued: vec!["follows".into(), "orphan".into()],
+            deferred: vec!["orphan".into()],
         };
         let names = unsettled(&state);
         assert_eq!(names, vec!["Storage follows (mounting)", "Storage orphan (retry pending)"]);
-        // Only a retry a restart picks up again (login reconnect) is not a stranding.
-        *state.work.lock().unwrap() = Work { in_flight: vec![], queued: vec!["follows".into()] };
-        assert!(unsettled(&state).is_empty());
+        // A claim this helper defers is resumable, and does not block its own update.
+        *state.work.lock().unwrap() = Work {
+            in_flight: vec![],
+            queued: vec!["orphan".into()],
+            deferred: vec!["orphan".into()],
+        };
+        assert_eq!(unsettled(&state), vec!["Storage orphan (retry pending)"]);
         *state.work.lock().unwrap() = Work::default();
         assert!(unsettled(&state).is_empty(), "an idle app is safe");
     }
-}
+
+    #[test]
+    fn a_queued_retry_does_not_burn_the_settle_window() {
+        let state = AppState::new(super::Settings::default());
+        *state.work.lock().unwrap() = Work {
+            in_flight: vec![],
+            queued: vec!["orphan".into()],
+            deferred: vec![],
+        };
+        assert!(state.work.lock().unwrap().in_flight.is_empty());
+        assert_eq!(unsettled(&state), vec!["Storage orphan (retry pending)"]);
+        *state.work.lock().unwrap() = Work::default();
+        assert_eq!(unsettled(&state), vec![]);
+    }
+
+    #[test]
+    fn helper_hold_outcomes_supersede_older_reports() {
+        let app = tauri::test::mock_app();
+        let state = app.state::<AppState>();
+        *state.work.lock().unwrap() = Work::default();
+        *state.work_revision.lock().unwrap() = 0;
+        acknowledge_hold(&app.handle(), "hold", 0);
+        assert!(state.work_pending.lock().unwrap().is_none());
+        acknowledge_hold(&app.handle(), "hold", 1);
+        *state.work.lock().unwrap() = Work {
+            in_flight: vec!["s1".into()], queued: vec![], deferred: vec![],
+        };
+        acknowledge_hold(&app.handle(), "hold", 2);
+        assert_eq!(*state.work_revision.lock().unwrap(), 2);
+        assert_eq!(*state.work_pending.lock().unwrap(), Some(HoldWork::Held));
+        *state.work.lock().unwrap() = Work::default();
+        // The newer helper outcome (held) is kept when a pre-hold state arrives late.
+        acknowledge_hold(&app.handle(), "hold", 0);
+        assert_eq!(*state.work_pending.lock().unwrap(), Some(HoldWork::Held));
+        acknowledge_hold(&app.handle(), "hold", 3);
+        assert_eq!(*state.work_pending.lock().unwrap(), Some(HoldWork::Settled));
+    }
 
 // ---------------------------------------------------------------- lifecycle
 

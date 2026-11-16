@@ -128,7 +128,7 @@ final class ProtocolTests: XCTestCase {
 
     func testStateEventIsOneJSONObjectWithCamelCaseKeys() throws {
         let state = StorageState(id: "s1", status: .needsAttention, detail: "Can't reach nas.local", mountedPath: nil, hasCredentials: true)
-        let object = try JSONSerialization.jsonObject(with: Event.state([state], inFlight: ["s1"], queued: []).json) as? [String: Any]
+        let object = try JSONSerialization.jsonObject(with: Event.state([state], inFlight: ["s1"], queued: [], deferred: []).json) as? [String: Any]
         XCTAssertEqual(object?["type"] as? String, "state")
         let item = (object?["items"] as? [[String: Any]])?.first
         XCTAssertEqual(item?["status"] as? String, "needs_attention")
@@ -136,6 +136,7 @@ final class ProtocolTests: XCTestCase {
         XCTAssertEqual(item?["detail"] as? String, "Can't reach nas.local")
         XCTAssertEqual(object?["inFlight"] as? [String], ["s1"])
         XCTAssertEqual(object?["queued"] as? [String], [])
+        XCTAssertEqual(object?["deferred"] as? [String], [])
     }
 
     /// The update hold's two commands decode like every other helper command.

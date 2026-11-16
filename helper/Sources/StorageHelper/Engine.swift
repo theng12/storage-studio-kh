@@ -18,7 +18,9 @@ public final class Engine {
     private var retries = 3
     private var configured = false
     private var inFlight = Set<String>()
-    /// Held for an update: no new mount attempt starts. In memory only, so a restart takes work again.
+    /// Claims this process will retry: timers survive a restart, a login-only label does not.
+    private var queued = Set<String>()
+    /// Held for an update: no new attempt starts. In memory only, so a restart takes work again.
     private var paused = false
     private var deferred = Set<String>()
 
@@ -190,6 +192,7 @@ public final class Engine {
         paused = false
         let waiting = deferred.sorted()
         deferred.removeAll()
+        queued.formUnion(waiting)
         emit(Event.log(level: "info", message: "resumed; new work is accepted again").json)
         announce()
         for id in waiting {
@@ -209,6 +212,7 @@ public final class Engine {
         if paused {
             // Held for an update: nothing starts. The storage id is kept and re-run on resume.
             deferred.insert(storage.id)
+            queued.insert(storage.id)
             announce()
             return
         }
@@ -348,6 +352,8 @@ public final class Engine {
         attempts[storage.id] = 0
         scheduled[storage.id]?.cancel()
         scheduled[storage.id] = nil
+        queued.remove(storage.id)
+        deferred.remove(storage.id)
         set(storage, .mounted, detail: nil, path: path)
         if wasTrouble {
             emit(Event.recovered(id: storage.id, name: storage.name).json)
@@ -372,11 +378,13 @@ public final class Engine {
             attempts[storage.id] = 0
             scheduled[storage.id]?.cancel()
             scheduled[storage.id] = nil
+            queued.remove(storage.id)
             let reason = failureText(storage, failure)
             set(storage, .needsAttention, detail: reason)
             emit(Event.needsCredentials(id: storage.id, name: storage.name).json)
             return
         }
+        queued.remove(storage.id)
         let reason = failureText(storage, failure)
         if attempt <= retries, let wait = retryDelay(attempt) {
             let retryState: StorageStatus = failure.unreachable ? .unreachable : .retrying
@@ -390,6 +398,7 @@ public final class Engine {
             }
             scheduled[storage.id]?.cancel()
             scheduled[storage.id] = work
+            queued.insert(storage.id)
             queue.asyncAfter(deadline: .now() + wait, execute: work)
         } else {
             set(storage, .needsAttention, detail: reason)
@@ -544,8 +553,7 @@ public final class Engine {
             state.hasCredentials = hasCredentials(storage)
             return state
         }
-        // What is really running, and what is still owed: the update hold reports both.
         let queued = Set(scheduled.keys).union(deferred).sorted()
-        emit(Event.state(items, inFlight: inFlight.sorted(), queued: queued).json)
+        emit(Event.state(items, inFlight: inFlight.sorted(), queued: queued, deferred: deferred.sorted()).json)
     }
 }
