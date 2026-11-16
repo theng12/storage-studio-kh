@@ -951,7 +951,8 @@ fn hold_request(app: &AppHandle, query: &str) -> String {
     emit_snapshot(app);
 
     // Wait for the helper's own pause outcome, never a pre-hold cache or the retry queue.
-    let fresh_deadline = Instant::now() + Duration::from_secs(1);
+    // A helper started moments ago needs a moment to answer; this stays well inside the settle.
+    let fresh_deadline = Instant::now() + Duration::from_secs(3);
     while state.work_pending.lock().unwrap().is_none() {
         if state.helper.lock().unwrap().is_none() || Instant::now() >= fresh_deadline {
             log("the update hold could not confirm the helper paused its new work");
