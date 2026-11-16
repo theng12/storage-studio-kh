@@ -269,7 +269,7 @@ struct Work {
     deferred: Vec<String>,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum HoldWork {
     Settled,
     Held,
@@ -872,10 +872,16 @@ fn unsettled(state: &AppState) -> Vec<String> {
         .iter()
         .map(|id| format!("{} (mounting)", name(id)))
         .collect();
-    // A hold-deferred claim is resumable by this helper. Only a still-pending retry may be
-    // dropped by a restart: a new launch does not normally re-dispatch it.
+    // A hold-deferred claim is resumable by this helper. A retry timer dies with the process, so
+    // it is only stranded when the next start would not re-dispatch it (no login reconnect).
     for id in &work.queued {
-        out.push(format!("{} (retry pending)", name(id)));
+        let follows_next_start = settings
+            .storages
+            .iter()
+            .any(|storage| &storage.id == id && storage.reconnect_at_login);
+        if !follows_next_start {
+            out.push(format!("{} (retry pending)", name(id)));
+        }
     }
     out
 }
@@ -898,18 +904,26 @@ fn tell_helper(app: &AppHandle, kind: &str) {
     }
 }
 
+/// Records the helper's own post-hold outcome. Returns true when a mount was still running, so a
+/// later settle can report it; a newer outcome always replaces an older one.
+fn record_hold_outcome(awaiting: &mut Option<HoldWork>, kind: &str, in_flight: usize) -> bool {
+    if kind == "resume" {
+        *awaiting = Some(HoldWork::Settled);
+        return false;
+    }
+    let pending = if in_flight == 0 { HoldWork::Settled } else { HoldWork::Held };
+    let previous = awaiting.replace(pending);
+    pending == HoldWork::Held || previous == Some(HoldWork::Held)
+}
+
 /// A state report without a new revision is the helper's own outcome, not its echoed command.
 fn acknowledge_hold(app: &AppHandle, kind: &str, version: u64) {
     let state = app.state::<AppState>();
     if *state.work_revision.lock().unwrap() == version {
         return;
     }
-    let work = state.work.lock().unwrap().clone();
-    let pending = if work.in_flight.is_empty() { HoldWork::Settled } else { HoldWork::Held };
-    let mut awaiting = state.work_pending.lock().unwrap();
-    let is_resume = kind == "resume";
-    let previous = awaiting.replace(if is_resume { HoldWork::Settled } else { pending });
-    let held = pending == HoldWork::Held || previous == Some(HoldWork::Held);
+    let in_flight = state.work.lock().unwrap().in_flight.len();
+    let held = record_hold_outcome(&mut state.work_pending.lock().unwrap(), kind, in_flight);
     *state.work_revision.lock().unwrap() = version;
     if kind == "hold" {
         log(if held { "the helper has paused new work" } else { "the helper has already paused new work" });
@@ -1646,9 +1660,9 @@ fn unix_millis() -> u128 {
 mod tests {
     use super::feed::{is_newer, parse_version};
     use super::{
-        hold_seconds, query_value, refuse_new_work, unsettled, validate_input, AppState, Hold,
-        Storage, StorageInput, Work, HOLD_PAUSE_DEFAULT_S, HOLD_PAUSE_MAX_S, HOLD_TIMEOUT_DEFAULT_S,
-        HOLD_TIMEOUT_MAX_S,
+        hold_seconds, query_value, record_hold_outcome, refuse_new_work, unsettled,
+        validate_input, AppState, Hold, HoldWork, Storage, StorageInput, Work,
+        HOLD_PAUSE_DEFAULT_S, HOLD_PAUSE_MAX_S, HOLD_TIMEOUT_DEFAULT_S, HOLD_TIMEOUT_MAX_S,
     };
     use std::time::{Duration, Instant};
 
@@ -1878,39 +1892,33 @@ mod tests {
 
     #[test]
     fn a_queued_retry_does_not_burn_the_settle_window() {
-        let state = AppState::new(super::Settings::default());
+        let mut settings = super::Settings::default();
+        settings.storages = vec![storage("orphan", false), storage("follows", true)];
+        let state = AppState::new(settings);
         *state.work.lock().unwrap() = Work {
             in_flight: vec![],
-            queued: vec!["orphan".into()],
+            queued: vec!["orphan".into(), "follows".into()],
             deferred: vec![],
         };
         assert!(state.work.lock().unwrap().in_flight.is_empty());
+        // Only the retry a restart would drop is a stranding; the login one is picked up again.
         assert_eq!(unsettled(&state), vec!["Storage orphan (retry pending)"]);
         *state.work.lock().unwrap() = Work::default();
-        assert_eq!(unsettled(&state), vec![]);
+        let none: Vec<String> = vec![];
+        assert_eq!(unsettled(&state), none);
     }
 
     #[test]
     fn helper_hold_outcomes_supersede_older_reports() {
-        let app = tauri::test::mock_app();
-        let state = app.state::<AppState>();
-        *state.work.lock().unwrap() = Work::default();
-        *state.work_revision.lock().unwrap() = 0;
-        acknowledge_hold(&app.handle(), "hold", 0);
-        assert!(state.work_pending.lock().unwrap().is_none());
-        acknowledge_hold(&app.handle(), "hold", 1);
-        *state.work.lock().unwrap() = Work {
-            in_flight: vec!["s1".into()], queued: vec![], deferred: vec![],
-        };
-        acknowledge_hold(&app.handle(), "hold", 2);
-        assert_eq!(*state.work_revision.lock().unwrap(), 2);
-        assert_eq!(*state.work_pending.lock().unwrap(), Some(HoldWork::Held));
-        *state.work.lock().unwrap() = Work::default();
-        // The newer helper outcome (held) is kept when a pre-hold state arrives late.
-        acknowledge_hold(&app.handle(), "hold", 0);
-        assert_eq!(*state.work_pending.lock().unwrap(), Some(HoldWork::Held));
-        acknowledge_hold(&app.handle(), "hold", 3);
-        assert_eq!(*state.work_pending.lock().unwrap(), Some(HoldWork::Settled));
+        let mut awaiting = None;
+        assert!(!record_hold_outcome(&mut awaiting, "hold", 0));
+        assert_eq!(awaiting, Some(HoldWork::Settled));
+        assert!(record_hold_outcome(&mut awaiting, "hold", 1), "a running mount is reported");
+        assert_eq!(awaiting, Some(HoldWork::Held));
+        assert!(record_hold_outcome(&mut awaiting, "hold", 0), "held wins until settled");
+        assert_eq!(awaiting, Some(HoldWork::Settled));
+        assert!(!record_hold_outcome(&mut awaiting, "resume", 1), "resume clears the pause");
+        assert_eq!(awaiting, Some(HoldWork::Settled));
     }
 }
 
