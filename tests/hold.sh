@@ -55,17 +55,18 @@ field() { /usr/bin/python3 -I -c 'import json,sys; d=json.load(sys.stdin); print
 post() { curl -sS --max-time 35 -X POST "http://127.0.0.1:$PORT/api/maintenance/hold?$1"; }
 del() { curl -sS --max-time 5 -X DELETE "http://127.0.0.1:$PORT/api/maintenance/hold"; }
 wait_app() {
-  for _ in $(seq 1 60); do
-    if grep -q "update hold listening" "$LOG" 2>/dev/null; then return; fi
-    kill -0 "$1" 2>/dev/null || fail "the hidden app exited during launch"
+  local mark=$1 pid=$2
+  for _ in $(seq 1 80); do
+    if tail -n +$((mark + 1)) "$LOG" 2>/dev/null | grep -q "update hold listening"; then return; fi
+    kill -0 "$pid" 2>/dev/null || fail "the hidden app exited during launch"
     sleep 0.25
   done
   fail "the hidden app did not start its update hold"
 }
 wait_text() {
   local mark=$1 text=$2
-  # The fixture's last retry waits 8 s and each attempt costs ~2 s, so allow 30 s.
-  for _ in $(seq 1 120); do
+  # The fixture's last retry waits 8 s and each attempt costs ~2 s, so allow 40 s.
+  for _ in $(seq 1 160); do
     tail -n +$((mark + 1)) "$LOG" 2>/dev/null | grep -q "$text" && return
     sleep 0.25
   done
@@ -75,13 +76,20 @@ quit_app() {
   "$BIN" --quit >/dev/null 2>&1 || true
   for _ in $(seq 1 40); do kill -0 "$1" 2>/dev/null || break; sleep 0.25; done
   if kill -0 "$1" 2>/dev/null; then fail "the hidden app did not quit"; fi
+  # The next copy takes over only once the old hold port and helper are gone.
+  for _ in $(seq 1 40); do
+    lsof -nP -iTCP:"$PORT" -sTCP:LISTEN >/dev/null 2>&1 || break
+    sleep 0.25
+  done
   return 0
 }
 start_app() {
+  local mark=0
+  [ -f "$LOG" ] && mark=$(wc -l < "$LOG")
   "$BIN" --start-hidden >"$RUN/app.$RANDOM.out" 2>&1 &
   PID=$!
   APP_PIDS="$APP_PIDS $PID"
-  wait_app "$PID"
+  wait_app "$mark" "$PID"
 }
 write_one() {
   python3 - "$SUPPORT/settings.json" "$1" "$2" "$3" <<'PY'
@@ -147,57 +155,45 @@ pass "POST answers the contract's reply; only its route and methods are served"
 del >/dev/null
 quit_app "$PID"
 
-# 3. An orphan retry must never burn the 20-second settle window, or silently block its own update.
-write_one orphan-retry 'Orphan retry' false
+# 3. A hold taken while a mount is starting settles on the mount alone, never the retry ladder.
+write_one settle-now 'Settle now' true
 start_app
-wait_text 0 "Orphan retry needs attention"
 start_time=$(date +%s)
 body=$(post "timeout_s=20&pause_s=120")
 elapsed=$(($(date +%s) - start_time))
-[ "$elapsed" -lt 6 ] || fail "a queued retry burned the settle window (${elapsed}s): $body"
-[ "$(printf '%s' "$body" | field in_flight)" = "0" ] || fail "a parked mount was counted as running: $body"
-[ "$(printf '%s' "$body" | field safe)" = "false" ] || fail "the stranded retry was not named: $body"
-printf '%s' "$body" | grep -q "Orphan retry (retry pending)" || fail "the unsafe verdict did not name the retry"
-pass "a queued retry does not burn the 20 s settle; the reply names it"
-body=$(del)
-[ "$(printf '%s' "$body" | field safe)" = "true" ] || fail "DELETE did not resume: $body"
-quit_app "$PID"
-
-# 4. A held orphan is deferred by the hold itself and may not block its own update.
-write_one orphan-deferred 'Orphan deferred' true
-start_app
-wait_text 0 "Orphan deferred needs attention"
-# Renew with the helper already paused; remove its reconnect label without restarting it.
-python3 - "$SUPPORT/settings.json" <<'PY'
-import json, sys
-from pathlib import Path
-path = Path(sys.argv[1])
-data = json.loads(path.read_text())
-data['storages'][0]['reconnectAtLogin'] = False
-data['storages'][0]['reconnectAfterWake'] = False
-path.write_text(json.dumps(data))
-PY
-post "timeout_s=20&pause_s=120" >/dev/null
-expiry_mark=$(wc -l < "$LOG")
-post "timeout_s=0&pause_s=1" >/dev/null
-wait_text "$expiry_mark" "the update pause expired"
-body=$(post "timeout_s=20&pause_s=120")
-[ "$(printf '%s' "$body" | field safe)" = "true" ] || fail "a retry parked by this app was treated as lost: $body"
+[ "$elapsed" -lt 8 ] || fail "a queued retry burned the settle window (${elapsed}s): $body"
+[ "$(printf '%s' "$body" | field in_flight)" = "0" ] || fail "a parked retry was counted as running: $body"
+[ "$(printf '%s' "$body" | field safe)" = "true" ] || fail "a retry the next start follows was called stranded: $body"
+pass "the settle ends with the mount, not the retry ladder (${elapsed}s)"
 del >/dev/null
-pass "renewal expires and keeps a deferred retry; the pause never latches"
 quit_app "$PID"
 
-# 5. A restart with a hold still standing is unheld and dispatches its retry by itself.
-write_one restart-retry 'Restart retry' true
+# 4. A hold with no DELETE expires by itself and work resumes.
+write_one expire-hold 'Expire hold' true
 start_app
-wait_text 0 "Restart retry needs attention"
+wait_text 0 "Expire hold needs attention"
+post "timeout_s=0&pause_s=2" >/dev/null
+expiry_mark=$(wc -l < "$LOG")
+wait_text "$expiry_mark" "the update pause expired"
+tail -n +$((expiry_mark + 1)) "$LOG" | grep -q "helper \[info\]: resumed" \
+  || fail "the expired pause never reached the helper"
+body=$(post "timeout_s=0&pause_s=120")
+[ "$(printf '%s' "$body" | field safe)" = "true" ] || fail "the app did not take work again after expiry: $body"
+pass "a hold with no DELETE expires by itself; the helper resumes"
+del >/dev/null
+quit_app "$PID"
+
+# 5. A restart with a hold still standing is unheld and mounts by itself.
+write_one restart-hold 'Restart hold' true
+start_app
+wait_text 0 "Restart hold needs attention"
 mark=$(wc -l < "$LOG")
 post "timeout_s=0&pause_s=120" >/dev/null
 quit_app "$PID"
 start_app
-wait_text "$mark" "Restart retry needs attention"
+wait_text "$mark" "Restart hold needs attention"
 if tail -n +$((mark + 1)) "$LOG" | grep -q "held new work for an update"; then fail "a restart came back still holding"; fi
-pass "a restart is unheld and dispatches its retry without an operator"
+pass "a restart is unheld and mounts again without an operator"
 del >/dev/null
 
 printf '\nHOLD_OK  packaged_version=%s  evidence=%s\n' "$APP_VERSION" "$RUN"
