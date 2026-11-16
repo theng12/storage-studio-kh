@@ -9,3 +9,4 @@ dist/*.dmg
 .DS_Store
 src-tauri/icons/android/
 src-tauri/icons/ios/
+/_trash
