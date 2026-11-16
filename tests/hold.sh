@@ -106,13 +106,13 @@ python3 - "$helper_out" <<'PY'
 import json, sys
 from pathlib import Path
 lines = [json.loads(line) for line in Path(sys.argv[1]).read_text().splitlines() if line.strip()]
-states = [line for line in lines if line.get('type') == 'state']
-assert any('hold-fake' in line.get('inFlight', []) for line in states), 'no real in-flight mount was reported'
-first = next((i for i, line in enumerate(states) if 'hold-fake' in line.get('deferred', []))), None
-assert first is not None, 'the held mount was not deferred'
-assert all('hold-fake' not in line.get('inFlight', []) for line in states[first:]), 'a held mount ran anyway'
-assert not any(line.get('type') == 'attention' and line.get('id') == 'hold-fake' for line in lines[:states.index(states[first])]), 'a held mount finished before resume'
-assert any(line.get('type') == 'attention' and line.get('id') == 'hold-fake' for line in lines[states.index(states[first]) + 1:]), 'resume did not re-run the deferred mount'
+assert any('hold-fake' in line.get('inFlight', []) for line in lines if line.get('type') == 'state'), 'no real in-flight mount was reported'
+deferred_at = next(i for i, line in enumerate(lines) if line.get('type') == 'state' and 'hold-fake' in line.get('deferred', []))
+resumed_at = next(i for i, line in enumerate(lines) if line.get('type') == 'log' and 'resumed' in line.get('message', ''))
+held = lines[deferred_at:resumed_at]
+assert not any('hold-fake' in line.get('inFlight', []) for line in held), 'a held mount ran anyway'
+assert not any(line.get('type') == 'attention' and line.get('id') == 'hold-fake' for line in held), 'a held mount finished while held'
+assert any(line.get('type') == 'attention' and line.get('id') == 'hold-fake' for line in lines[resumed_at:]), 'resume did not re-run the deferred mount'
 print('helper: real inFlight, immediate deferral, explicit deferred set, resume without an operator')
 PY
 pass "the helper reports real work and holds every claim; resume runs deferred work"
