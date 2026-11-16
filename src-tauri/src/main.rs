@@ -1912,6 +1912,7 @@ mod tests {
         acknowledge_hold(&app.handle(), "hold", 3);
         assert_eq!(*state.work_pending.lock().unwrap(), Some(HoldWork::Settled));
     }
+}
 
 // ---------------------------------------------------------------- lifecycle
 
