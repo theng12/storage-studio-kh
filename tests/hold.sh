@@ -187,9 +187,9 @@ quit_app "$PID"
 write_one restart-hold 'Restart hold' true
 start_app
 wait_text 0 "Restart hold needs attention"
-mark=$(wc -l < "$LOG")
 post "timeout_s=0&pause_s=120" >/dev/null
 quit_app "$PID"
+mark=$(wc -l < "$LOG")
 start_app
 wait_text "$mark" "Restart hold needs attention"
 if tail -n +$((mark + 1)) "$LOG" | grep -q "held new work for an update"; then fail "a restart came back still holding"; fi
