@@ -64,7 +64,8 @@ wait_app() {
 }
 wait_text() {
   local mark=$1 text=$2
-  for _ in $(seq 1 40); do
+  # The fixture's last retry waits 8 s and each attempt costs ~2 s, so allow 30 s.
+  for _ in $(seq 1 120); do
     tail -n +$((mark + 1)) "$LOG" 2>/dev/null | grep -q "$text" && return
     sleep 0.25
   done
@@ -73,7 +74,8 @@ wait_text() {
 quit_app() {
   "$BIN" --quit >/dev/null 2>&1 || true
   for _ in $(seq 1 40); do kill -0 "$1" 2>/dev/null || break; sleep 0.25; done
-  kill -0 "$1" 2>/dev/null && fail "the hidden app did not quit"
+  if kill -0 "$1" 2>/dev/null; then fail "the hidden app did not quit"; fi
+  return 0
 }
 start_app() {
   "$BIN" --start-hidden >"$RUN/app.$RANDOM.out" 2>&1 &
@@ -82,7 +84,7 @@ start_app() {
   wait_app "$PID"
 }
 write_one() {
-  python3 - "$SUPPORT/settings.json" "$1" "$2" "$3" "$4" <<'PY'
+  python3 - "$SUPPORT/settings.json" "$1" "$2" "$3" <<'PY'
 import json, sys
 from pathlib import Path
 path, id, name, login = sys.argv[1:]
@@ -128,8 +130,8 @@ pass "the helper reports real work and holds every claim; resume runs deferred w
 
 # 2. The packaged app answers on loopback, hidden, with live work.
 start_app
-start_time=$(date +%s)
 wait_text 0 "Hold Fake NAS needs attention"
+start_time=$(date +%s)
 body=$(post "timeout_s=20&pause_s=120")
 elapsed=$(($(date +%s) - start_time))
 [ "$elapsed" -lt 6 ] || fail "an idle app burned the settle window (${elapsed}s): $body"
