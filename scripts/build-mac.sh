@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Build and sign Storage Studio KH for this Mac, then keep the newest three DMGs in dist/.
+# Build and sign Storage Studio KH for this Mac; retention follows verified publication.
 # This Mac builds; publishing happens on 1301 with packaging/release-push.sh.
 #
 #   bash scripts/build-mac.sh            # full build + Swift tests
@@ -125,8 +125,13 @@ codesign --verify --deep --strict "$app" || fail "the app's signature is broken"
 
 step "Keeping the DMG in dist/"
 mkdir -p dist
-dmg_source="$(ls -t src-tauri/target/release/bundle/dmg/*.dmg | head -n1)"
-[ -f "$dmg_source" ] || fail "the packager made no DMG"
+case "$(uname -m)" in
+  arm64) dmg_arch=aarch64 ;;
+  x86_64) dmg_arch=x64 ;;
+  *) fail "unsupported DMG architecture: $(uname -m)" ;;
+esac
+dmg_source="src-tauri/target/release/bundle/dmg/Storage Studio KH_${version}_${dmg_arch}.dmg"
+[ -f "$dmg_source" ] || fail "the packager did not produce the exact release DMG: $dmg_source"
 dmg="dist/Storage Studio KH-${version}.dmg"
 [ ! -e "$dmg" ] || fail "$dmg already exists; choose a fresh release version"
 cp "$dmg_source" "$dmg"
@@ -140,8 +145,8 @@ hdiutil detach "$verify_mount" >/dev/null
 retire "$verify_mount"
 trap - EXIT
 
-step "Retention: newest three DMGs"
-python3 -I scripts/retain-dist.py "Storage Studio KH" "$version"
+# Keep the prior verified installers until the new release has passed its packaged gate and
+# served-feed readback. Run scripts/retain-dist.py during release closeout, never during build.
 
 sha="$(shasum -a 256 "$dmg" | awk '{print $1}')"
 bytes="$(stat -f %z "$dmg")"
