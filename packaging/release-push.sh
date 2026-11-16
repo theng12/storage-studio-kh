@@ -20,7 +20,7 @@ SSH=(ssh -i "$KEY" -o BatchMode=yes -o ConnectTimeout=10 "$HOST")
 scp -i "$KEY" -o BatchMode=yes "$DMG" "$HOST:$STAGE/$BASE"
 scp -i "$KEY" -o BatchMode=yes "$LOG" "$HOST:$STAGE/changelogs/$APP.md"
 # The signed feed names where a running copy takes an update hold (owner rule 2026-11-15).
-: "${KHU_HOLD_URL:?set KHU_HOLD_URL to the app's fixed loopback hold endpoint}"
+: "${KHU_HOLD_URL:?KHU_HOLD_URL is required: set it to the fixed loopback hold endpoint}"
 HOLD_ARGS="--hold-url '$KHU_HOLD_URL'"
 
 "${SSH[@]}" "K=\$HOME/Library/KHUpdater; \"\$K/bin/khu\" publish --feed \"\$K/feed\" --key \"\$K/keys/private.key\" \
