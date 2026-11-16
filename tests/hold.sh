@@ -21,7 +21,9 @@ DATA="$RUN/home"
 SUPPORT="$DATA/Library/Application Support/Storage Studio KH"
 mkdir -p "$SUPPORT"
 LOG="$SUPPORT/log.txt"
-PORT=8911
+# The shipped default port, so the proof covers the URL the signed feed names. Override only
+# when another copy of 0.1.11 already holds it.
+PORT="${HOLD_TEST_PORT:-8646}"
 export HOME="$DATA"
 export STORAGE_STUDIO_TEST_DATA_DIR="$DATA"
 export STORAGE_STUDIO_NO_NOTIFICATIONS=1
@@ -29,6 +31,7 @@ export STORAGE_STUDIO_NO_LOGIN_ITEM=1
 export STORAGE_STUDIO_RETRY_DELAYS=0.3,0.5,8
 export STORAGE_STUDIO_HOLD_PORT="$PORT"
 
+APP_PIDS=""
 cleanup() {
   for pid in ${APP_PIDS:-}; do kill "$pid" 2>/dev/null || true; done
   for pid in ${APP_PIDS:-}; do kill -9 "$pid" 2>/dev/null || true; done
@@ -112,7 +115,13 @@ resumed_at = next(i for i, line in enumerate(lines) if line.get('type') == 'log'
 held = lines[deferred_at:resumed_at]
 assert not any('hold-fake' in line.get('inFlight', []) for line in held), 'a held mount ran anyway'
 assert not any(line.get('type') == 'attention' and line.get('id') == 'hold-fake' for line in held), 'a held mount finished while held'
-assert any(line.get('type') == 'attention' and line.get('id') == 'hold-fake' for line in lines[resumed_at:]), 'resume did not re-run the deferred mount'
+def status(line):
+    for item in line.get('items') or []:
+        if item.get('id') == 'hold-fake':
+            return item.get('status')
+    return None
+started = {'mounting', 'retrying', 'unreachable', 'needs_attention', 'mounted'}
+assert any(status(line) in started for line in lines[resumed_at:] if line.get('type') == 'state'), 'resume did not re-run the deferred mount'
 print('helper: real inFlight, immediate deferral, explicit deferred set, resume without an operator')
 PY
 pass "the helper reports real work and holds every claim; resume runs deferred work"
