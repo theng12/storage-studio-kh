@@ -47,6 +47,18 @@ public enum Secrets {
             .appendingPathComponent("secrets.json")
     }
 
+    /// Free space on the disk that holds the secrets file, so a failed save can say the number.
+    public static func freeSpace() -> Int64? {
+        var folder = fileURL.deletingLastPathComponent()
+        while !FileManager.default.fileExists(atPath: folder.path) {
+            let parent = folder.deletingLastPathComponent()
+            if parent.path == folder.path { break }
+            folder = parent
+        }
+        let attributes = try? FileManager.default.attributesOfFileSystem(forPath: folder.path)
+        return attributes?[.systemFreeSize] as? Int64
+    }
+
     public static func save(host: String, username: String?, password: String) -> Bool {
         guard !host.isEmpty, !password.isEmpty else { return false }
         let key = account(host: host, username: username)

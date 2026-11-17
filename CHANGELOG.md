@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.12 — 2026-11-17
+
+- A mount that never answers now ends by itself: after 90 seconds the row says "It didn't answer within 90 s. Mount now starts again." instead of sitting at Mounting… forever.
+- A mounting or waiting row has a Stop trying button, so you can end it yourself; it says "Stopped trying. Mount now starts again."
+- A stuck mount no longer holds up the rest of the app: other rows, Unmount, Test and an update's pause all keep working while it waits.
+- If a password can't be saved because the disk is full, the row says so when the storage connects, with the free space on that disk, instead of keeping quiet.
+
 ## 0.1.11 — 2026-11-15
 
 - Storage Studio KH can now be updated while it runs: Studio Launcher asks it to hold first, it finishes or parks what it was doing within 20 seconds, and the update happens in that gap.

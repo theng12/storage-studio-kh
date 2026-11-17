@@ -1,5 +1,20 @@
 # Storage Studio KH acceptance
 
+## Release scope: 0.1.12
+
+0.1.12 makes a mount end. A share that accepts the connection but never answers used to leave
+its row at "Mounting…" for as long as NetFS stayed blocked, and the helper's single command queue
+froze with it. Now the attempt has its own ceiling, runs off the command queue, and the row has a
+Stop trying control. Everything from 0.1.11 is carried unchanged.
+
+| User task | Check and evidence | State |
+| --- | --- | --- |
+| A mount that never answers ends by itself | `MountBudget` unit test (90 s default, 600 s ceiling) and the helper's deadline path; a real half-open share is not reproducible on this Mac — the budget is code- and unit-verified | Required on 0.1.12; live half-open share not checked |
+| Stop trying ends a running mount or a waiting retry | `tests/acceptance/run.cjs` — a mounting row shows an enabled Stop trying, invokes `cancel_storage`, and the row says Not mounted with "Stopped trying." | Required on 0.1.12 |
+| A stuck mount no longer freezes the rest of the app | Mounts run on their own queue, so `hold`, unmount, test and refresh run while a mount waits; `tests/hold.sh` still proves the contract | Required on 0.1.12 |
+| A full disk is not a quiet failure | The helper on a 100%-full HFS+ volume logged the failed save, did not create `secrets.json`, and kept `hasCredentials` false; the connected row now says the password wasn't saved and the disk's free space (`SecretsTests`) | Required on 0.1.12; the app's own settings save on a full disk is code-verified, not run |
+| Keep the rest of the app working | `tests/gate.sh`, `tests/web.test.mjs`, `helper swift test`, `cargo test` | Required on 0.1.12 |
+
 ## Release scope: 0.1.11
 
 0.1.11 makes the app update-safe: Studio Launcher can hold its work before an install, so an

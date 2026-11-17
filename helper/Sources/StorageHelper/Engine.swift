@@ -9,6 +9,8 @@ public final class Engine {
 
     private let emit: Emitter
     private let queue = DispatchQueue(label: "app.storagestudiokh.helper.engine")
+    /// Mounts run here, never on `queue`: a wedged NetFS call must not block commands or a hold.
+    private let mountQueue = DispatchQueue(label: "app.storagestudiokh.helper.mount", attributes: .concurrent)
     private let environment = ProcessInfo.processInfo.environment
 
     private var storages: [Storage] = []
@@ -18,6 +20,13 @@ public final class Engine {
     private var retries = 3
     private var configured = false
     private var inFlight = Set<String>()
+    /// Which attempt owns a row's current mount call, so a late answer cannot overwrite a newer one.
+    private var attemptToken: [String: UInt64] = [:]
+    private var nextToken: UInt64 = 0
+    /// Attempts that ran past their budget; only a late success may be adopted.
+    private var expiredToken: [String: UInt64] = [:]
+    /// A save that failed, said in the row once the storage is connected. Cleared by the next save.
+    private var notice: [String: String] = [:]
     /// Claims this process will retry: timers survive a restart, a login-only label does not.
     private var queued = Set<String>()
     /// Held for an update: no new attempt starts. In memory only, so a restart takes work again.
@@ -73,6 +82,8 @@ public final class Engine {
             for storage in storages { mountNow(storage) }
         case "unmount":
             if let storage = storage(command.id) { unmount(storage) }
+        case "cancel":
+            if let storage = storage(command.id) { cancel(storage) }
         case "test":
             if let storage = storage(command.id) { test(storage) }
         case "refresh":
@@ -103,8 +114,11 @@ public final class Engine {
                     password: command.password ?? ""
                 )
                 let host = Reachability.smbHost(storage.target) ?? ""
-                if !Secrets.save(host: host, username: credentials.username, password: credentials.password) {
+                if Secrets.save(host: host, username: credentials.username, password: credentials.password) {
+                    notice[storage.id] = nil
+                } else {
                     emit(Event.log(level: "warn", message: "Storage Studio KH couldn't save the password for \(storage.name); check the app's data folder.").json)
+                    notice[storage.id] = passwordSaveNotice()
                 }
                 mountNow(storage)
             }
@@ -114,6 +128,7 @@ public final class Engine {
                     // An explicit user name lets the app forget the previous identity on a change.
                     Secrets.forget(host: host, username: command.username ?? storage.username)
                 }
+                notice[id] = nil
                 announce()
             }
         case "hold":
@@ -220,17 +235,85 @@ public final class Engine {
             markMounted(storage, path: entry.mountPoint)
             return
         }
+        nextToken += 1
+        let token = nextToken
+        attemptToken[storage.id] = token
         inFlight.insert(storage.id)
         set(storage, .mounting, detail: nil)
-        let failure = performMount(storage)
-        inFlight.remove(storage.id)
-        if let failure {
-            failed(storage, failure)
-        } else if let entry = mountedEntry(storage, in: MountTable.current()) {
-            markMounted(storage, path: entry.mountPoint)
-        } else {
-            failed(storage, MountFailure(message: "The connection didn't appear after mounting."))
+        // NetFS has no ceiling of its own: this deadline is the row's, and it never blocks
+        // the engine queue, so a wedged share cannot freeze commands or an update hold.
+        let budget = MountBudget.seconds(environment["STORAGE_STUDIO_MOUNT_BUDGET_S"])
+        queue.asyncAfter(deadline: .now() + budget) { [weak self] in
+            self?.expire(storage, token, budget)
         }
+        mountQueue.async { [weak self] in
+            guard let self else { return }
+            let failure = self.performMount(storage)
+            self.queue.async { self.finish(storage, token, failure) }
+        }
+    }
+
+    /// The attempt ran past its budget. Its late answer is ignored except for a success,
+    /// which `finish` adopts beside this verdict; nothing retries on its own.
+    private func expire(_ storage: Storage, _ token: UInt64, _ budget: TimeInterval) {
+        guard attemptToken[storage.id] == token, inFlight.remove(storage.id) != nil else { return }
+        guard let current = self.storage(storage.id) else {
+            attemptToken[storage.id] = nil
+            return
+        }
+        expiredToken[storage.id] = token
+        let reason = failureText(current, MountFailure(message: "It didn't answer within \(Int(budget)) s.")) + " Mount now starts again."
+        set(current, .needsAttention, detail: reason)
+        emit(Event.attention(id: current.id, name: current.name, reason: reason).json)
+    }
+
+    private func finish(_ storage: Storage, _ token: UInt64, _ failure: MountFailure?) {
+        guard attemptToken[storage.id] == token else { return }
+        guard let current = self.storage(storage.id) else {
+            // Removed while its mount ran: nothing to report, and nothing may stay in flight.
+            inFlight.remove(storage.id)
+            attemptToken[storage.id] = nil
+            expiredToken[storage.id] = nil
+            return
+        }
+        if inFlight.remove(storage.id) != nil {
+            attemptToken[storage.id] = nil
+            if let failure {
+                failed(current, failure)
+            } else if let entry = mountedEntry(current, in: MountTable.current()) {
+                markMounted(current, path: entry.mountPoint)
+            } else {
+                failed(current, MountFailure(message: "The connection didn't appear after mounting."))
+            }
+            return
+        }
+        // Past the deadline: a real mount is adopted; a late failure changes nothing.
+        guard expiredToken[storage.id] == token else { return }
+        expiredToken[storage.id] = nil
+        attemptToken[storage.id] = nil
+        if failure == nil, let entry = mountedEntry(current, in: MountTable.current()) {
+            markMounted(current, path: entry.mountPoint)
+        }
+    }
+
+    /// Stop trying: a waiting retry is dropped and a running attempt's answer is no longer
+    /// believed. The call itself cannot be cancelled inside NetFS, so the mount table, read
+    /// every 15 s, still reflects a connection that lands late.
+    private func cancel(_ storage: Storage) {
+        let status = states[storage.id]?.status
+        // Only a real attempt or a waiting retry can be stopped; a Test's verdict is not work.
+        guard inFlight.contains(storage.id) || scheduled[storage.id] != nil,
+              status == .mounting || status == .retrying || status == .unreachable
+        else { return }
+        scheduled[storage.id]?.cancel()
+        scheduled[storage.id] = nil
+        attempts[storage.id] = 0
+        queued.remove(storage.id)
+        deferred.remove(storage.id)
+        attemptToken[storage.id] = nil
+        expiredToken[storage.id] = nil
+        inFlight.remove(storage.id)
+        set(storage, .notMounted, detail: "Stopped trying. Mount now starts again.")
     }
 
     /// An attached disk counts as mounted only when the volume at that folder is the one
@@ -354,10 +437,19 @@ public final class Engine {
         scheduled[storage.id] = nil
         queued.remove(storage.id)
         deferred.remove(storage.id)
-        set(storage, .mounted, detail: nil, path: path)
+        set(storage, .mounted, detail: notice[storage.id], path: path)
         if wasTrouble {
             emit(Event.recovered(id: storage.id, name: storage.name).json)
         }
+    }
+
+    /// A full or read-only disk must not be a quiet failure: the row says it, with the number.
+    private func passwordSaveNotice() -> String {
+        guard let free = Secrets.freeSpace() else {
+            return "The password wasn't saved, so it will be asked for again."
+        }
+        let text = ByteCountFormatter.string(fromByteCount: free, countStyle: .file)
+        return "The password wasn't saved, so it will be asked for again. The startup disk has \(text) free."
     }
 
     /// The row must say which address was tried, not just that something failed.

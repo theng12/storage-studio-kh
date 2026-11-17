@@ -480,16 +480,23 @@ function renderRowActions(storage: StorageView): string {
   const mounted = storage.status === "mounted";
   const engine = Boolean(snapshot?.engineRunning);
   const busyAction = rowBusy[storage.id];
-  const mounting = busyAction === "mount" || storage.status === "mounting";
+  // A mount that is running or waiting to retry gets a control that ends it, first try.
+  // An Unreachable row is only stoppable while a retry is really waiting; a Test's verdict is not.
+  const stoppable =
+    storage.status === "mounting" ||
+    storage.status === "retrying" ||
+    (storage.status === "unreachable" && (snapshot?.queued ?? []).includes(storage.id));
   const primary = mounted
     ? `<button type="button" class="row-primary" data-action="reveal" data-id="${id}" data-fk="row-${id}-reveal" aria-label="Open ${esc(
         storage.name,
       )} in Finder"${storage.mountedPath ? "" : " disabled"}>${icons.folder}<span>Open in Finder</span></button>`
-    : `<button type="button" class="row-primary row-primary-accent" data-action="mount" data-id="${id}" data-fk="row-${id}-mount" aria-label="${
-        mounting ? "Mounting" : "Mount now"
-      } ${esc(storage.name)}"${busyAction || !engine || storage.status === "mounting" ? " disabled" : ""}>${
-        mounting ? "Mounting…" : "Mount now"
-      }</button>`;
+    : stoppable
+      ? `<button type="button" class="row-primary" data-action="cancel" data-id="${id}" data-fk="row-${id}-cancel" aria-label="Stop trying to mount ${esc(
+          storage.name,
+        )}"${engine ? "" : " disabled"}><span>Stop trying</span></button>`
+      : `<button type="button" class="row-primary row-primary-accent" data-action="mount" data-id="${id}" data-fk="row-${id}-mount" aria-label="Mount now ${esc(
+          storage.name,
+        )}"${busyAction || !engine ? " disabled" : ""}>Mount now</button>`;
   return `<div class="row-actions">
     ${primary}
     <button type="button" class="row-menu-btn" data-row-menu data-id="${id}" data-fk="row-${id}-menu" aria-haspopup="menu" aria-expanded="${
@@ -560,12 +567,17 @@ function renderRowMenu(storage: StorageView): void {
   const id = esc(storage.id);
   const mounted = storage.status === "mounted";
   const blocked = Boolean(rowBusy[storage.id]) || !snapshot.engineRunning;
+  const stoppable =
+    storage.status === "mounting" ||
+    storage.status === "retrying" ||
+    (storage.status === "unreachable" && (snapshot.queued ?? []).includes(storage.id));
   const item = (action: string, label: string, disabled: boolean): string =>
     `<button type="button" class="row-menu-item" role="menuitem" data-action="${action}" data-id="${id}" data-fk="row-${id}-${action}"${
       disabled ? " disabled" : ""
     }>${label}</button>`;
   rowMenuEl.innerHTML = `
     ${mounted ? item("unmount", "Unmount", blocked) : ""}
+    ${stoppable ? item("cancel", "Stop trying", !snapshot.engineRunning) : ""}
     ${item("test", rowBusy[storage.id] === "test" ? "Testing…" : "Test", blocked)}
     ${item("edit", "Edit", false)}
     ${item("remove", "Remove…", false)}`;
@@ -1468,11 +1480,13 @@ async function restoreStorage(draft: Draft): Promise<void> {
 const ROW_COMMANDS: Record<string, string> = {
   mount: "mount_storage",
   unmount: "unmount_storage",
+  cancel: "cancel_storage",
   test: "test_storage",
 };
 
 async function runRowAction(id: string, action: string): Promise<void> {
-  if (!snapshot || rowBusy[id]) return;
+  // Stop is never blocked by the row's own busy latch: it is the way out of a waiting mount.
+  if (!snapshot || (rowBusy[id] && action !== "cancel")) return;
   const command = ROW_COMMANDS[action];
   if (!command) return;
   pendingRowFocus =
@@ -1480,7 +1494,9 @@ async function runRowAction(id: string, action: string): Promise<void> {
       ? [`row-${id}-mount`, `row-${id}-menu`]
       : action === "mount"
         ? [`row-${id}-reveal`, `row-${id}-menu`]
-        : [`row-${id}-menu`];
+        : action === "cancel"
+          ? [`row-${id}-mount`, `row-${id}-menu`]
+          : [`row-${id}-menu`];
   rowBusy[id] = action;
   if (action === "test") beginTest(id);
   render();
@@ -1497,6 +1513,18 @@ async function runRowAction(id: string, action: string): Promise<void> {
         }
       }
     }, 15000);
+    if (action === "cancel") {
+      // The helper answers with the row's real state; nothing to wait 15 s for. The next
+      // snapshot restores focus to the control that replaced Stop; this is the bounded fallback.
+      delete rowBusy[id];
+      render();
+      window.setTimeout(() => {
+        if (!pendingRowFocus) return;
+        const targets = pendingRowFocus;
+        pendingRowFocus = null;
+        if (!targets.some(restoreFocus)) mainEl.focus({ preventScroll: true });
+      }, 1000);
+    }
   } catch (error) {
     delete rowBusy[id];
     pendingRowFocus = null;

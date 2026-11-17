@@ -79,6 +79,8 @@ export interface Snapshot {
   secondInstance: boolean;
   /** An update is installing: nothing new starts until it finishes. */
   holding: boolean;
+  /** Storages with a running attempt or a waiting retry: the rows that offer Stop trying. */
+  queued?: string[];
 }
 
 export interface StorageInput {

@@ -72,6 +72,8 @@ interface Snapshot {
   engineRunning: boolean;
   engineError: string | null;
   secondInstance: boolean;
+  holding: boolean;               // an update is installing; nothing new starts
+  queued: string[];               // storages with a running attempt or a waiting retry
 }
 ```
 
@@ -85,6 +87,7 @@ interface Snapshot {
 | `mount_storage` | `{ id }` | `null` |
 | `mount_all` | — | `null` |
 | `unmount_storage` | `{ id }` | `null` |
+| `cancel_storage` | `{ id }` | `null` — stops a running mount or a waiting retry; the row becomes Not mounted with "Stopped trying. Mount now starts again." |
 | `test_storage` | `{ id }` | `null` — the result arrives as a new snapshot (`detail`) |
 | `refresh_storage` | — | `null` — re-reads the mount table and connected disks (⌘R) |
 | `restart_helper` | — | `null` — starts the background helper again after it stopped (a `snapshot` event follows) |
@@ -126,7 +129,13 @@ already running, and answers `{ "safe", "unsettled", "dispatch_paused_s", "in_fl
 `in_flight` is the helper's own running set; `unsettled` names what a restart right now would
 strand. DELETE resumes at once; without it the pause expires after `pause_s`. The pause is memory
 only, so a restart always takes work again. While held, `mount_storage`, `mount_all` and
-`test_storage` refuse in plain words; unmount, refresh and Open in Finder still work.
+`test_storage` refuse in plain words; unmount, cancel, refresh and Open in Finder still work.
+
+A mount attempt has its own ceiling (90 s default, `STORAGE_STUDIO_MOUNT_BUDGET_S` for a test
+instance, never more than 600 s): past it the row turns Needs attention with "It didn't answer
+within 90 s. Mount now starts again." and nothing retries on its own. The attempt runs off the
+helper's command queue, so a wedged share never blocks other commands or the hold; a mount that
+lands late is still reflected by the next mount-table read.
 
 ## Copy rules
 

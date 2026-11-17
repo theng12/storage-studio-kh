@@ -33,7 +33,7 @@ A single Settings window opened from the menu-bar item. The person adds SMB shar
 - Storage list with status: Mounted, Mounting…, Retrying…, Needs attention, Unreachable, Not mounted.
 - Add/Edit: name, kind (SMB share or attached disk), SMB address, optional user name and password, optional mount point, or a connected-volume picker.
 - Reconnect at login and reconnect after wake per storage, read-only as facts in the list.
-- Row actions: Mount now, Unmount, Open in Finder, Test, Edit.
+- Row actions: Mount now, Stop trying (while a mount or retry runs), Unmount, Open in Finder, Test, Edit.
 - Credentials prompt when the helper needs a user name and password; saved in the app's own private file.
 - General: notifications, launch at login, retries before it stops (1–8, default 3).
 - Appearance: System (default), Light, Dark; a stored `default` reads as System.

@@ -18,6 +18,21 @@ public enum RetryPolicy {
     }
 }
 
+/// A mount attempt's own ceiling. `NetFSMountURLSync` has no timeout of its own and can block
+/// on a half-open share, so the row gets a terminal answer instead of sitting at Mounting…
+public enum MountBudget {
+    public static let secondsDefault: TimeInterval = 90
+    public static let secondsMax: TimeInterval = 600
+
+    public static func seconds(_ raw: String?) -> TimeInterval {
+        guard let raw,
+              let value = Double(raw.trimmingCharacters(in: .whitespaces)),
+              value >= 1
+        else { return secondsDefault }
+        return min(value, secondsMax)
+    }
+}
+
 /// Notices a wake without an AppKit app: after sleep the wall clock runs ahead of the
 /// monotonic clock by however long the Mac slept.
 public enum SleepDetector {

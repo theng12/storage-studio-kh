@@ -224,6 +224,8 @@ struct Snapshot {
     second_instance: bool,
     /// True while an update holds new work; the window says so instead of looking stuck.
     holding: bool,
+    /// Storages with a running attempt or a waiting retry: the rows that offer Stop trying.
+    queued: Vec<String>,
 }
 
 #[derive(Serialize, Clone)]
@@ -369,6 +371,15 @@ fn snapshot(app: &AppHandle) -> Snapshot {
     let engine_running = state.helper.lock().unwrap().is_some();
     let last_checked = *state.last_checked.lock().unwrap();
     let holding = state.hold.lock().unwrap().paused();
+    // In flight or waiting a retry: what a Stop trying can end.
+    let queued: Vec<String> = {
+        let work = state.work.lock().unwrap();
+        let mut ids = work.in_flight.clone();
+        ids.extend(work.queued.iter().cloned());
+        ids.sort();
+        ids.dedup();
+        ids
+    };
     Snapshot {
         app_name: APP_NAME.into(),
         version: APP_VERSION.into(),
@@ -387,6 +398,7 @@ fn snapshot(app: &AppHandle) -> Snapshot {
         engine_error,
         second_instance,
         holding,
+        queued,
     }
 }
 
@@ -1350,6 +1362,12 @@ fn unmount_storage(state: State<'_, AppState>, id: String) -> Result<(), String>
     send_to_helper(&state, &serde_json::json!({ "type": "unmount", "id": id }))
 }
 
+/// Stop a mount or a waiting retry. Stopping is not new work, so a held app still allows it.
+#[tauri::command]
+fn cancel_storage(state: State<'_, AppState>, id: String) -> Result<(), String> {
+    send_to_helper(&state, &serde_json::json!({ "type": "cancel", "id": id }))
+}
+
 #[tauri::command]
 fn test_storage(state: State<'_, AppState>, id: String) -> Result<(), String> {
     refuse_new_work(&state)?;
@@ -1998,6 +2016,7 @@ fn main() {
             mount_storage,
             mount_all,
             unmount_storage,
+            cancel_storage,
             test_storage,
             refresh_storage,
             list_shares,

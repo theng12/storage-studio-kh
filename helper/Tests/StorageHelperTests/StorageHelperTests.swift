@@ -19,6 +19,15 @@ final class RetryPolicyTests: XCTestCase {
         XCTAssertEqual(RetryPolicy.retryCount(99), 8)
     }
 
+    func testMountBudgetHasADefaultAndItsOwnCeiling() {
+        XCTAssertEqual(MountBudget.seconds(nil), 90)
+        XCTAssertEqual(MountBudget.seconds("soon"), 90)
+        XCTAssertEqual(MountBudget.seconds("0"), 90)
+        XCTAssertEqual(MountBudget.seconds("2.5"), 2.5)
+        // A mounted wait is a gap, not a latch: a wild value ends within ten minutes.
+        XCTAssertEqual(MountBudget.seconds("999999"), MountBudget.secondsMax)
+    }
+
     func testWakeDetectionUsesWallAndMonotonicClocks() {
         let before = SleepDetector.Sample(wall: 1_000, monotonic: 100)
         let after = SleepDetector.Sample(wall: 1_300, monotonic: 110)
@@ -145,5 +154,27 @@ final class ProtocolTests: XCTestCase {
             let command = try JSONDecoder().decode(Command.self, from: Data("{\"type\":\"\(type)\"}".utf8))
             XCTAssertEqual(command.type, type)
         }
+    }
+
+    /// Stop trying arrives like Mount now, with the storage it belongs to.
+    func testCancelCommandDecodesWithItsStorage() throws {
+        let command = try JSONDecoder().decode(Command.self, from: Data("{\"type\":\"cancel\",\"id\":\"s1\"}".utf8))
+        XCTAssertEqual(command.type, "cancel")
+        XCTAssertEqual(command.id, "s1")
+    }
+}
+
+final class SecretsTests: XCTestCase {
+    func testTheAccountKeyIsUserAtHostOrDefault() {
+        XCTAssertEqual(Secrets.account(host: "nas.local", username: nil), "nas.local")
+        XCTAssertEqual(Secrets.account(host: "nas.local", username: " "), "nas.local")
+        XCTAssertEqual(Secrets.account(host: "nas.local", username: "studio"), "studio@nas.local")
+    }
+
+    /// A failed save must be able to say the number, so this read has to answer on a real disk.
+    func testFreeSpaceIsMeasuredForTheDataVolume() {
+        let free = Secrets.freeSpace()
+        XCTAssertNotNil(free)
+        XCTAssertGreaterThan(free ?? 0, 0)
     }
 }

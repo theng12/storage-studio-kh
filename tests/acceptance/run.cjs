@@ -1028,9 +1028,20 @@ async function noOverflow(page, id) {
         snapshot.storages[0].status = "mounting";
         snapshot.storages[0].mountedPath = null;
       });
+      const id = live.storages[0].id;
       const page = await open(browser, mounting);
-      const button = await page.locator('[data-fk$="-mount"]').first().innerText();
-      truthy("Storage", "a mounting row says Mounting on its button", "Mounting…", button.includes("Mounting"), button);
+      const stop = page.locator(`[data-storage="${id}"] [data-fk$="-cancel"]`).first();
+      const label = await stop.innerText();
+      truthy("Storage", "a mounting row offers Stop trying", "Stop trying", label.includes("Stop trying"), label);
+      truthy("Storage", "Stop trying is not a dead disabled button", "enabled", await stop.isEnabled(), null);
+      await stop.click();
+      await page.waitForTimeout(200);
+      const names = await commands(page);
+      truthy("Storage", "Stop trying invokes", "cancel_storage", names.includes("cancel_storage"), JSON.stringify(names));
+      const chip = await page.locator(`[data-storage="${id}"] .chip`).innerText();
+      truthy("Storage", "a stopped mount says Not mounted", "Not mounted", chip.includes("Not mounted"), chip);
+      const detail = await page.locator(`[data-storage="${id}"] .storage-detail`).innerText();
+      truthy("Storage", "a stopped mount says it stopped", "Stopped trying", detail.includes("Stopped trying"), detail);
       await page.close();
     }
 

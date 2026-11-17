@@ -158,6 +158,7 @@ function buildSnapshot(hash: string): Snapshot {
     lastChecked: Date.now(),
     secondInstance: params.get("second") === "1",
     holding: params.get("holding") === "1",
+    queued: [],
   };
 }
 
@@ -327,6 +328,19 @@ export function createDevBackend(hash: string): {
             storage.mountedPath = storage.mountPoint || `/Volumes/${storage.name}`;
             emit("snapshot", snapshot);
           }, 150);
+        }
+        return null;
+      }
+
+      case "cancel_storage": {
+        // Mirror the helper: a running mount or a waiting retry ends here, in plain words.
+        const wanted = String(args?.id ?? "");
+        const storage = snapshot.storages.find((item) => item.id === wanted);
+        if (storage) {
+          storage.status = "not_mounted";
+          storage.detail = "Stopped trying. Mount now starts again.";
+          storage.mountedPath = null;
+          emit("snapshot", snapshot);
         }
         return null;
       }
