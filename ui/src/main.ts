@@ -1941,7 +1941,9 @@ function wireEvents(): void {
       else if (action === "open-support") void openSupport();
       else if (action === "retry-boot") void boot();
       else if (action === "restart-helper") void restartHelper();
-      else if (action === "mount" || action === "unmount" || action === "test") void runRowAction(id, action);
+      else if (action === "mount" || action === "unmount" || action === "cancel" || action === "test") {
+        void runRowAction(id, action);
+      }
       else if (action === "reveal") void revealStorage(id);
       else if (action === "edit") {
         const storage = snapshot?.storages.find((item) => item.id === id);

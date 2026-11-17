@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-14T00:54:44.810Z",
+  "generatedAt": "2026-11-17T08:28:06.311Z",
   "appVersion": "0.1.10",
   "checks": [
     {
@@ -1787,7 +1787,7 @@
       "expected": "row menu",
       "actual": "true",
       "pass": true,
-      "evidence": "row-s1794617642496-menu"
+      "evidence": "row-s1794904045438-menu"
     },
     {
       "page": "Dialog",
@@ -1823,11 +1823,43 @@
     },
     {
       "page": "Storage",
-      "id": "a mounting row says Mounting on its button",
-      "expected": "Mounting…",
+      "id": "a mounting row offers Stop trying",
+      "expected": "Stop trying",
       "actual": "true",
       "pass": true,
-      "evidence": "Mounting…"
+      "evidence": "Stop trying"
+    },
+    {
+      "page": "Storage",
+      "id": "Stop trying is not a dead disabled button",
+      "expected": "enabled",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Storage",
+      "id": "Stop trying invokes",
+      "expected": "cancel_storage",
+      "actual": "true",
+      "pass": true,
+      "evidence": "[\"get_snapshot\",\"cancel_storage\"]"
+    },
+    {
+      "page": "Storage",
+      "id": "a stopped mount says Not mounted",
+      "expected": "Not mounted",
+      "actual": "true",
+      "pass": true,
+      "evidence": "Not mounted"
+    },
+    {
+      "page": "Storage",
+      "id": "a stopped mount says it stopped",
+      "expected": "Stopped trying",
+      "actual": "true",
+      "pass": true,
+      "evidence": "Stopped trying. Mount now starts again."
     },
     {
       "page": "Dialog",
@@ -2075,7 +2107,7 @@
       "expected": "Storage list checked",
       "actual": "true",
       "pass": true,
-      "evidence": "Storage list checked 2 h ago"
+      "evidence": "Storage list checked 82 h ago"
     },
     {
       "page": "Footer",
@@ -2291,7 +2323,7 @@
       "expected": "the focused control is visible",
       "actual": "true",
       "pass": true,
-      "evidence": "{\"fk\":\"row-s1794617680626-menu\",\"top\":606,\"bottom\":634,\"h\":812}"
+      "evidence": "{\"fk\":\"row-s1794904082341-menu\",\"top\":606,\"bottom\":634,\"h\":812}"
     },
     {
       "page": "Layout",
@@ -2443,8 +2475,8 @@
     "tests/acceptance/screenshots/appearance/appearance-light-820x640.png"
   ],
   "summary": {
-    "total": 298,
-    "passed": 298,
+    "total": 302,
+    "passed": 302,
     "failed": 0
   }
 }

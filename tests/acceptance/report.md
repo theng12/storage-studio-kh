@@ -1,6 +1,6 @@
 # Storage Studio KH — page acceptance
 
-Run: 2026-11-14T00:54:44.810Z · app 0.1.10 · 298/298 checks passed
+Run: 2026-11-17T08:28:06.311Z · app 0.1.10 · 302/302 checks passed
 
 | Page | Check | Expected | Actual | Result |
 | --- | --- | --- | --- | --- |
@@ -231,7 +231,11 @@ Run: 2026-11-14T00:54:44.810Z · app 0.1.10 · 298/298 checks passed
 | Layout | 375 Tab order is nav, content, footer | DOM order matches the screen | true | PASS |
 | Keys | arrow keys move between sections | General focused and shown | true | PASS |
 | Storage | a repeated Test still names its result | one replaced Test toast with a result | true | PASS |
-| Storage | a mounting row says Mounting on its button | Mounting… | true | PASS |
+| Storage | a mounting row offers Stop trying | Stop trying | true | PASS |
+| Storage | Stop trying is not a dead disabled button | enabled | true | PASS |
+| Storage | Stop trying invokes | cancel_storage | true | PASS |
+| Storage | a stopped mount says Not mounted | Not mounted | true | PASS |
+| Storage | a stopped mount says it stopped | Stopped trying | true | PASS |
 | Dialog | saved password mounts the share in the preview | Mounted chip and no stale sign-in line | true | PASS |
 | Add | the new row's actions are clear of the toast | no intersection at 820x640 | true | PASS |
 | Storage | a Test reports without mounting | the chip still says Unreachable | true | PASS |

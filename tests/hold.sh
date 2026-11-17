@@ -114,7 +114,9 @@ helper_out="$RUN/helper.jsonl"
   printf '{"type":"resume"}\n'
   sleep 4
   printf '{"type":"quit"}\n'
-} | "$HELPER" > "$helper_out" 2>/dev/null || true
+# Since 0.1.12 a mount answer no longer blocks the command queue, so the mount below must land
+# in a retry gap (8 s) rather than behind a running attempt, where "already mounting" is right.
+} | STORAGE_STUDIO_RETRY_DELAYS=8 "$HELPER" > "$helper_out" 2>/dev/null || true
 python3 - "$helper_out" <<'PY'
 import json, sys
 from pathlib import Path
