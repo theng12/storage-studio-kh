@@ -25,6 +25,8 @@ public final class Engine {
     private var nextToken: UInt64 = 0
     /// Attempts that ran past their budget; only a late success may be adopted.
     private var expiredToken: [String: UInt64] = [:]
+    /// Replaced by a test to stand in for a share that accepts the connection and never answers.
+    var mountAttempt: ((Storage) -> MountFailure?)?
     /// A save that failed, said in the row once the storage is connected. Cleared by the next save.
     private var notice: [String: String] = [:]
     /// Claims this process will retry: timers survive a restart, a login-only label does not.
@@ -246,9 +248,11 @@ public final class Engine {
         queue.asyncAfter(deadline: .now() + budget) { [weak self] in
             self?.expire(storage, token, budget)
         }
+        let attempt = mountAttempt
         mountQueue.async { [weak self] in
             guard let self else { return }
-            let failure = self.performMount(storage)
+            let failure: MountFailure?
+            if let attempt { failure = attempt(storage) } else { failure = self.performMount(storage) }
             self.queue.async { self.finish(storage, token, failure) }
         }
     }

@@ -26,6 +26,11 @@ final class RetryPolicyTests: XCTestCase {
         XCTAssertEqual(MountBudget.seconds("2.5"), 2.5)
         // A mounted wait is a gap, not a latch: a wild value ends within ten minutes.
         XCTAssertEqual(MountBudget.seconds("999999"), MountBudget.secondsMax)
+        // The row's ceiling itself: 90 s to answer, ten minutes at the very most.
+        XCTAssertEqual(MountBudget.secondsDefault, 90)
+        XCTAssertEqual(MountBudget.secondsMax, 600)
+        // One second is the floor, so a fixture can inject a short gap and never sleep a minute.
+        XCTAssertEqual(MountBudget.seconds("1"), 1)
     }
 
     func testWakeDetectionUsesWallAndMonotonicClocks() {
@@ -176,5 +181,238 @@ final class SecretsTests: XCTestCase {
         let free = Secrets.freeSpace()
         XCTAssertNotNil(free)
         XCTAssertGreaterThan(free ?? 0, 0)
+    }
+
+    /// A save that cannot land — a blocked folder stands in for a full disk — fails instead of
+    /// pretending, and the free-space read still answers so the row can print the number.
+    func testBlockedDataFolderFailsTheSaveAndStillMeasuresFreeSpace() throws {
+        let temp = FileManager.default.temporaryDirectory.appendingPathComponent("storage-fixture-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: temp) }
+        // A file where the data folder must go: createDirectory cannot succeed, like a full disk.
+        try Data("blocked".utf8).write(to: temp.appendingPathComponent("Library"))
+        setenv("STORAGE_STUDIO_TEST_DATA_DIR", temp.path, 1)
+        defer { unsetenv("STORAGE_STUDIO_TEST_DATA_DIR") }
+        XCTAssertFalse(Secrets.save(host: "fixture.invalid", username: "user", password: "secret"))
+        let free = Secrets.freeSpace()
+        XCTAssertNotNil(free)
+        XCTAssertGreaterThan(free ?? 0, 0)
+    }
+}
+
+/// Reads the engine's JSON events in order so a test waits for one instead of sleeping blind.
+private final class EngineRecorder {
+    private let lock = NSLock()
+    private var events: [[String: Any]] = []
+
+    func emit(_ data: Data) {
+        guard let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return }
+        lock.lock()
+        events.append(object)
+        lock.unlock()
+    }
+
+    var all: [[String: Any]] {
+        lock.lock()
+        defer { lock.unlock() }
+        return events
+    }
+}
+
+private func stateEvents(_ events: [[String: Any]]) -> [[String: Any]] {
+    events.filter { $0["type"] as? String == "state" }
+}
+
+private func item(in event: [String: Any], id: String) -> [String: Any]? {
+    ((event["items"] as? [[String: Any]]) ?? []).first { $0["id"] as? String == id }
+}
+
+private func latestItem(_ events: [[String: Any]], id: String) -> [String: Any]? {
+    for event in stateEvents(events).reversed() {
+        if let found = item(in: event, id: id) { return found }
+    }
+    return nil
+}
+
+private let stoppedDetail = "Stopped trying. Mount now starts again."
+
+/// States a cancelled row must never show again once it has said "Stopped trying".
+private let forbiddenAfterStop: Set<String> = ["mounting", "retrying", "unreachable", "needs_attention"]
+
+private func strayedAfterStop(_ events: [[String: Any]], from index: Int, id: String) -> Bool {
+    stateEvents(Array(events[index...])).contains { event in
+        guard let status = item(in: event, id: id)?["status"] as? String else { return false }
+        return forbiddenAfterStop.contains(status)
+    }
+}
+
+extension XCTestCase {
+    /// The helper answers on its own queues; poll for the event instead of guessing a sleep.
+    @discardableResult
+    func wait(timeout: TimeInterval = 5, file: StaticString = #filePath, line: UInt = #line,
+              until condition: () -> Bool) -> Bool {
+        let deadline = Date().addingTimeInterval(timeout)
+        while Date() < deadline {
+            if condition() { return true }
+            Thread.sleep(forTimeInterval: 0.02)
+        }
+        XCTFail("no expected helper event within \(timeout)s", file: file, line: line)
+        return false
+    }
+}
+
+/// b40c816's Stop trying and password-save row, driven straight at the engine. The fixture
+/// only reads the mount table and runs diskutil: no share is reached, nothing is mounted,
+/// and no path under /Volumes is ever looked at. No start(), so no ticker and no network watch.
+final class EngineTests: XCTestCase {
+    private func command(_ type: String, id: String? = nil, retries: Int? = nil,
+                         storages: [Storage]? = nil, username: String? = nil,
+                         password: String? = nil) -> Command {
+        Command(type: type, id: id, retries: retries, storages: storages,
+                username: username, password: password, host: nil)
+    }
+
+    /// Stop trying drops the retry that is waiting to run; nothing attempts the share afterwards.
+    func testCancelDropsAWaitingRetrySoNoAttemptFollows() {
+        setenv("STORAGE_STUDIO_RETRY_DELAYS", "1.5", 1)
+        defer { unsetenv("STORAGE_STUDIO_RETRY_DELAYS") }
+        let recorder = EngineRecorder()
+        let engine = Engine(emit: recorder.emit)
+        defer { engine.stop() }
+        // A target without a host fails the address check: zero network, zero mount.
+        let storage = Storage(id: "s1", name: "Fixture", kind: "smb", target: "not-a-share")
+        engine.handle(command("configure", retries: 3, storages: [storage]))
+        engine.handle(command("mount", id: storage.id))
+        guard wait(until: { latestItem(recorder.all, id: "s1")?["status"] as? String == "retrying" }) else { return }
+        // A Test's verdict is not work, but a waiting retry is: Snapshot.queued still names it.
+        engine.handle(command("test", id: storage.id))
+        guard wait(until: { latestItem(recorder.all, id: "s1")?["status"] as? String == "unreachable" }) else { return }
+        let verdict = stateEvents(recorder.all).last { item(in: $0, id: "s1")?["status"] as? String == "unreachable" }
+        XCTAssertTrue(((verdict?["queued"] as? [String]) ?? []).contains("s1"))
+        engine.handle(command("cancel", id: storage.id))
+        guard wait(until: { latestItem(recorder.all, id: "s1")?["detail"] as? String == stoppedDetail }) else { return }
+        let all = recorder.all
+        guard let stoppedIndex = all.lastIndex(where: {
+            ($0["type"] as? String) == "state" && item(in: $0, id: "s1")?["detail"] as? String == stoppedDetail
+        }) else { XCTFail("the Stop trying state event is missing"); return }
+        // The drop is visible in the same snapshot: no queue name left for the row.
+        XCTAssertFalse(((all[stoppedIndex]["queued"] as? [String]) ?? []).contains("s1"))
+        Thread.sleep(forTimeInterval: 2.5) // past the injected 1.5 s retry the failure queued
+        let after = recorder.all
+        XCTAssertFalse(strayedAfterStop(after, from: stoppedIndex, id: "s1"),
+                       "the cancelled retry came back: \(String(describing: latestItem(after, id: "s1")))")
+        XCTAssertEqual(latestItem(after, id: "s1")?["status"] as? String, "not_mounted")
+        XCTAssertEqual(latestItem(after, id: "s1")?["detail"] as? String, stoppedDetail)
+    }
+
+    /// Stop trying during a real attempt: the row stops, the engine stops claiming the attempt,
+    /// and the answer that arrives afterwards changes nothing.
+    func testCancelStopsBelievingARunningAttempt() {
+        setenv("STORAGE_STUDIO_RETRY_DELAYS", "1.5", 1)
+        defer { unsetenv("STORAGE_STUDIO_RETRY_DELAYS") }
+        let recorder = EngineRecorder()
+        let engine = Engine(emit: recorder.emit)
+        defer { engine.stop() }
+        // A disk identity that does not exist: the diskutil lookup is the attempt, so the row
+        // goes in flight without a share, a mount, or any /Volumes path in the picture.
+        let storage = Storage(id: "s2", name: "Fixture", kind: "volume", target: "fixture-disk",
+                              volumeUUID: "fixture-uuid-not-a-disk")
+        engine.handle(command("configure", retries: 3, storages: [storage]))
+        engine.handle(command("mount", id: storage.id))
+        guard wait(until: {
+            stateEvents(recorder.all).contains { (($0["inFlight"] as? [String]) ?? []).contains("s2") }
+        }) else { return }
+        engine.handle(command("cancel", id: storage.id))
+        guard wait(until: { latestItem(recorder.all, id: "s2")?["detail"] as? String == stoppedDetail }) else { return }
+        let all = recorder.all
+        guard let stoppedIndex = all.lastIndex(where: {
+            ($0["type"] as? String) == "state" && item(in: $0, id: "s2")?["detail"] as? String == stoppedDetail
+        }) else { XCTFail("the Stop trying state event is missing"); return }
+        // The stop itself clears both beliefs the row held about the attempt.
+        XCTAssertFalse(((all[stoppedIndex]["inFlight"] as? [String]) ?? []).contains("s2"))
+        XCTAssertFalse(((all[stoppedIndex]["queued"] as? [String]) ?? []).contains("s2"))
+        Thread.sleep(forTimeInterval: 2.5) // room for the attempt's late answer and any retry
+        let after = recorder.all
+        XCTAssertFalse(strayedAfterStop(after, from: stoppedIndex, id: "s2"),
+                       "the stopped attempt's answer came back: \(String(describing: latestItem(after, id: "s2")))")
+        XCTAssertEqual(latestItem(after, id: "s2")?["detail"] as? String, stoppedDetail)
+    }
+
+    /// A password save that fails leaves the row saying it, with the free space really measured.
+    func testFailedPasswordSaveReachesTheRowWithMeasuredFreeSpace() throws {
+        guard let entry = MountTable.current().first(where: {
+            $0.fsType == "apfs" && !$0.mountPoint.hasPrefix("/Volumes/")
+        }), let uuid = Volumes.volumeUUID(at: entry.mountPoint), !uuid.isEmpty else {
+            throw XCTSkip("No mounted APFS volume outside /Volumes to hang the row on.")
+        }
+        let recorder = EngineRecorder()
+        let engine = Engine(emit: recorder.emit)
+        defer { engine.stop() }
+        // Already mounted, so Mount now stops at the table lookup: no attempt, no network.
+        let storage = Storage(id: "e1", name: "Fixture", kind: "volume", target: "fixture-disk",
+                              mountPoint: entry.mountPoint, volumeUUID: uuid)
+        engine.handle(command("configure", retries: 3, storages: [storage]))
+        // The target names no host, so the save cannot land — the same branch a full disk takes.
+        engine.handle(command("credentials", id: storage.id, username: "user", password: "secret"))
+        guard wait(until: {
+            ((latestItem(recorder.all, id: "e1")?["detail"]) as? String)?.contains("password wasn't saved") == true
+        }) else { return }
+        let row = latestItem(recorder.all, id: "e1")
+        XCTAssertEqual(row?["status"] as? String, "mounted")
+        let prefix = "The password wasn't saved, so it will be asked for again. The startup disk has "
+        let suffix = " free."
+        let detail = row?["detail"] as? String ?? ""
+        XCTAssertTrue(detail.hasPrefix(prefix), detail)
+        XCTAssertTrue(detail.hasSuffix(suffix), detail)
+        // The number tracks the disk, not a constant: free space moves a little between reads.
+        let mine = ByteCountFormatter.string(fromByteCount: try XCTUnwrap(Secrets.freeSpace()),
+                                             countStyle: .file).split(separator: " ")
+        let shown = String(detail.dropFirst(prefix.count).dropLast(suffix.count)).split(separator: " ")
+        guard shown.count == 2, mine.count == 2, shown[1] == mine[1],
+              let shownValue = Double(shown[0]), let mineValue = Double(mine[0]) else {
+            return XCTFail("the row's free space is not the disk's reading: \(detail) vs \(mine)")
+        }
+        XCTAssertLessThan(abs(shownValue - mineValue), 0.5, "\(detail) vs \(mine)")
+    }
+
+    /// The heart of 0.1.12: an attempt that never answers ends its row at the budget and stays
+    /// ended. A watched slow mount stands in for a half-open share; no NetFS call is made.
+    func testAnAttemptPastItsBudgetEndsTheRowAndIgnoresItsLateAnswer() {
+        setenv("STORAGE_STUDIO_MOUNT_BUDGET_S", "1", 1)
+        defer { unsetenv("STORAGE_STUDIO_MOUNT_BUDGET_S") }
+        let recorder = EngineRecorder()
+        let engine = Engine(emit: recorder.emit)
+        defer { engine.stop() }
+        engine.mountAttempt = { _ in
+            Thread.sleep(forTimeInterval: 2.0) // a share that accepts the call and never answers
+            return MountFailure(message: "late failure")
+        }
+        let storage = Storage(id: "c1", name: "Fixture", kind: "smb", target: "not-a-share")
+        engine.handle(command("configure", retries: 3, storages: [storage]))
+        engine.handle(command("mount", id: storage.id))
+        guard wait(until: { latestItem(recorder.all, id: "c1")?["status"] as? String == "mounting" }) else { return }
+        // The wedged attempt runs off the command queue: another command answers at once.
+        let beforeRefresh = recorder.all.count
+        engine.handle(command("refresh"))
+        XCTAssertTrue(wait(timeout: 0.6, until: { recorder.all.count > beforeRefresh }),
+                      "a mount that never answers blocked the command queue")
+        guard wait(until: {
+            ((latestItem(recorder.all, id: "c1")?["detail"]) as? String)?.contains("didn't answer within 1 s") == true
+        }) else { return }
+        let expiredIndex = stateEvents(recorder.all).lastIndex {
+            ((item(in: $0, id: "c1")?["detail"]) as? String)?.contains("didn't answer within 1 s") == true
+        } ?? 0
+        let expired = latestItem(recorder.all, id: "c1")
+        XCTAssertEqual(expired?["status"] as? String, "needs_attention")
+        XCTAssertTrue(((expired?["detail"] as? String) ?? "").hasSuffix("Mount now starts again."))
+        // Terminal: the row holds no work, and nothing retries on its own.
+        let snapshot = stateEvents(Array(recorder.all[expiredIndex...])).last { item(in: $0, id: "c1") != nil }
+        XCTAssertFalse(((snapshot?["inFlight"] as? [String]) ?? []).contains("c1"))
+        XCTAssertFalse(((snapshot?["queued"] as? [String]) ?? []).contains("c1"))
+        // The late failure arrives past the budget and changes nothing, and is not reported twice.
+        Thread.sleep(forTimeInterval: 1.5)
+        let after = recorder.all
+        XCTAssertEqual(latestItem(after, id: "c1")?["status"] as? String, "needs_attention")
+        XCTAssertEqual(after.filter { ($0["type"] as? String) == "attention" }.count, 1)
     }
 }
