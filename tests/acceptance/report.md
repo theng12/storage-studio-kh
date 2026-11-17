@@ -1,6 +1,6 @@
 # Storage Studio KH — page acceptance
 
-Run: 2026-11-17T08:32:59.352Z · app 0.1.10 · 302/302 checks passed
+Run: 2026-11-17T10:15:47.060Z · app 0.1.10 · 311/311 checks passed
 
 | Page | Check | Expected | Actual | Result |
 | --- | --- | --- | --- | --- |
@@ -64,6 +64,15 @@ Run: 2026-11-17T08:32:59.352Z · app 0.1.10 · 302/302 checks passed
 | Add | picked address is encoded | smb://192.168.0.217/Public%20Space-Media%20-%204TB%20-%20Music | "smb://192.168.0.217/Public%20Space-Media%20-%204TB%20-%20Music" | PASS |
 | Add | readable share line | Share: Public Space-Media - 4TB - Music | true | PASS |
 | Add | Save enabled for a full address | enabled | true | PASS |
+| Add | mount point cannot be typed | readonly | true | PASS |
+| Add | mount point starts empty | blank | true | PASS |
+| Add | Choose asks macOS for a folder | pick_mount_point | true | PASS |
+| Add | the panel's folder fills the read-only field | /Volumes/Studio Projects | "/Volumes/Studio Projects" | PASS |
+| Add | a chosen folder stays read-only | readonly | true | PASS |
+| Add | Clear forgets the chosen folder |  | "" | PASS |
+| Add | Clear leaves the share address alone | smb://192.168.0.217/Public%20Space-Media%20-%204TB%20-%20Music | true | PASS |
+| Add | a cancelled panel leaves the mount point empty |  | "" | PASS |
+| Add | a cancelled panel reports no error | no form error | true | PASS |
 | Add | credential message | needs a user name and password | true | PASS |
 | Add | credential note is a warning | field-note-warn | true | PASS |
 | Add | browse error is an error note | field-note-error | true | PASS |
@@ -322,6 +331,7 @@ Run: 2026-11-17T08:32:59.352Z · app 0.1.10 · 302/302 checks passed
 - tests/acceptance/screenshots/add/add-validation-light-820x640.png
 - tests/acceptance/screenshots/add/add-host-only-light-820x640.png
 - tests/acceptance/screenshots/add/add-browse-chooser-light-820x640.png
+- tests/acceptance/screenshots/add/add-mount-point-light-820x640.png
 - tests/acceptance/screenshots/add/add-browse-credentials-light-820x640.png
 - tests/acceptance/screenshots/add/add-browse-error-light-820x640.png
 - tests/acceptance/screenshots/add/add-browse-empty-light-820x640.png

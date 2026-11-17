@@ -315,6 +315,31 @@ test("a second launch reopens the window, even after it was hidden", () => {
   assert.match(rust, /SHOW_ONCE:/);
 });
 
+test("a mount point is chosen in the native folder panel and never typed", () => {
+  // The path field is read-only, the panel is the only control that sets it, and typing is gone.
+  assert.match(mainSource, /name="mountPoint"[^>]*readonly/);
+  assert.match(mainSource, /data-editor-action="pick-mount"/);
+  assert.match(mainSource, /case "pick-mount":[\s\S]{0,80}pickMountPoint\(\)/);
+  assert.match(mainSource, /backend\.invoke<string \| null>\("pick_mount_point", \{\s*startDir:/);
+  assert.match(mainSource, /editor\.draft\.mountPoint = chosen\.trim\(\)/);
+  assert.match(mainSource, /data-editor-action="clear-mount"/);
+  assert.match(mainSource, /editor\.draft\.mountPoint = ""/);
+  assert.doesNotMatch(mainSource, /case "mountPoint":\s*\n\s*draft\.mountPoint = target\.value/);
+  const rust = readFileSync(new URL("../src-tauri/src/main.rs", import.meta.url), "utf8");
+  assert.match(rust, /async fn pick_mount_point/);
+  assert.match(rust, /class!\(NSOpenPanel\), openPanel/);
+  assert.match(rust, /setCanChooseDirectories: true/);
+});
+
+test("the hold route requires the Launcher's token on every request", () => {
+  const rust = readFileSync(new URL("../src-tauri/src/main.rs", import.meta.url), "utf8");
+  assert.match(rust, /KHU_HOLD_TOKEN_FILE/);
+  assert.match(rust, /"Library"\)\.join\("KHUpdater"\)\.join\("state"\)\.join\("hold-token"\)/);
+  assert.match(rust, /fn authorize_hold_headers/);
+  assert.match(rust, /401 Unauthorized/);
+  assert.match(rust, /constant_time_eq/);
+});
+
 test("no app surface uses the browser confirm, alert or prompt", () => {
   for (const file of ["../ui/src/main.ts", "../ui/src/dev-fixture.ts"]) {
     const source = readFileSync(new URL(file, import.meta.url), "utf8");

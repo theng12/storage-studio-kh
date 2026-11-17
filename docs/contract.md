@@ -88,6 +88,7 @@ interface Snapshot {
 | `mount_all` | — | `null` |
 | `unmount_storage` | `{ id }` | `null` |
 | `cancel_storage` | `{ id }` | `null` — stops a running mount or a waiting retry; the row becomes Not mounted with "Stopped trying. Mount now starts again." |
+| `pick_mount_point` | `{ startDir?: string }` | `string \| null` — macOS's own folder panel. A chosen folder is the only way a mount point is set; the field is read-only, and `null` means the panel was cancelled |
 | `test_storage` | `{ id }` | `null` — the result arrives as a new snapshot (`detail`) |
 | `refresh_storage` | — | `null` — re-reads the mount table and connected disks (⌘R) |
 | `restart_helper` | — | `null` — starts the background helper again after it stopped (a `snapshot` event follows) |
@@ -123,6 +124,14 @@ Errors come back as a rejected promise with a plain sentence; show it, never swa
 POST   /api/maintenance/hold?timeout_s=20&pause_s=120
 DELETE /api/maintenance/hold
 ```
+
+Both requests carry the Launcher's own credential — the 0600 file at
+`~/Library/KHUpdater/state/hold-token` (`KHU_HOLD_TOKEN_FILE` overrides it for a test instance) —
+as `X-Hub-Token: <token>` or `Authorization: Bearer <token>`. The file is read fresh on every
+request, so a rotation takes effect without a restart. No credential, a wrong one, a browser
+`Origin`, a missing/empty/symlinked/oversized token file all answer `401`; the route answers `401`
+before it considers the method. The credential is accepted on this route only; any other path is
+`404`.
 
 POST pauses new work at once, waits up to `timeout_s` (default 20, max 30) for a mount attempt
 already running, and answers `{ "safe", "unsettled", "dispatch_paused_s", "in_flight" }`.

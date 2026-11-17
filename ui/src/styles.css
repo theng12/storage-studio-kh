@@ -1575,6 +1575,13 @@ dialog.sheet::backdrop {
   opacity: 0.6;
 }
 
+/* A value that only a native picker may set still reads as a field, not as editable text. */
+.field input[readonly] {
+  background: var(--bg);
+  color: var(--text-2);
+  cursor: default;
+}
+
 .field-hint {
   margin: 0;
   color: var(--text-3);

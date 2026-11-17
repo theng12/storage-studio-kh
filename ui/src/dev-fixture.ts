@@ -370,6 +370,11 @@ export function createDevBackend(hash: string): {
         setTimeout(() => emit("shares", { host, shares, needsCredentials: false, error: null }), 250);
         return null;
       }
+      case "pick_mount_point": {
+        // The native panel is macOS's; here a fixed folder stands in, and ?cancel-pick=1 cancels.
+        if (params.get("cancel-pick") === "1") return null;
+        return params.get("pick-mount") ?? "/Volumes/Studio Projects";
+      }
       case "set_list_view": {
         snapshot.listView = args?.mode === "table" ? "table" : "cards";
         emit("snapshot", snapshot);

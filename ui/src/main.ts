@@ -58,6 +58,7 @@ interface EditorState {
   shareNoteTone: "hint" | "warn" | "error";
   browseBusy: boolean;
   browseHost: string | null;
+  mountPickBusy: boolean;
   draft: Draft;
   originalName: string | null;
   error: string | null;
@@ -813,6 +814,7 @@ function openEditor(storage?: StorageView, openerFk?: string): void {
     shareNoteTone: "hint",
     browseBusy: false,
     browseHost: null,
+    mountPickBusy: false,
   };
   renderEditor();
   if (!editorEl.open) editorEl.showModal();
@@ -1026,13 +1028,25 @@ function renderEditor(): void {
               }${editor.busy ? " disabled" : ""} /> Forget the saved password</label>`
             : ""
         }
-        <label class="field">
-          <span class="field-label">Mount point (optional)</span>
-          <input type="text" name="mountPoint" value="${esc(d.mountPoint)}" placeholder="e.g. /Volumes/studio" spellcheck="false" autocomplete="off"${
-            editor.busy ? " disabled" : ""
-          }${d.kind === "smb" ? "" : " readonly"} />
-          <span class="field-hint">Leave blank and macOS chooses a folder in /Volumes.</span>
-        </label>`
+        <div class="field">
+          <span class="field-label" id="mount-point-label">Mount point (optional)</span>
+          <div class="browse-row">
+            <input id="mount-point" type="text" name="mountPoint" value="${esc(d.mountPoint)}" placeholder="macOS chooses a folder in /Volumes" spellcheck="false" autocomplete="off" readonly aria-labelledby="mount-point-label" aria-describedby="mount-point-hint"${
+              editor.busy ? " disabled" : ""
+            } />
+            <button type="button" class="btn" data-editor-action="pick-mount" data-fk="editor-pick-mount"${
+              editor.busy || editor.mountPickBusy ? " disabled" : ""
+            }>${editor.mountPickBusy ? "Choosing…" : "Choose…"}</button>
+            ${
+              d.mountPoint
+                ? `<button type="button" class="btn" data-editor-action="clear-mount" data-fk="editor-clear-mount"${
+                    editor.busy ? " disabled" : ""
+                  }>Clear</button>`
+                : ""
+            }
+          </div>
+          <span class="field-hint" id="mount-point-hint">Chosen in the folder panel, so a path is never typed by hand.</span>
+        </div>`
       : `
         <label class="field">
           <span class="field-label">Disk</span>
@@ -1164,9 +1178,6 @@ function syncEditorField(target: HTMLInputElement | HTMLSelectElement): void {
       draft.removeCredentials = (target as HTMLInputElement).checked;
       if (draft.removeCredentials) draft.password = "";
       renderEditor();
-      break;
-    case "mountPoint":
-      draft.mountPoint = target.value;
       break;
     case "kind": {
       const kind = target.value === "volume" ? "volume" : "smb";
@@ -1317,6 +1328,42 @@ function pickShare(share: string): void {
   editor.dirty = true;
   renderEditor();
   editorEl.querySelector<HTMLElement>('[name="target"]')?.focus();
+}
+
+/** The mount point comes from macOS's folder panel; the field is read-only so no path is typed. */
+async function pickMountPoint(): Promise<void> {
+  if (!editor || editor.busy || editor.mountPickBusy) return;
+  editor.mountPickBusy = true;
+  editor.error = null;
+  renderEditor();
+  try {
+    const chosen = await backend.invoke<string | null>("pick_mount_point", {
+      startDir: editor.draft.mountPoint,
+    });
+    if (!editor) return;
+    if (typeof chosen === "string" && chosen.trim()) {
+      editor.draft.mountPoint = chosen.trim();
+      editor.touched = true;
+      editor.dirty = true;
+    }
+  } catch (error) {
+    if (editor) editor.error = errText(error);
+  } finally {
+    if (editor) {
+      editor.mountPickBusy = false;
+      renderEditor();
+      if (!restoreFocus("editor-pick-mount")) focusTopDialog();
+    }
+  }
+}
+
+function clearMountPoint(): void {
+  if (!editor || editor.busy) return;
+  editor.draft.mountPoint = "";
+  editor.touched = true;
+  editor.dirty = true;
+  renderEditor();
+  editorEl.querySelector<HTMLElement>('[data-editor-action="pick-mount"]')?.focus();
 }
 
 async function saveEditor(): Promise<void> {
@@ -2107,6 +2154,12 @@ function wireEvents(): void {
         break;
       case "pick-share":
         pickShare(button.dataset.share ?? "");
+        break;
+      case "pick-mount":
+        void pickMountPoint();
+        break;
+      case "clear-mount":
+        clearMountPoint();
         break;
       case "dismiss-shares":
         if (editor) {

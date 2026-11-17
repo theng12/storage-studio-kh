@@ -52,8 +52,16 @@ cat > "$SUPPORT/settings.json" <<JSON
 JSON
 
 field() { /usr/bin/python3 -I -c 'import json,sys; d=json.load(sys.stdin); print(json.dumps(d.get(sys.argv[1])))' "$1"; }
-post() { curl -sS --max-time 35 -X POST "http://127.0.0.1:$PORT/api/maintenance/hold?$1"; }
-del() { curl -sS --max-time 5 -X DELETE "http://127.0.0.1:$PORT/api/maintenance/hold"; }
+# The Launcher's hold credential, as the fleet contract defines it: a 0600 file the app reads
+# fresh on every request, presented as X-Hub-Token or Authorization: Bearer.
+HOLD_TOKEN_FILE="$RUN/hold-token"
+printf '%s\n' "$(/usr/bin/python3 -I -c 'import secrets; print(secrets.token_hex(32))')" > "$HOLD_TOKEN_FILE"
+chmod 600 "$HOLD_TOKEN_FILE"
+HOLD_TOKEN="$(cat "$HOLD_TOKEN_FILE")"
+export KHU_HOLD_TOKEN_FILE="$HOLD_TOKEN_FILE"
+post() { curl -sS --max-time 35 -X POST -H "X-Hub-Token: $HOLD_TOKEN" "http://127.0.0.1:$PORT/api/maintenance/hold?$1"; }
+del() { curl -sS --max-time 5 -X DELETE -H "X-Hub-Token: $HOLD_TOKEN" "http://127.0.0.1:$PORT/api/maintenance/hold"; }
+code() { curl -sS -o /dev/null -w '%{http_code}' "$@"; }
 wait_app() {
   local mark=$1 pid=$2
   for _ in $(seq 1 80); do
@@ -151,9 +159,28 @@ elapsed=$(($(date +%s) - start_time))
 for key in safe unsettled dispatch_paused_s in_flight; do
   printf '%s' "$body" | grep -q "\"$key\"" || fail "the reply has no $key"
 done
-[ "$(curl -sS -o /dev/null -w '%{http_code}' "http://127.0.0.1:$PORT/api/other")" = "404" ] || fail "an unknown path was served"
-[ "$(curl -sS -o /dev/null -w '%{http_code}' "http://127.0.0.1:$PORT/api/maintenance/hold")" = "405" ] || fail "GET on the hold was not refused"
-pass "POST answers the contract's reply; only its route and methods are served"
+[ "$(code "http://127.0.0.1:$PORT/api/other")" = "404" ] || fail "an unknown path was served"
+# Only the Launcher's own credential opens the route: none, a wrong one, or another header is 401.
+[ "$(code -X POST "http://127.0.0.1:$PORT/api/maintenance/hold?timeout_s=1")" = "401" ] \
+  || fail "a hold with no credential was served"
+[ "$(code -X POST -H 'X-Hub-Token: not-the-token' "http://127.0.0.1:$PORT/api/maintenance/hold?timeout_s=1")" = "401" ] \
+  || fail "a hold with a wrong credential was served"
+[ "$(code -X DELETE "http://127.0.0.1:$PORT/api/maintenance/hold")" = "401" ] \
+  || fail "a resume with no credential was served"
+[ "$(code "http://127.0.0.1:$PORT/api/maintenance/hold")" = "401" ] \
+  || fail "an uncredentialed GET was answered with anything but 401"
+[ "$(code -H "X-Hub-Token: $HOLD_TOKEN" "http://127.0.0.1:$PORT/api/maintenance/hold")" = "405" ] \
+  || fail "an authorized GET on the hold was not refused as a method"
+[ "$(code -X POST -H "Authorization: Bearer $HOLD_TOKEN" "http://127.0.0.1:$PORT/api/maintenance/hold?timeout_s=1")" = "200" ] \
+  || fail "the Bearer form of the hold credential was refused"
+# Rotated on disk, the very next request follows the new value: the file is read per request.
+printf '%s\n' "$(/usr/bin/python3 -I -c 'import secrets; print(secrets.token_hex(32))')" > "$HOLD_TOKEN_FILE"
+[ "$(code -X POST -H "X-Hub-Token: $HOLD_TOKEN" "http://127.0.0.1:$PORT/api/maintenance/hold?timeout_s=1")" = "401" ] \
+  || fail "a rotated-away credential still worked"
+HOLD_TOKEN="$(cat "$HOLD_TOKEN_FILE")"
+post "timeout_s=0&pause_s=120" >/dev/null || fail "the rotated credential was refused"
+del >/dev/null
+pass "POST answers the contract's reply; the hold requires the Launcher's token, read fresh"
 del >/dev/null
 quit_app "$PID"
 

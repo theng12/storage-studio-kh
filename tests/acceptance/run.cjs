@@ -383,6 +383,32 @@ async function noOverflow(page, id) {
       truthy("Add", "readable share line", "Share: Public Space-Media - 4TB - Music", (await page.locator("dialog[open]").innerText()).includes("Share: Public Space-Media - 4TB - Music"), null);
       truthy("Add", "Save enabled for a full address", "enabled", !(await save.isDisabled()), null);
 
+      // Mount point: a read-only field the native folder panel drives; nothing is typed.
+      const mountInput = page.locator('input[name="mountPoint"]');
+      truthy("Add", "mount point cannot be typed", "readonly", (await mountInput.getAttribute("readonly")) !== null, null);
+      truthy("Add", "mount point starts empty", "blank", (await mountInput.inputValue()) === "", null);
+      await page.locator('[data-editor-action="pick-mount"]').click();
+      await page.waitForTimeout(200);
+      truthy("Add", "Choose asks macOS for a folder", "pick_mount_point", (await commands(page)).includes("pick_mount_point"), null);
+      eq("Add", "the panel's folder fills the read-only field", "/Volumes/Studio Projects", await mountInput.inputValue());
+      truthy("Add", "a chosen folder stays read-only", "readonly", (await mountInput.getAttribute("readonly")) !== null, null);
+      await shot(page, "add/add-mount-point-light-820x640");
+      await page.locator('[data-editor-action="clear-mount"]').click();
+      await page.waitForTimeout(120);
+      eq("Add", "Clear forgets the chosen folder", "", await mountInput.inputValue());
+      truthy("Add", "Clear leaves the share address alone", "smb://192.168.0.217/Public%20Space-Media%20-%204TB%20-%20Music", (await page.locator('input[name="target"]').inputValue()).includes("Public%20Space-Media"), null);
+
+      // A cancelled panel changes nothing and reports no error.
+      const cancelPage = await open(browser, live, { extra: "&cancel-pick=1" });
+      await cancelPage.locator('[data-fk="add-storage"], [data-action="add-storage"]').first().click();
+      await cancelPage.waitForTimeout(150);
+      await cancelPage.locator('[data-editor-action="pick-mount"]').click();
+      await cancelPage.waitForTimeout(200);
+      eq("Add", "a cancelled panel leaves the mount point empty", "", await cancelPage.locator('input[name="mountPoint"]').inputValue());
+      truthy("Add", "a cancelled panel reports no error", "no form error", (await cancelPage.locator(".form-error").count()) === 0, null);
+      await cancelPage.keyboard.press("Escape");
+      await cancelPage.close();
+
       // Credential request, error and empty results each read as a warning/error, not a hint.
       await page.locator('[data-editor-action="browse"]').click();
       await page.waitForTimeout(100);

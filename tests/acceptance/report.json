@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-17T08:32:59.352Z",
+  "generatedAt": "2026-11-17T10:15:47.060Z",
   "appVersion": "0.1.10",
   "checks": [
     {
@@ -481,6 +481,78 @@
       "page": "Add",
       "id": "Save enabled for a full address",
       "expected": "enabled",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Add",
+      "id": "mount point cannot be typed",
+      "expected": "readonly",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Add",
+      "id": "mount point starts empty",
+      "expected": "blank",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Add",
+      "id": "Choose asks macOS for a folder",
+      "expected": "pick_mount_point",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Add",
+      "id": "the panel's folder fills the read-only field",
+      "expected": "/Volumes/Studio Projects",
+      "actual": "\"/Volumes/Studio Projects\"",
+      "pass": "\"/Volumes/Studio Projects\"",
+      "evidence": true
+    },
+    {
+      "page": "Add",
+      "id": "a chosen folder stays read-only",
+      "expected": "readonly",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Add",
+      "id": "Clear forgets the chosen folder",
+      "expected": "",
+      "actual": "\"\"",
+      "pass": "\"\"",
+      "evidence": true
+    },
+    {
+      "page": "Add",
+      "id": "Clear leaves the share address alone",
+      "expected": "smb://192.168.0.217/Public%20Space-Media%20-%204TB%20-%20Music",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Add",
+      "id": "a cancelled panel leaves the mount point empty",
+      "expected": "",
+      "actual": "\"\"",
+      "pass": "\"\"",
+      "evidence": true
+    },
+    {
+      "page": "Add",
+      "id": "a cancelled panel reports no error",
+      "expected": "no form error",
       "actual": "true",
       "pass": true,
       "evidence": null
@@ -1787,7 +1859,7 @@
       "expected": "row menu",
       "actual": "true",
       "pass": true,
-      "evidence": "row-s1794904338298-menu"
+      "evidence": "row-s1794910506111-menu"
     },
     {
       "page": "Dialog",
@@ -2107,7 +2179,7 @@
       "expected": "Storage list checked",
       "actual": "true",
       "pass": true,
-      "evidence": "Storage list checked 82 h ago"
+      "evidence": "Storage list checked 83 h ago"
     },
     {
       "page": "Footer",
@@ -2323,7 +2395,7 @@
       "expected": "the focused control is visible",
       "actual": "true",
       "pass": true,
-      "evidence": "{\"fk\":\"row-s1794904375365-menu\",\"top\":606,\"bottom\":634,\"h\":812}"
+      "evidence": "{\"fk\":\"row-s1794910543048-menu\",\"top\":606,\"bottom\":634,\"h\":812}"
     },
     {
       "page": "Layout",
@@ -2436,6 +2508,7 @@
     "tests/acceptance/screenshots/add/add-validation-light-820x640.png",
     "tests/acceptance/screenshots/add/add-host-only-light-820x640.png",
     "tests/acceptance/screenshots/add/add-browse-chooser-light-820x640.png",
+    "tests/acceptance/screenshots/add/add-mount-point-light-820x640.png",
     "tests/acceptance/screenshots/add/add-browse-credentials-light-820x640.png",
     "tests/acceptance/screenshots/add/add-browse-error-light-820x640.png",
     "tests/acceptance/screenshots/add/add-browse-empty-light-820x640.png",
@@ -2475,8 +2548,8 @@
     "tests/acceptance/screenshots/appearance/appearance-light-820x640.png"
   ],
   "summary": {
-    "total": 302,
-    "passed": 302,
+    "total": 311,
+    "passed": 311,
     "failed": 0
   }
 }

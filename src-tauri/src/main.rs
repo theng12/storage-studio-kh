@@ -783,6 +783,10 @@ mod login_item {
 #[link(name = "ServiceManagement", kind = "framework")]
 extern "C" {}
 
+#[cfg(target_os = "macos")]
+#[link(name = "AppKit", kind = "framework")]
+extern "C" {}
+
 // ---------------------------------------------------------------- windows
 
 fn show_settings(app: &AppHandle) {
@@ -834,6 +838,7 @@ fn is_test_mode() -> bool {
 // the app takes work again by itself. The pause lives in memory, so a restart is never held.
 
 const HOLD_PATH: &str = "/api/maintenance/hold";
+const HOLD_TOKEN_ENV: &str = "KHU_HOLD_TOKEN_FILE";
 /// This app's row in the contract's port table. Fixed, because the signed feed names it as a
 /// literal URL; `STORAGE_STUDIO_HOLD_PORT` only exists so a test instance can avoid the live one.
 const HOLD_PORT: u16 = 8646;
@@ -1072,6 +1077,104 @@ fn start_hold_server(app: AppHandle) {
     });
 }
 
+fn hold_token_path() -> PathBuf {
+    if let Ok(override_path) = std::env::var(HOLD_TOKEN_ENV) {
+        let trimmed = override_path.trim();
+        if !trimmed.is_empty() {
+            return PathBuf::from(trimmed);
+        }
+    }
+    let home = std::env::var("HOME").unwrap_or_default();
+    PathBuf::from(home).join("Library").join("KHUpdater").join("state").join("hold-token")
+}
+
+/// Reads the Launcher's hold credential fresh on every request so an atomic rotation takes effect
+/// without restarting the app. Symlinks and oversized/empty files fail closed.
+fn read_hold_token_at(path: &Path) -> Option<String> {
+    let meta = std::fs::symlink_metadata(path).ok()?;
+    if meta.file_type().is_symlink() || !meta.is_file() || meta.len() > 512 {
+        return None;
+    }
+    let raw = std::fs::read_to_string(path).ok()?;
+    let token = raw.trim();
+    if token.is_empty() || token.len() > 256 || token.chars().any(char::is_whitespace) {
+        return None;
+    }
+    Some(token.to_string())
+}
+
+fn constant_time_eq(a: &[u8], b: &[u8]) -> bool {
+    if a.len() != b.len() {
+        return false;
+    }
+    let mut diff = 0u8;
+    for (&x, &y) in a.iter().zip(b.iter()) {
+        diff |= x ^ y;
+    }
+    diff == 0
+}
+
+fn authorize_hold_headers(headers: &[(String, String)], token_path: &Path) -> bool {
+    // Reject browser-origin requests even on loopback.
+    if headers.iter().any(|(name, _)| name.eq_ignore_ascii_case("origin")) {
+        return false;
+    }
+    let Some(expected) = read_hold_token_at(token_path) else {
+        return false;
+    };
+    let mut bearer: Option<&str> = None;
+    let mut hub_token: Option<&str> = None;
+    for (name, value) in headers {
+        if name.eq_ignore_ascii_case("authorization") {
+            let trimmed = value.trim();
+            // ASCII compare on bytes: a multibyte value must not panic on a slice boundary.
+            if trimmed.len() >= 7 && trimmed.as_bytes()[..7].eq_ignore_ascii_case(b"bearer ") {
+                let candidate = trimmed[7..].trim();
+                if !candidate.is_empty() {
+                    bearer = Some(candidate);
+                }
+            }
+        } else if name.eq_ignore_ascii_case("x-hub-token") {
+            let candidate = value.trim();
+            if !candidate.is_empty() {
+                hub_token = Some(candidate);
+            }
+        }
+    }
+    if bearer.is_none() && hub_token.is_none() {
+        return false;
+    }
+    let expected_bytes = expected.as_bytes();
+    let bearer_ok = bearer.map_or(true, |token| constant_time_eq(token.as_bytes(), expected_bytes));
+    let hub_ok = hub_token.map_or(true, |token| constant_time_eq(token.as_bytes(), expected_bytes));
+    bearer_ok && hub_ok
+}
+
+enum HoldDispatch {
+    Hold,
+    Resume,
+    Error(&'static str, &'static str),
+}
+
+fn route_hold_request(
+    method: &str,
+    path: &str,
+    headers: &[(String, String)],
+    token_path: &Path,
+) -> HoldDispatch {
+    if path != HOLD_PATH {
+        return HoldDispatch::Error("404 Not Found", r#"{"error":"no such route"}"#);
+    }
+    if !authorize_hold_headers(headers, token_path) {
+        return HoldDispatch::Error("401 Unauthorized", r#"{"error":"unauthorized"}"#);
+    }
+    match method {
+        "POST" => HoldDispatch::Hold,
+        "DELETE" => HoldDispatch::Resume,
+        _ => HoldDispatch::Error("405 Method Not Allowed", r#"{"error":"use POST or DELETE"}"#),
+    }
+}
+
 fn handle_hold_connection(app: &AppHandle, mut stream: TcpStream) {
     let _ = stream.set_read_timeout(Some(Duration::from_secs(2)));
     let _ = stream.set_write_timeout(Some(Duration::from_secs(5)));
@@ -1081,13 +1184,22 @@ fn handle_hold_connection(app: &AppHandle, mut stream: TcpStream) {
     if reader.read_line(&mut request_line).is_err() {
         return;
     }
-    // Only the request line matters: the contract's requests carry no body.
-    loop {
+    let mut headers: Vec<(String, String)> = Vec::new();
+    let mut total_bytes = request_line.len();
+    for _ in 0..64 {
         let mut line = String::new();
         match reader.read_line(&mut line) {
             Ok(0) => break,
             Ok(_) if line.trim().is_empty() => break,
-            Ok(_) => {}
+            Ok(n) => {
+                total_bytes += n;
+                if total_bytes > 8192 {
+                    break;
+                }
+                if let Some((name, value)) = line.split_once(':') {
+                    headers.push((name.trim().to_string(), value.trim().to_string()));
+                }
+            }
             Err(_) => break,
         }
     }
@@ -1095,14 +1207,10 @@ fn handle_hold_connection(app: &AppHandle, mut stream: TcpStream) {
     let method = parts.next().unwrap_or("");
     let target = parts.next().unwrap_or("");
     let (path, query) = target.split_once('?').unwrap_or((target, ""));
-    let (status, body) = if path != HOLD_PATH {
-        ("404 Not Found", r#"{"error":"no such route"}"#.to_string())
-    } else {
-        match method {
-            "POST" => ("200 OK", hold_request(app, query)),
-            "DELETE" => ("200 OK", resume_request(app)),
-            _ => ("405 Method Not Allowed", r#"{"error":"use POST or DELETE"}"#.to_string()),
-        }
+    let (status, body) = match route_hold_request(method, path, &headers, &hold_token_path()) {
+        HoldDispatch::Hold => ("200 OK", hold_request(app, query)),
+        HoldDispatch::Resume => ("200 OK", resume_request(app)),
+        HoldDispatch::Error(status, json) => (status, json.to_string()),
     };
     let response = format!(
         "HTTP/1.1 {status}\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}",
@@ -1424,6 +1532,78 @@ fn reveal_storage(state: State<'_, AppState>, id: String) -> Result<(), String> 
     Ok(())
 }
 
+/// The storage form never types a filesystem path: macOS's own folder panel is the only way to
+/// set a mount point, and the field is read-only afterwards. A cancelled panel answers `None`.
+#[tauri::command]
+async fn pick_mount_point(app: AppHandle, start_dir: Option<String>) -> Result<Option<String>, String> {
+    #[cfg(target_os = "macos")]
+    {
+        let (sender, receiver) = std::sync::mpsc::channel();
+        let start = start_dir.unwrap_or_default();
+        app.run_on_main_thread(move || {
+            let _ = sender.send(folder_panel(&start));
+        })
+        .map_err(|e| format!("The folder chooser could not open: {e}"))?;
+        // The panel is modal on the main thread; wait off it so the rest of the app keeps painting.
+        tauri::async_runtime::spawn_blocking(move || receiver.recv().ok().flatten())
+            .await
+            .map_err(|e| format!("The folder chooser did not answer: {e}"))
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        let _ = (app, start_dir);
+        Err("Choosing a folder needs macOS.".into())
+    }
+}
+
+#[cfg(target_os = "macos")]
+fn folder_panel(start: &str) -> Option<String> {
+    use objc2::rc::Retained;
+    use objc2::runtime::AnyObject;
+    use objc2::{class, msg_send};
+    use std::ffi::{CStr, CString};
+
+    unsafe {
+        let panel: Retained<AnyObject> = msg_send![class!(NSOpenPanel), openPanel];
+        let _: () = msg_send![&*panel, setCanChooseFiles: false];
+        let _: () = msg_send![&*panel, setCanChooseDirectories: true];
+        let _: () = msg_send![&*panel, setCanCreateDirectories: true];
+        let _: () = msg_send![&*panel, setAllowsMultipleSelection: false];
+        let _: () = msg_send![&*panel, setResolvesAliases: true];
+        let message = CString::new("Choose a folder to mount the share at").ok()?;
+        let text: *mut AnyObject = msg_send![class!(NSString), stringWithUTF8String: message.as_ptr()];
+        let _: () = msg_send![&*panel, setMessage: text];
+        let prompt = CString::new("Choose").ok()?;
+        let prompt_text: *mut AnyObject = msg_send![class!(NSString), stringWithUTF8String: prompt.as_ptr()];
+        let _: () = msg_send![&*panel, setPrompt: prompt_text];
+        if !start.is_empty() {
+            if let Ok(path) = CString::new(start) {
+                let path_text: *mut AnyObject = msg_send![class!(NSString), stringWithUTF8String: path.as_ptr()];
+                let url: *mut AnyObject = msg_send![class!(NSURL), fileURLWithPath: path_text];
+                let _: () = msg_send![&*panel, setDirectoryURL: url];
+            }
+        }
+        // NSModalResponseOK is 1; anything else is Cancel.
+        let response: i64 = msg_send![&*panel, runModal];
+        if response != 1 {
+            return None;
+        }
+        let url: *mut AnyObject = msg_send![&*panel, URL];
+        if url.is_null() {
+            return None;
+        }
+        let path: *mut AnyObject = msg_send![url, path];
+        if path.is_null() {
+            return None;
+        }
+        let bytes: *const std::ffi::c_char = msg_send![path, UTF8String];
+        if bytes.is_null() {
+            return None;
+        }
+        Some(CStr::from_ptr(bytes).to_string_lossy().into_owned())
+    }
+}
+
 #[tauri::command]
 fn set_credentials(state: State<'_, AppState>, id: String, username: String, password: String) -> Result<(), String> {
     send_to_helper(&state, &serde_json::json!({ "type": "credentials", "id": id, "username": username, "password": password }))
@@ -1679,9 +1859,9 @@ fn unix_millis() -> u128 {
 mod tests {
     use super::feed::{is_newer, parse_version};
     use super::{
-        hold_seconds, query_value, record_hold_outcome, refuse_new_work, unsettled,
-        validate_input, AppState, Hold, HoldWork, Storage, StorageInput, Work,
-        HOLD_PAUSE_DEFAULT_S, HOLD_PAUSE_MAX_S, HOLD_TIMEOUT_DEFAULT_S, HOLD_TIMEOUT_MAX_S,
+        hold_seconds, query_value, record_hold_outcome, refuse_new_work, route_hold_request, unsettled,
+        validate_input, AppState, Hold, HoldDispatch, HoldWork, Storage, StorageInput, Work,
+        HOLD_PAUSE_DEFAULT_S, HOLD_PAUSE_MAX_S, HOLD_PATH, HOLD_TIMEOUT_DEFAULT_S, HOLD_TIMEOUT_MAX_S,
     };
     use std::time::{Duration, Instant};
 
@@ -1927,6 +2107,143 @@ mod tests {
         assert_eq!(unsettled(&state), none);
     }
 
+    // ------------------------------------------------------- hold credential
+
+    fn token_dir(name: &str) -> std::path::PathBuf {
+        let dir = std::env::temp_dir().join(format!("storage-hold-token-{}-{}", name, super::unix_millis()));
+        std::fs::create_dir_all(&dir).unwrap();
+        dir
+    }
+
+    fn write_token(dir: &std::path::Path, text: &str) -> std::path::PathBuf {
+        let path = dir.join("hold-token");
+        std::fs::write(&path, text).unwrap();
+        path
+    }
+
+    fn header(name: &str, value: &str) -> Vec<(String, String)> {
+        vec![(name.to_string(), value.to_string())]
+    }
+
+    fn is_unauthorized(outcome: HoldDispatch) -> bool {
+        matches!(outcome, HoldDispatch::Error(status, _) if status == "401 Unauthorized")
+    }
+
+    #[test]
+    fn a_hold_request_without_the_launcher_token_is_refused() {
+        let dir = token_dir("no-header");
+        let path = write_token(&dir, "a-real-launcher-token-value");
+        for method in ["POST", "DELETE", "GET"] {
+            assert!(is_unauthorized(route_hold_request(method, HOLD_PATH, &[], &path)), "{method} without a credential");
+        }
+        assert!(is_unauthorized(route_hold_request("POST", HOLD_PATH, &header("X-Other", "x"), &path)));
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    #[test]
+    fn a_wrong_token_is_refused_and_the_right_one_answered() {
+        let dir = token_dir("wrong");
+        let path = write_token(&dir, "the-launcher-token");
+        assert!(is_unauthorized(route_hold_request("POST", HOLD_PATH, &header("X-Hub-Token", "not-the-token"), &path)));
+        assert!(is_unauthorized(route_hold_request("POST", HOLD_PATH, &header("Authorization", "Bearer nope"), &path)));
+        assert!(matches!(
+            route_hold_request("POST", HOLD_PATH, &header("X-Hub-Token", "the-launcher-token"), &path),
+            HoldDispatch::Hold
+        ));
+        assert!(matches!(
+            route_hold_request("DELETE", HOLD_PATH, &header("Authorization", "Bearer the-launcher-token"), &path),
+            HoldDispatch::Resume
+        ));
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    #[test]
+    fn both_credentials_present_must_agree() {
+        let dir = token_dir("both");
+        let path = write_token(&dir, "the-launcher-token");
+        let agree = vec![
+            ("Authorization".to_string(), "Bearer the-launcher-token".to_string()),
+            ("x-hub-token".to_string(), "the-launcher-token".to_string()),
+        ];
+        assert!(matches!(route_hold_request("POST", HOLD_PATH, &agree, &path), HoldDispatch::Hold));
+        let disagree = vec![
+            ("Authorization".to_string(), "Bearer the-launcher-token".to_string()),
+            ("X-Hub-Token".to_string(), "some-other-token".to_string()),
+        ];
+        assert!(is_unauthorized(route_hold_request("POST", HOLD_PATH, &disagree, &path)));
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    #[test]
+    fn a_browser_origin_is_refused_even_with_the_right_token() {
+        let dir = token_dir("origin");
+        let path = write_token(&dir, "the-launcher-token");
+        let headers = vec![
+            ("X-Hub-Token".to_string(), "the-launcher-token".to_string()),
+            ("Origin".to_string(), "https://example.com".to_string()),
+        ];
+        assert!(is_unauthorized(route_hold_request("POST", HOLD_PATH, &headers, &path)));
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    #[test]
+    fn only_the_hold_route_is_served_and_only_after_the_token() {
+        let dir = token_dir("route");
+        let path = write_token(&dir, "the-launcher-token");
+        // Another path is not found, credential or not.
+        assert!(matches!(
+            route_hold_request("POST", "/api/other", &header("X-Hub-Token", "the-launcher-token"), &path),
+            HoldDispatch::Error("404 Not Found", _)
+        ));
+        assert!(matches!(route_hold_request("POST", "/api/other", &[], &path), HoldDispatch::Error("404 Not Found", _)));
+        // The right token on the wrong method is a method error, not a refusal of the credential.
+        assert!(matches!(
+            route_hold_request("GET", HOLD_PATH, &header("X-Hub-Token", "the-launcher-token"), &path),
+            HoldDispatch::Error("405 Method Not Allowed", _)
+        ));
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    #[test]
+    fn a_missing_empty_or_symlinked_token_file_fails_closed() {
+        let dir = token_dir("fail-closed");
+        let missing = dir.join("absent-token");
+        assert!(is_unauthorized(route_hold_request("POST", HOLD_PATH, &header("X-Hub-Token", "anything"), &missing)));
+        let empty = write_token(&dir, "   \n");
+        assert!(is_unauthorized(route_hold_request("POST", HOLD_PATH, &header("X-Hub-Token", ""), &empty)));
+        let real = write_token(&dir, "the-launcher-token");
+        let link = dir.join("link-token");
+        #[cfg(unix)]
+        std::os::unix::fs::symlink(&real, &link).unwrap();
+        #[cfg(unix)]
+        assert!(is_unauthorized(route_hold_request("POST", HOLD_PATH, &header("X-Hub-Token", "the-launcher-token"), &link)));
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    #[test]
+    fn the_token_is_read_fresh_so_a_rotation_takes_effect() {
+        let dir = token_dir("rotate");
+        let path = write_token(&dir, "first-token-value");
+        assert!(matches!(
+            route_hold_request("POST", HOLD_PATH, &header("X-Hub-Token", "first-token-value"), &path),
+            HoldDispatch::Hold
+        ));
+        std::fs::write(&path, "second-token-value").unwrap();
+        assert!(is_unauthorized(route_hold_request("POST", HOLD_PATH, &header("X-Hub-Token", "first-token-value"), &path)));
+        assert!(matches!(
+            route_hold_request("POST", HOLD_PATH, &header("X-Hub-Token", "second-token-value"), &path),
+            HoldDispatch::Hold
+        ));
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    #[test]
+    fn the_constant_time_compare_still_compares() {
+        assert!(super::constant_time_eq(b"abc", b"abc"));
+        assert!(!super::constant_time_eq(b"abc", b"abd"));
+        assert!(!super::constant_time_eq(b"abc", b"ab"));
+    }
+
     #[test]
     fn helper_hold_outcomes_supersede_older_reports() {
         let mut awaiting = None;
@@ -2021,6 +2338,7 @@ fn main() {
             refresh_storage,
             list_shares,
             reveal_storage,
+            pick_mount_point,
             set_credentials,
             set_appearance,
             set_general,

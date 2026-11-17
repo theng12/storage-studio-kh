@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.13 — 2026-11-17
+
+- Choosing where a share mounts now uses macOS's own folder panel: pick a folder and the path appears in a field you can't type into, so a mount point is never a hand-typed path. Leave it empty and macOS picks a folder in /Volumes as before.
+- The update hold now asks for the Launcher's own credential. Studio Launcher sends it automatically, so updating while Storage Studio KH runs is unchanged; anything else that calls the hold address gets "unauthorized" instead of taking a pause.
+
 ## 0.1.12 — 2026-11-17
 
 - A mount that never answers now ends by itself: after 90 seconds the row says "It didn't answer within 90 s. Mount now starts again." instead of sitting at Mounting… forever.

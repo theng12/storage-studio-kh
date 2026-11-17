@@ -1,5 +1,17 @@
 # Storage Studio KH acceptance
 
+## Release scope: 0.1.13
+
+0.1.13 closes two carried items: a mount point is chosen in macOS's folder panel and can no longer
+be typed, and the update-hold route requires the Launcher's own credential. Everything from 0.1.12
+is carried unchanged.
+
+| User task | Check and evidence | State |
+| --- | --- | --- |
+| Choose where a share mounts with a folder panel | `tests/acceptance/run.cjs` — the mount point field is `readonly`, Choose… invokes `pick_mount_point` and the panel's folder fills it, Clear empties it, a cancelled panel changes nothing and reports no error. `tests/web.test.mjs` asserts no typed-path branch remains; the Rust panel is code-verified only (a real panel needs a desktop, so it is not clicked in a test) | Required on 0.1.13; the native panel itself is not clicked by a test |
+| The Launcher can still hold the app; nobody else can | `tests/hold.sh` — a hold with no credential, a wrong one or a plain GET answers 401, the Bearer form and `X-Hub-Token` both open it, an authorized GET answers 405, another path answers 404, and a token rotated on disk takes effect on the next request. `cargo test` covers the same rules at unit level (missing, empty, symlinked and wrong tokens; two disagreeing credentials; an `Origin` header) | Required on 0.1.13 |
+| Keep the rest of the app working | `tests/gate.sh`, `tests/web.test.mjs`, `helper swift test`, `cargo test` | Required on 0.1.13 |
+
 ## Release scope: 0.1.12
 
 0.1.12 makes a mount end. A share that accepts the connection but never answers used to leave
