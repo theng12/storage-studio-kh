@@ -13,7 +13,7 @@ mirrors or syncs data.
 - Never bring an app to the front, never drive the pointer or keyboard, never leave a window for
   the owner to close. Tests launch hidden with their own data folder (`tests/gate.sh`).
 - Commit as `112568204+theng12@users.noreply.github.com`.
-- Nothing is deleted in place: retire to `~/Developer/_trash/storage-studio-kh/`.
+- Nothing is deleted in place: retire to `~/Desktop/_trash/storage-studio-kh/`.
 
 ## Verify before claiming done
 

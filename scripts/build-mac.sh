@@ -13,7 +13,7 @@ fail() { printf '\n\033[31mStopped: %s\033[0m\n' "$1" >&2; exit 1; }
 retire() {
   local target="$1"
   [ -e "$target" ] || return 0
-  local dest="$HOME/Developer/_trash/storage-studio-kh/${target#./}.$(date +%Y%m%d-%H%M%S)"
+  local dest="$HOME/Desktop/_trash/storage-studio-kh/${target#./}.$(date +%Y%m%d-%H%M%S)"
   mkdir -p "$(dirname "$dest")"
   mv "$target" "$dest"
   printf 'Retired %s -> %s\n' "$target" "$dest"
@@ -54,7 +54,11 @@ step "Helper tests"
 (cd helper && swift test 2>&1 | tail -5)
 
 step "Building the helper (release)"
-(cd helper && swift build -c release)
+# Swift records absolute source and object paths unless they are remapped, and the
+# shipped copy is stripped so no debug-info path reaches the bundle at all.
+(cd helper && swift build -c release \
+  -Xswiftc -file-prefix-map -Xswiftc "$PWD=/build/helper" \
+  -Xswiftc -debug-prefix-map -Xswiftc "$PWD=/build/helper")
 helper_bin="helper/.build/release/Storage Studio KH Helper"
 [ -x "$helper_bin" ] || fail "the helper binary was not built"
 helper_app="src-tauri/helper/Storage Studio KH Helper.app"
@@ -62,6 +66,7 @@ retire "$helper_app"
 mkdir -p "$helper_app/Contents/MacOS" "$helper_app/Contents/Resources" "$helper_app/Contents/Helpers"
 cp "$helper_bin" "$helper_app/Contents/MacOS/Storage Studio KH Helper"
 chmod 0755 "$helper_app/Contents/MacOS/Storage Studio KH Helper"
+strip -S "$helper_app/Contents/MacOS/Storage Studio KH Helper"
 cp src-tauri/icons/icon.icns "$helper_app/Contents/Resources/icon.icns"
 python3 - "$helper_app/Contents/Info.plist" "$version" <<'PY'
 import plistlib, sys
@@ -139,11 +144,11 @@ cp "$dmg_source" "$dmg"
 
 verify_mount="$(mktemp -d /tmp/storage-studio-dmg.XXXXXX)"
 hdiutil attach -nobrowse -mountpoint "$verify_mount" "$dmg" >/dev/null
-trap 'hdiutil detach "$verify_mount" >/dev/null 2>&1 || true; retire "$verify_mount"' EXIT
+trap 'hdiutil detach "$verify_mount" >/dev/null 2>&1 || true; rmdir "$verify_mount" 2>/dev/null || true' EXIT
 [ -d "$verify_mount/Storage Studio KH.app" ] || fail "the DMG does not contain Storage Studio KH.app"
 [ -x "$verify_mount/Storage Studio KH.app/Contents/Helpers/Storage Studio KH Helper.app/Contents/MacOS/Storage Studio KH Helper" ] || fail "the DMG's app has no helper"
 hdiutil detach "$verify_mount" >/dev/null
-retire "$verify_mount"
+rmdir "$verify_mount"
 trap - EXIT
 
 # Keep the prior verified installers until the new release has passed its packaged gate and

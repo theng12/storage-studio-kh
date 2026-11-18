@@ -142,9 +142,25 @@ fn save_settings(settings: &Settings) -> Result<(), String> {
     let dir = data_dir();
     std::fs::create_dir_all(&dir).map_err(|e| format!("Could not create {APP_NAME}'s data folder: {e}"))?;
     let text = serde_json::to_string_pretty(settings).map_err(|e| e.to_string())?;
-    let temporary = dir.join(".settings.json.tmp");
-    std::fs::write(&temporary, text).map_err(|e| format!("Could not save settings: {e}"))?;
-    std::fs::rename(&temporary, settings_path()).map_err(|e| format!("Could not save settings: {e}"))
+    write_private(&settings_path(), &text).map_err(|e| format!("Could not save settings: {e}"))
+}
+
+/// Settings name a share's user, so the file stays owner-only (0600): written to a
+/// temporary beside it, made 0600, then renamed into place.
+fn write_private(path: &Path, text: &str) -> std::io::Result<()> {
+    use std::os::unix::fs::{OpenOptionsExt, PermissionsExt};
+    let dir = path.parent().unwrap_or(Path::new("."));
+    let temporary = dir.join(format!(".{}.tmp", path.file_name().unwrap_or_default().to_string_lossy()));
+    let mut file = std::fs::OpenOptions::new()
+        .write(true)
+        .create(true)
+        .truncate(true)
+        .mode(0o600)
+        .open(&temporary)?;
+    file.write_all(text.as_bytes())?;
+    // mode() only applies when the file is created; an older temporary keeps its own.
+    std::fs::set_permissions(&temporary, std::fs::Permissions::from_mode(0o600))?;
+    std::fs::rename(&temporary, path)
 }
 
 /// What the helper reports about one storage.
@@ -333,6 +349,8 @@ fn whats_new() -> Vec<WhatsNewEntry> {
             candidates.push(contents.join("Resources").join("whats-new.json"));
         }
     }
+    // Dev fallback only: embedding the build folder in a release binary would carry the owner's path.
+    #[cfg(debug_assertions)]
     candidates.push(PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("whats-new.json"));
     for path in candidates {
         if let Ok(text) = std::fs::read_to_string(&path) {
@@ -2255,6 +2273,22 @@ mod tests {
         assert_eq!(awaiting, Some(HoldWork::Settled));
         assert!(!record_hold_outcome(&mut awaiting, "resume", 1), "resume clears the pause");
         assert_eq!(awaiting, Some(HoldWork::Settled));
+    }
+
+    #[test]
+    fn the_settings_file_is_readable_only_by_its_owner() {
+        use std::os::unix::fs::PermissionsExt;
+        let dir = std::env::temp_dir().join(format!("storage-studio-settings-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("settings.json");
+        // A file written before this rule was world-readable; the next write fixes it.
+        std::fs::write(&path, "{}").unwrap();
+        std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o644)).unwrap();
+        super::write_private(&path, r#"{"schema":1}"#).unwrap();
+        let mode = std::fs::metadata(&path).unwrap().permissions().mode() & 0o777;
+        assert_eq!(mode, 0o600, "settings.json must be owner-only");
+        assert_eq!(std::fs::read_to_string(&path).unwrap(), r#"{"schema":1}"#);
+        std::fs::remove_dir_all(&dir).ok();
     }
 }
 

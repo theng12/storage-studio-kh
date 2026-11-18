@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.14 — 2026-11-19
+
+- The app you install no longer carries anyone's home folder or build paths. The build replaces them before compiling, then opens the finished DMG and refuses to hand it over if one is still inside.
+- Settings are now readable only by you.
+
 ## 0.1.13 — 2026-11-17
 
 - Choosing where a share mounts now uses macOS's own folder panel: pick a folder and the path appears in a field you can't type into, so a mount point is never a hand-typed path. Leave it empty and macOS picks a folder in /Volumes as before.

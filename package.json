@@ -1,14 +1,14 @@
 {
   "name": "storage-studio-kh",
   "private": true,
-  "version": "0.1.13",
+  "version": "0.1.14",
   "type": "module",
   "scripts": {
     "dev": "vite --config ui/vite.config.ts",
     "build:web": "tsc -p ui/tsconfig.json && vite build --config ui/vite.config.ts",
     "tauri": "tauri",
     "desktop": "tauri dev",
-    "build:desktop": "tauri build",
+    "build:desktop": "node scripts/build-desktop.mjs",
     "test:web": "node tests/web.test.mjs",
     "test": "npm run build:web && npm run test:web"
   },
