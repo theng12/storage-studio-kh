@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.15 — 2026-11-19
+
+- New signing certificate. The studio replaced its code-signing certificate today, so this build is signed with the new one and the retired certificate is no longer used. Nothing else changed.
+
 ## 0.1.14 — 2026-11-19
 
 - The app you install no longer carries anyone's home folder or build paths. The build replaces them before compiling, then opens the finished DMG and refuses to hand it over if one is still inside.
