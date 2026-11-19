@@ -246,6 +246,10 @@ test("Browse sends the host and credentials and shows a chooser", () => {
   assert.match(modelSource, /function parseShareHost/);
   assert.match(mainSource, /listen\("shares", applyShares\)/);
   assert.match(mainSource, /id="save-reason"/);
+  // A Browse always ends: its own wait past the helper's 15 s, and an answer for another device
+  // is not read as this Browse's.
+  assert.match(mainSource, /browseLease = window\.setTimeout\(\(\) => \{[\s\S]{0,160}Choose Browse to try again/);
+  assert.match(mainSource, /payload\.host\.trim\(\)\.toLowerCase\(\) !== editor\.browseHost/);
 });
 
 test("offers shares that are already connected and skips ones already added", () => {

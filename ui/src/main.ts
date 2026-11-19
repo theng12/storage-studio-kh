@@ -123,6 +123,8 @@ let afterSharesRendered = false;
 let refreshingStorage = false;
 let secondInstanceShown = false;
 let pendingTest: PendingTest | null = null;
+/** A Browse is a device call bounded at 15 s in the helper; past this the row must say so. */
+let browseLease: number | null = null;
 let editorOpener: string | undefined;
 let whatsnewOpener: string | undefined;
 let credentialsOpener: string | undefined;
@@ -823,6 +825,7 @@ function openEditor(storage?: StorageView, openerFk?: string): void {
 }
 
 function closeEditor(): void {
+  cancelBrowseWait();
   editor = null;
   if (editorEl.open) editorEl.close();
   const opener = editorOpener ?? "add-storage";
@@ -1255,6 +1258,23 @@ function updateEditorBlockState(): void {
   reason.textContent = blockReason;
 }
 
+function cancelBrowseWait(): void {
+  if (browseLease !== null) window.clearTimeout(browseLease);
+  browseLease = null;
+}
+
+/** Ends a Browse with its answer or its reason; the wait is over either way. */
+function endBrowse(note: string | null = null, tone: "warn" | "error" = "warn"): void {
+  cancelBrowseWait();
+  if (!editor) return;
+  editor.browseBusy = false;
+  if (note) {
+    editor.shareNote = note;
+    editor.shareNoteTone = tone;
+  }
+  renderEditor();
+}
+
 async function browseShares(): Promise<void> {
   if (!editor || editor.busy || editor.browseBusy) return;
   const host = parseShareHost(editor.draft.target);
@@ -1271,6 +1291,12 @@ async function browseShares(): Promise<void> {
   editor.browseHost = host;
   editor.error = null;
   renderEditor();
+  // Looking… is an answer owed: if the helper or the device never answers, the row says so
+  // instead of staying disabled with no way out.
+  cancelBrowseWait();
+  browseLease = window.setTimeout(() => {
+    endBrowse("The device didn't answer. Choose Browse to try again.", "error");
+  }, 25000);
   try {
     await backend.invoke<null>("list_shares", {
       address: editor.draft.target.trim(),
@@ -1278,6 +1304,7 @@ async function browseShares(): Promise<void> {
       password: editor.draft.password,
     });
   } catch (error) {
+    cancelBrowseWait();
     if (!editor) return;
     editor.browseBusy = false;
     editor.shareNote = error instanceof Error ? error.message : String(error);
@@ -1288,6 +1315,9 @@ async function browseShares(): Promise<void> {
 
 function applyShares(payload: { host: string; shares: string[]; needsCredentials: boolean; error: string | null }): void {
   if (!editor || !editor.browseBusy) return;
+  // An answer for another device is an older Browse's: it must not be read as this one's.
+  if (editor.browseHost && payload.host.trim().toLowerCase() !== editor.browseHost.trim().toLowerCase()) return;
+  cancelBrowseWait();
   editor.browseBusy = false;
   if (payload.needsCredentials) {
     editor.shareNote = "That device needs a user name and password. Enter them below, then choose Browse again.";

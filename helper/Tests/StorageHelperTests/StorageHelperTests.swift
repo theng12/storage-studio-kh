@@ -267,9 +267,9 @@ extension XCTestCase {
 final class EngineTests: XCTestCase {
     private func command(_ type: String, id: String? = nil, retries: Int? = nil,
                          storages: [Storage]? = nil, username: String? = nil,
-                         password: String? = nil) -> Command {
+                         password: String? = nil, host: String? = nil) -> Command {
         Command(type: type, id: id, retries: retries, storages: storages,
-                username: username, password: password, host: nil)
+                username: username, password: password, host: host)
     }
 
     /// Stop trying drops the retry that is waiting to run; nothing attempts the share afterwards.
@@ -414,5 +414,67 @@ final class EngineTests: XCTestCase {
         let after = recorder.all
         XCTAssertEqual(latestItem(after, id: "c1")?["status"] as? String, "needs_attention")
         XCTAssertEqual(after.filter { ($0["type"] as? String) == "attention" }.count, 1)
+    }
+
+    /// A Browse is a device call with its own ceiling. It runs off the command queue, so a slow
+    /// server cannot stop the ticker, a Stop trying or a hold; its answer still comes, once.
+    func testASlowShareListDoesNotBlockTheEngine() {
+        let recorder = EngineRecorder()
+        let engine = Engine(emit: recorder.emit)
+        defer { engine.stop() }
+        let release = DispatchSemaphore(value: 0)
+        let listed = expectation(description: "the listing started")
+        engine.listShares = { _, _ in
+            listed.fulfill()
+            _ = release.wait(timeout: .now() + 10)
+            return ShareLister.Result(shares: ["photos"])
+        }
+        engine.handle(command("list_shares", host: "slow.example"))
+        wait(for: [listed], timeout: 2)
+        let before = recorder.all.count
+        engine.handle(command("refresh"))
+        XCTAssertTrue(wait(timeout: 0.6, until: { recorder.all.count > before }),
+                      "a listing that never answers blocked the command queue")
+        XCTAssertFalse(recorder.all.contains { $0["type"] as? String == "shares" })
+        release.signal()
+        guard wait(until: { recorder.all.contains { $0["type"] as? String == "shares" } }) else { return }
+        let answers = recorder.all.filter { $0["type"] as? String == "shares" }
+        XCTAssertEqual(answers.count, 1)
+        XCTAssertEqual(answers.last?["host"] as? String, "slow.example")
+        XCTAssertEqual(answers.last?["shares"] as? [String], ["photos"])
+    }
+
+    /// A wedged unmount holds `umount` for 30 s and `diskutil` for another 30. Both run off the
+    /// command queue, and the row moves only when the drive has actually been let go.
+    func testASlowUnmountDoesNotBlockTheEngine() throws {
+        guard let entry = MountTable.current().first(where: {
+            $0.fsType == "apfs" && !$0.mountPoint.hasPrefix("/Volumes/")
+        }) else {
+            throw XCTSkip("No mounted APFS volume outside /Volumes to hang the row on.")
+        }
+        let recorder = EngineRecorder()
+        let engine = Engine(emit: recorder.emit)
+        defer { engine.stop() }
+        let release = DispatchSemaphore(value: 0)
+        let started = expectation(description: "the unmount started")
+        // Injected, so no umount or diskutil call ever runs against the fixture volume.
+        engine.unmountAttempt = { _ in
+            started.fulfill()
+            _ = release.wait(timeout: .now() + 10)
+            return Shell.Result(status: 0, output: Data(), error: "")
+        }
+        let storage = Storage(id: "u1", name: "Fixture", kind: "volume", target: "fixture-disk",
+                              mountPoint: entry.mountPoint)
+        engine.handle(command("configure", retries: 3, storages: [storage]))
+        engine.handle(command("unmount", id: storage.id))
+        wait(for: [started], timeout: 2)
+        let before = recorder.all.count
+        engine.handle(command("refresh"))
+        XCTAssertTrue(wait(timeout: 0.6, until: { recorder.all.count > before }),
+                      "an unmount that never answers blocked the command queue")
+        XCTAssertEqual(latestItem(recorder.all, id: "u1")?["status"] as? String, "mounted")
+        release.signal()
+        guard wait(until: { latestItem(recorder.all, id: "u1")?["status"] as? String == "not_mounted" }) else { return }
+        XCTAssertEqual(latestItem(recorder.all, id: "u1")?["detail"] as? String, "Disconnected just now.")
     }
 }

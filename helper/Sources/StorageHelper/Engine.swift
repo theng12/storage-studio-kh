@@ -27,6 +27,13 @@ public final class Engine {
     private var expiredToken: [String: UInt64] = [:]
     /// Replaced by a test to stand in for a share that accepts the connection and never answers.
     var mountAttempt: ((Storage) -> MountFailure?)?
+    /// Stand-ins for the other two device calls, so a test can prove neither blocks the engine.
+    var listShares: ((String, Secrets.Credentials?) -> ShareLister.Result)?
+    var unmountAttempt: ((MountedVolume) -> Shell.Result)?
+    /// Which browse owns a host's answer: a newer browse supersedes an older one.
+    private var listToken: [String: UInt64] = [:]
+    /// Unmounts running now, so a second request cannot race the first off the engine queue.
+    private var unmounting = Set<String>()
     /// A save that failed, said in the row once the storage is connected. Cleared by the next save.
     private var notice: [String: String] = [:]
     /// Claims this process will retry: timers survive a restart, a login-only label does not.
@@ -102,13 +109,17 @@ public final class Engine {
             } else {
                 credentials = nil
             }
-            let result = ShareLister.list(host: host, credentials: credentials)
-            emit(Event.shares(
-                host: host,
-                shares: result.shares,
-                needsCredentials: result.needsCredentials,
-                error: result.error
-            ).json)
+            // smbutil is a device call with a 15 s ceiling of its own: it runs off `queue`, so a
+            // slow server cannot stop the ticker, a Stop trying or an update hold.
+            nextToken += 1
+            let token = nextToken
+            listToken[host] = token
+            let lister = listShares ?? ShareLister.list
+            mountQueue.async { [weak self] in
+                let result = lister(host, credentials)
+                guard let self else { return }
+                self.queue.async { self.finishList(host, token, result) }
+            }
         case "credentials":
             if let storage = storage(command.id) {
                 let credentials = Secrets.Credentials(
@@ -300,6 +311,19 @@ public final class Engine {
         }
     }
 
+    /// A browse's answer, adopted only while it still owns its host. A newer Browse reclaims the
+    /// row, and the older answer is dropped instead of landing over it.
+    private func finishList(_ host: String, _ token: UInt64, _ result: ShareLister.Result) {
+        guard listToken[host] == token else { return }
+        listToken[host] = nil
+        emit(Event.shares(
+            host: host,
+            shares: result.shares,
+            needsCredentials: result.needsCredentials,
+            error: result.error
+        ).json)
+    }
+
     /// Stop trying: a waiting retry is dropped and a running attempt's answer is no longer
     /// believed. The call itself cannot be cancelled inside NetFS, so the mount table, read
     /// every 15 s, still reflects a connection that lands late.
@@ -386,15 +410,28 @@ public final class Engine {
             }
             return
         }
-        var result = Shell.run("/sbin/umount", [entry.mountPoint], timeout: 30)
-        if result.status != 0 {
-            result = Shell.run("/usr/sbin/diskutil", ["unmount", entry.mountPoint], timeout: 30)
+        // A wedged drive holds umount for up to 30 s and diskutil for another 30: both run off
+        // `queue`, so the rest of the app keeps answering while the drive is let go.
+        guard unmounting.insert(storage.id).inserted else { return }
+        let runner = unmountAttempt
+        mountQueue.async { [weak self] in
+            var result = runner?(entry) ?? Shell.run("/sbin/umount", [entry.mountPoint], timeout: 30)
+            if runner == nil, result.status != 0 {
+                result = Shell.run("/usr/sbin/diskutil", ["unmount", entry.mountPoint], timeout: 30)
+            }
+            guard let self else { return }
+            self.queue.async { self.finishUnmount(storage.id, entry.mountPoint, result) }
         }
+    }
+
+    private func finishUnmount(_ id: String, _ mountPoint: String, _ result: Shell.Result) {
+        unmounting.remove(id)
+        guard let current = storage(id) else { return }
         if result.status == 0 {
-            set(storage, .notMounted, detail: "Disconnected just now.")
+            set(current, .notMounted, detail: "Disconnected just now.")
         } else {
             let reason = result.error.isEmpty ? "macOS wouldn't disconnect it." : result.error
-            set(storage, .mounted, detail: reason, path: entry.mountPoint)
+            set(current, .mounted, detail: reason, path: mountPoint)
         }
     }
 
