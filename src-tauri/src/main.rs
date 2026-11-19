@@ -285,6 +285,8 @@ struct Work {
     queued: Vec<String>,
     /// Claims deferred by the hold: the helper will try them again on resume.
     deferred: Vec<String>,
+    /// The helper's own answer to a hold. Read, never inferred from an empty queue.
+    paused: bool,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -582,6 +584,8 @@ enum HelperEvent {
         queued: Vec<String>,
         #[serde(default)]
         deferred: Vec<String>,
+        #[serde(default)]
+        paused: bool,
     },
     #[serde(rename = "volumes")]
     Volumes { items: Vec<VolumeCandidate> },
@@ -623,13 +627,13 @@ fn handle_helper_line(app: &AppHandle, line: &str) {
     };
     let state = app.state::<AppState>();
     match event {
-        HelperEvent::State { items, in_flight, queued, deferred } => {
+        HelperEvent::State { items, in_flight, queued, deferred, paused } => {
             let version = {
                 let mut version = state.work_version.lock().unwrap();
                 *version += 1;
                 *version
             };
-            *state.work.lock().unwrap() = Work { in_flight, queued, deferred };
+            *state.work.lock().unwrap() = Work { in_flight, queued, deferred, paused };
             acknowledge_hold(app, *state.work_type.lock().unwrap(), version);
             let mut statuses = state.statuses.lock().unwrap();
             statuses.clear();
@@ -985,31 +989,33 @@ fn hold_request(app: &AppHandle, query: &str) -> String {
     log(&format!("held new work for an update (paused {pause_s} s)"));
     emit_snapshot(app);
 
-    // Wait for the helper's own pause outcome, never a pre-hold cache or the retry queue.
+    // Wait for the helper's own answer: a fresh report AND the helper saying it is paused. A
+    // state report that lands before the helper has taken the hold says `paused: false`, so it
+    // cannot end the wait early and claim a pause that has not happened.
     // A helper started moments ago needs a moment to answer; this stays well inside the settle.
     let fresh_deadline = Instant::now() + Duration::from_secs(3);
-    while state.work_pending.lock().unwrap().is_none() {
-        if state.helper.lock().unwrap().is_none() || Instant::now() >= fresh_deadline {
+    while state.work_pending.lock().unwrap().is_none() || !state.work.lock().unwrap().paused {
+        // No helper: nothing can be mounting, so the hold answers from that truth.
+        if state.helper.lock().unwrap().is_none() {
+            break;
+        }
+        if Instant::now() >= fresh_deadline {
             log("the update hold could not confirm the helper paused its new work");
+            let in_flight = state.work.lock().unwrap().in_flight.len();
             return serde_json::json!({
                 "safe": false,
                 "unsettled": ["the helper did not pause (retry or restart it)".to_string()],
                 "dispatch_paused_s": pause_s,
-                "in_flight": 0,
+                "in_flight": in_flight,
             }).to_string();
         }
         std::thread::sleep(Duration::from_millis(20));
     }
-    let mut awaiting = state.work_pending.lock().unwrap();
-    let paused = matches!(*awaiting, Some(HoldWork::Held));
-    *awaiting = None;
-    drop(awaiting);
-    if paused {
-        // The newest mount attempt may finish; the retry queue is never waited for.
-        let settle_deadline = Instant::now() + Duration::from_secs(timeout_s);
-        while !state.work.lock().unwrap().in_flight.is_empty() && Instant::now() < settle_deadline {
-            std::thread::sleep(Duration::from_millis(50));
-        }
+    *state.work_pending.lock().unwrap() = None;
+    // The newest mount attempt may finish; the retry queue is never waited for.
+    let settle_deadline = Instant::now() + Duration::from_secs(timeout_s);
+    while !state.work.lock().unwrap().in_flight.is_empty() && Instant::now() < settle_deadline {
+        std::thread::sleep(Duration::from_millis(50));
     }
     let in_flight = state.work.lock().unwrap().in_flight.len();
     let unsettled = unsettled(&state);
@@ -2093,6 +2099,7 @@ mod tests {
             in_flight: vec!["follows".into()],
             queued: vec!["follows".into(), "orphan".into()],
             deferred: vec!["orphan".into()],
+            paused: false,
         };
         let names = unsettled(&state);
         assert_eq!(names, vec!["Storage follows (mounting)", "Storage orphan (retry pending)"]);
@@ -2101,6 +2108,7 @@ mod tests {
             in_flight: vec![],
             queued: vec!["orphan".into()],
             deferred: vec!["orphan".into()],
+            paused: false,
         };
         assert_eq!(unsettled(&state), vec!["Storage orphan (retry pending)"]);
         *state.work.lock().unwrap() = Work::default();
@@ -2116,6 +2124,7 @@ mod tests {
             in_flight: vec![],
             queued: vec!["orphan".into(), "follows".into()],
             deferred: vec![],
+            paused: false,
         };
         assert!(state.work.lock().unwrap().in_flight.is_empty());
         // Only the retry a restart would drop is a stranding; the login one is picked up again.

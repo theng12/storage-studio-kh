@@ -2,6 +2,7 @@
 
 ## 0.1.16 — 2026-11-20
 
+- Updating while Storage Studio KH is running works again. The Launcher asks the app to pause before it installs and asks again every few seconds until it may; after the first ask the app answered "I didn't pause", so the update was refused every time and the app stayed paused. It now answers every ask, and says plainly whether it is paused.
 - Browse for shares always ends. If a device stops answering, the row says so after a few seconds instead of sitting at "Looking…" with nothing to do; and an answer for another device can't appear under the one you are adding.
 - A slow device no longer freezes the rest of the app while it answers: listing shares and disconnecting a drive now happen beside everything else, so other rows, Stop trying and an update's short pause keep working.
 

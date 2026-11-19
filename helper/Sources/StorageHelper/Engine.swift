@@ -206,19 +206,24 @@ public final class Engine {
     // MARK: actions
 
     /// An update is about to replace this app: claim nothing new until `resume`.
+    /// Every ask is answered, including a repeat: an installer that renews its hold while the
+    /// helper is already paused must hear "paused", not silence (a silent repeat reads as a
+    /// helper that never paused, and the install is refused every 7 s forever).
     private func hold() {
-        guard !paused else { return }
-        paused = true
-        emit(Event.log(level: "info", message: "holding new work for an update").json)
+        if paused {
+            emit(Event.log(level: "info", message: "already holding new work for an update").json)
+        } else {
+            paused = true
+            emit(Event.log(level: "info", message: "holding new work for an update").json)
+        }
         announce()
     }
 
     /// The pause ended (the installer said so, or it expired). Work it deferred starts again
     /// by itself — no operator step, and a restart is just as unpaused.
     private func resume() {
-        guard paused else { return }
+        let waiting = paused ? deferred.sorted() : []
         paused = false
-        let waiting = deferred.sorted()
         deferred.removeAll()
         queued.formUnion(waiting)
         emit(Event.log(level: "info", message: "resumed; new work is accepted again").json)
@@ -687,6 +692,6 @@ public final class Engine {
             return state
         }
         let queued = Set(scheduled.keys).union(deferred).sorted()
-        emit(Event.state(items, inFlight: inFlight.sorted(), queued: queued, deferred: deferred.sorted()).json)
+        emit(Event.state(items, inFlight: inFlight.sorted(), queued: queued, deferred: deferred.sorted(), paused: paused).json)
     }
 }

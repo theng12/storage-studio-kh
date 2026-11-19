@@ -13,8 +13,9 @@ public struct Command: Decodable {
 
 public enum Event {
     /// `inFlight` is a mount attempt running now; `queued` is work this process will try again;
-    /// `deferred` names the subset held only because an update asked. The hold never guesses.
-    case state([StorageState], inFlight: [String], queued: [String], deferred: [String])
+    /// `deferred` names the subset held only because an update asked. `paused` is the helper's
+    /// own answer to a hold: the app reads it rather than inferring a pause from an empty queue.
+    case state([StorageState], inFlight: [String], queued: [String], deferred: [String], paused: Bool)
     case volumes([VolumeCandidate])
     case attention(id: String, name: String, reason: String)
     case recovered(id: String, name: String)
@@ -26,8 +27,9 @@ public enum Event {
     public var json: Data {
         var object: [String: Any] = [:]
         switch self {
-        case .state(let items, let inFlight, let queued, let deferred):
+        case .state(let items, let inFlight, let queued, let deferred, let paused):
             object["type"] = "state"
+            object["paused"] = paused
             object["inFlight"] = inFlight
             object["queued"] = queued
             object["deferred"] = deferred

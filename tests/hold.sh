@@ -146,6 +146,28 @@ print('helper: real inFlight, immediate deferral, explicit deferred set, resume 
 PY
 pass "the helper reports real work and holds every claim; resume runs deferred work"
 
+# 1b. A repeat hold is answered, not ignored. Angkor 2026-11-20: the Launcher renewed its hold
+#     every 7 s; the helper said nothing when already paused, so every retry was refused with
+#     "the helper did not pause" and the app stayed held forever.
+{
+  printf '{"type":"configure","retries":3,"storages":[%s]}\n' "$STORAGE_JSON"
+  sleep 1
+  printf '{"type":"hold"}\n'
+  sleep 0.5
+  printf '{"type":"hold"}\n'
+  sleep 0.5
+  printf '{"type":"quit"}\n'
+} | "$HELPER" > "$RUN/helper-hold-twice.jsonl" 2>/dev/null || true
+python3 - "$RUN/helper-hold-twice.jsonl" <<'PY'
+import json, sys
+from pathlib import Path
+lines = [json.loads(line) for line in Path(sys.argv[1]).read_text().splitlines() if line.strip()]
+paused = [line for line in lines if line.get('type') == 'state' and line.get('paused') is True]
+assert len(paused) >= 2, f'a repeated hold was not answered: {len(paused)} paused report(s)'
+print('helper: both holds answered with paused')
+PY
+pass "a repeated hold while already paused is answered, not ignored"
+
 # 2. The packaged app answers on loopback, hidden, with live work.
 start_app
 wait_text 0 "Hold Fake NAS needs attention"
@@ -159,6 +181,12 @@ elapsed=$(($(date +%s) - start_time))
 for key in safe unsettled dispatch_paused_s in_flight; do
   printf '%s' "$body" | grep -q "\"$key\"" || fail "the reply has no $key"
 done
+# The Launcher retries its hold every few seconds. A second hold while the app is already paused
+# must answer the same as the first — angkor was refused every 7 s for exactly this.
+repeat=$(post "timeout_s=20&pause_s=120")
+[ "$(printf '%s' "$repeat" | field safe)" = "true" ] || fail "a repeated hold was refused: $repeat"
+[ "$(printf '%s' "$repeat" | field in_flight)" = "0" ] || fail "a repeated hold invented work in flight: $repeat"
+pass "a repeated hold answers safe while the helper is already paused"
 [ "$(code "http://127.0.0.1:$PORT/api/other")" = "404" ] || fail "an unknown path was served"
 # Only the Launcher's own credential opens the route: none, a wrong one, or another header is 401.
 [ "$(code -X POST "http://127.0.0.1:$PORT/api/maintenance/hold?timeout_s=1")" = "401" ] \
@@ -197,10 +225,12 @@ pass "the settle ends with the mount, not the retry ladder (${elapsed}s)"
 del >/dev/null
 quit_app "$PID"
 
-# 4. A hold with no DELETE expires by itself and work resumes.
+# 4. A hold with no DELETE expires by itself and work resumes — including after a repeat, the way
+#    the Launcher renews its hold. The pause must not outlive the asking (contract rule 3).
 write_one expire-hold 'Expire hold' true
 start_app
 wait_text 0 "Expire hold needs attention"
+post "timeout_s=0&pause_s=2" >/dev/null
 post "timeout_s=0&pause_s=2" >/dev/null
 expiry_mark=$(wc -l < "$LOG")
 wait_text "$expiry_mark" "the update pause expired"

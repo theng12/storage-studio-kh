@@ -142,7 +142,7 @@ final class ProtocolTests: XCTestCase {
 
     func testStateEventIsOneJSONObjectWithCamelCaseKeys() throws {
         let state = StorageState(id: "s1", status: .needsAttention, detail: "Can't reach nas.local", mountedPath: nil, hasCredentials: true)
-        let object = try JSONSerialization.jsonObject(with: Event.state([state], inFlight: ["s1"], queued: [], deferred: []).json) as? [String: Any]
+        let object = try JSONSerialization.jsonObject(with: Event.state([state], inFlight: ["s1"], queued: [], deferred: [], paused: true).json) as? [String: Any]
         XCTAssertEqual(object?["type"] as? String, "state")
         let item = (object?["items"] as? [[String: Any]])?.first
         XCTAssertEqual(item?["status"] as? String, "needs_attention")
@@ -151,6 +151,8 @@ final class ProtocolTests: XCTestCase {
         XCTAssertEqual(object?["inFlight"] as? [String], ["s1"])
         XCTAssertEqual(object?["queued"] as? [String], [])
         XCTAssertEqual(object?["deferred"] as? [String], [])
+        // The hold's answer travels in the state event itself, so the app never guesses it.
+        XCTAssertEqual(object?["paused"] as? Bool, true)
     }
 
     /// The update hold's two commands decode like every other helper command.
