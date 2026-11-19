@@ -34,6 +34,11 @@ export STORAGE_STUDIO_HOLD_PORT=8913
 pass() { printf 'PASS  %s\n' "$1"; }
 fail() { printf 'FAIL  %s\n' "$1" >&2; exit 1; }
 
+# The URL macOS holds for this app's login item (it writes no plist). A record naming a build
+# tree would launch that copy at the owner's next login — issue 20261119-73.
+btm_urls() { sfltool dumpbtm 2>/dev/null | awk '/Identifier: 2\.app\.storagestudiokh/{f=1;next} f && /URL:/{print; f=0}'; }
+BTM_BEFORE="$(btm_urls)"
+
 cleanup() {
   [ -n "${PID:-}" ] && kill "$PID" 2>/dev/null || true
   sleep 1
@@ -116,5 +121,18 @@ pass "helper ends with a force-quit"
 launchctl list 2>/dev/null | grep -i "storagestudio" && fail "a launchd job was left behind"
 [ -z "$(ls "$DATA/Library/LaunchAgents" 2>/dev/null || true)" ] || fail "a launch agent was written"
 pass "no launchd job or launch agent left behind"
+
+# 7. macOS re-points an existing login item at whichever copy of the app ran, even when the
+# app itself skips registration (issue 20261119-73, measured 2026-11-19: with
+# STORAGE_STUDIO_NO_LOGIN_ITEM=1 set, a launch from a clean record writes nothing, but a
+# launch from a build tree rewrites the owner's record to that build tree). No test can
+# prevent it, so say it plainly: a gate run on the owner's Mac must put the record back.
+BTM_AFTER="$(btm_urls)"
+if [ "$BTM_AFTER" != "$BTM_BEFORE" ]; then
+  printf 'NOTE  login item now names %s — restore it to the installed app\n' \
+    "$(printf '%s\n' "$BTM_AFTER" | sed -n 's/^ *URL: //p')"
+else
+  pass "login item unchanged by this run"
+fi
 
 printf '\nGATE_OK  evidence: %s\n' "$RUN"
