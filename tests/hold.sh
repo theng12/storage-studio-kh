@@ -115,16 +115,18 @@ echo "Packaged version: $APP_VERSION"
 helper_out="$RUN/helper.jsonl"
 {
   printf '{"type":"configure","retries":3,"storages":[%s]}\n' "$STORAGE_JSON"
-  sleep 3
-  printf '{"type":"hold"}\n'
+  sleep 8
+  printf '{"type":"hold","ceiling":20}\n'
   printf '{"type":"mount","id":"hold-fake"}\n'
   sleep 1
   printf '{"type":"resume"}\n'
   sleep 4
   printf '{"type":"quit"}\n'
 # Since 0.1.12 a mount answer no longer blocks the command queue, so the mount below must land
-# in a retry gap (8 s) rather than behind a running attempt, where "already mounting" is right.
-} | STORAGE_STUDIO_RETRY_DELAYS=8 "$HELPER" > "$helper_out" 2>/dev/null || true
+# in a retry gap rather than behind a running attempt, where "already mounting" is right. The
+# gap is 20 s and the hold waits 8 s, so a slow first attempt under load cannot eat the fixture
+# (measured 2026-11-20: a 3 s wait left the attempt in flight and nothing was deferred).
+} | STORAGE_STUDIO_RETRY_DELAYS=20 "$HELPER" > "$helper_out" 2>/dev/null || true
 python3 - "$helper_out" <<'PY'
 import json, sys
 from pathlib import Path
@@ -222,7 +224,51 @@ elapsed=$(($(date +%s) - start_time))
 [ "$(printf '%s' "$body" | field in_flight)" = "0" ] || fail "a parked retry was counted as running: $body"
 [ "$(printf '%s' "$body" | field safe)" = "true" ] || fail "a retry the next start follows was called stranded: $body"
 pass "the settle ends with the mount, not the retry ladder (${elapsed}s)"
+# The app keeps its own record of the handshake, with the ceiling and the time it took, so nobody
+# has to reconstruct a night from the updater's side of it.
+grep -qE "update hold: safe in [0-9]+ ms \(ceiling 20 s" "$LOG" \
+  || fail "the app's own log did not name the ceiling and the time: $(tail -3 "$LOG")"
+grep -q "holding new work for an update (settle ceiling 20 s" "$LOG" \
+  || fail "the helper's log did not name the ceiling it respects: $(grep 'holding new work' "$LOG" | tail -1)"
+[ -f "$SUPPORT/hold-attempts.jsonl" ] || fail "no hold-attempts.jsonl beside settings.json"
+/usr/bin/python3 -I -c '
+import json, sys
+lines = [json.loads(l) for l in open(sys.argv[1]) if l.strip()]
+last = lines[-1]
+assert last["request"] == "hold" and last["safe"] is True, last
+assert isinstance(last["answered_in_ms"], int) and last["asked_s"] == 20, last
+assert last["at"] > 0, last
+print("record:", json.dumps(last))
+' "$SUPPORT/hold-attempts.jsonl" || fail "the hold attempt was not recorded with its moment and timing"
+pass "the hold names its ceiling in both logs and is recorded with its moment and time"
 del >/dev/null
+quit_app "$PID"
+
+# 6. A helper that stops answering is refused in one plain sentence, recorded, and nothing changes.
+write_one stuck-hold 'Stuck hold' true
+start_app
+wait_text 0 "Stuck hold needs attention"
+HELPER_PID="$(pgrep -P "$PID" | head -n1)"
+[ -n "${HELPER_PID:-}" ] || fail "no helper process to stop"
+kill -STOP "$HELPER_PID"
+body=$(post "timeout_s=20&pause_s=120")
+kill -CONT "$HELPER_PID"
+[ "$(printf '%s' "$body" | field safe)" = "false" ] || fail "a silent helper was called safe: $body"
+printf '%s' "$body" | grep -q "did not answer the pause within 3 s" \
+  || fail "the refusal did not say what happened: $body"
+printf '%s' "$body" | grep -qi "ceiling is 20 s" || fail "the refusal did not name the ceiling: $body"
+/usr/bin/python3 -I -c '
+import json, sys
+last = [json.loads(l) for l in open(sys.argv[1]) if l.strip()][-1]
+assert last["safe"] is False and "did not answer" in (last["reason"] or ""), last
+print("record:", json.dumps(last))
+' "$SUPPORT/hold-attempts.jsonl" || fail "the refusal was not recorded with its reason"
+del >/dev/null
+# Answering again, it pauses and resumes like any other run: the stop was not a one-way door.
+body=$(post "timeout_s=20&pause_s=120")
+[ "$(printf '%s' "$body" | field safe)" = "true" ] || fail "the helper did not recover after it was continued: $body"
+del >/dev/null
+pass "a helper that cannot answer is refused in plain words, recorded, and recovers"
 quit_app "$PID"
 
 # 4. A hold with no DELETE expires by itself and work resumes — including after a repeat, the way

@@ -9,6 +9,8 @@ public struct Command: Decodable {
     public var username: String?
     public var password: String?
     public var host: String?
+    /// The hold's settle ceiling in seconds, sent by the app so the helper can name it.
+    public var ceiling: Int? = nil
 }
 
 public enum Event {

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.17 — 2026-11-20
+
+- The update pause now says what it did and how long it took: the helper's log names the ceiling it answers inside, the app's log gives the time in milliseconds, and both are kept in a small `hold-attempts.jsonl` beside settings, with the reason when a pause cannot be taken.
+
 ## 0.1.16 — 2026-11-20
 
 - Updating while Storage Studio KH is running works again. The Launcher asks the app to pause before it installs and asks again every few seconds until it may; after the first ask the app answered "I didn't pause", so the update was refused every time and the app stayed paused. It now answers every ask, and says plainly whether it is paused.

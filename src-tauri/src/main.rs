@@ -100,6 +100,43 @@ fn log_path() -> PathBuf {
     data_dir().join("log.txt")
 }
 
+fn hold_attempt_path() -> PathBuf {
+    data_dir().join("hold-attempts.jsonl")
+}
+
+/// One line per hold or resume the updater asked for: when, what it asked, what happened, why.
+/// The updater keeps its own record; this is the app's side of the same handshake.
+fn record_hold_attempt(kind: &str, asked_s: u64, answered_ms: u128, safe: bool, in_flight: usize, reason: Option<&str>) {
+    let path = hold_attempt_path();
+    if let Some(dir) = path.parent() {
+        let _ = std::fs::create_dir_all(dir);
+    }
+    let line = serde_json::json!({
+        "at": unix_millis(),
+        "request": kind,
+        "asked_s": asked_s,
+        "answered_in_ms": answered_ms,
+        "safe": safe,
+        "in_flight": in_flight,
+        "reason": reason,
+    })
+    .to_string();
+    // Keep it small: one night of retries is a few dozen lines; 200 is plenty to diagnose one.
+    let mut text = String::new();
+    if let Ok(existing) = std::fs::read_to_string(&path) {
+        let keep: Vec<&str> = existing.lines().filter(|l| !l.trim().is_empty()).rev().take(199).collect();
+        for l in keep.into_iter().rev() {
+            text.push_str(l);
+            text.push('\n');
+        }
+    }
+    text.push_str(&line);
+    text.push('\n');
+    if let Err(error) = std::fs::write(&path, text) {
+        log(&format!("the hold attempt could not be recorded: {error}"));
+    }
+}
+
 fn log(message: &str) {
     let stamp = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
@@ -540,7 +577,7 @@ fn start_helper(app: &AppHandle) -> Result<(), String> {
 
     // A helper restarted during an update hold is held first, so configuring it starts nothing.
     if app.state::<AppState>().hold.lock().unwrap().paused() {
-        let _ = send_to_helper(&app.state::<AppState>(), &serde_json::json!({ "type": "hold" }));
+        let _ = send_to_helper(&app.state::<AppState>(), &serde_json::json!({ "type": "hold", "ceiling": HOLD_TIMEOUT_DEFAULT_S }));
     }
 
     // Configure it with the saved storages straight away.
@@ -685,7 +722,7 @@ fn handle_helper_line(app: &AppHandle, line: &str) {
         }
         HelperEvent::Log { level, message } => {
             log(&format!("helper [{level}]: {message}"));
-            if message == "holding new work for an update" {
+            if message.starts_with("holding new work for an update") {
                 acknowledge_hold(app, "hold", 0);
             } else if message == "resumed; new work is accepted again" {
                 *app.state::<AppState>().work_pending.lock().unwrap() = Some(HoldWork::Settled);
@@ -925,10 +962,16 @@ fn unsettled(state: &AppState) -> Vec<String> {
     out
 }
 
-fn tell_helper(app: &AppHandle, kind: &str) {
+fn tell_helper(app: &AppHandle, kind: &str, ceiling_s: u64) {
     let state = app.state::<AppState>();
     *state.work_type.lock().unwrap() = if kind == "resume" { "resume" } else { "hold" };
-    if let Err(error) = send_to_helper(&state, &serde_json::json!({ "type": kind })) {
+    // The helper is told the ceiling it must answer inside, so its own log can name it.
+    let message = if kind == "hold" {
+        serde_json::json!({ "type": kind, "ceiling": ceiling_s })
+    } else {
+        serde_json::json!({ "type": kind })
+    };
+    if let Err(error) = send_to_helper(&state, &message) {
         if kind == "hold" || kind == "resume" {
             // Without a helper, no mount is running and the hold can answer from that truth.
             let version = {
@@ -984,8 +1027,9 @@ fn hold_request(app: &AppHandle, query: &str) -> String {
         hold.until = Some(Instant::now() + Duration::from_secs(pause_s));
         hold.generation
     };
+    let started = Instant::now();
     arm_resume(app.clone(), generation, pause_s);
-    tell_helper(app, "hold");
+    tell_helper(app, "hold", timeout_s);
     log(&format!("held new work for an update (paused {pause_s} s)"));
     emit_snapshot(app);
 
@@ -1000,11 +1044,18 @@ fn hold_request(app: &AppHandle, query: &str) -> String {
             break;
         }
         if Instant::now() >= fresh_deadline {
-            log("the update hold could not confirm the helper paused its new work");
+            // Plain words, the guard named, and the moment kept: the updater should never have to
+            // say "did not pause" on this app's behalf.
             let in_flight = state.work.lock().unwrap().in_flight.len();
+            let reason = format!(
+                "The background helper is running but did not answer the pause within 3 s (the hold's ceiling is {timeout_s} s); nothing was changed."
+            );
+            let ms = started.elapsed().as_millis();
+            log(&format!("update hold: NOT paused after {ms} ms (ceiling {timeout_s} s) — {reason}"));
+            record_hold_attempt("hold", timeout_s, ms, false, in_flight, Some(&reason));
             return serde_json::json!({
                 "safe": false,
-                "unsettled": ["the helper did not pause (retry or restart it)".to_string()],
+                "unsettled": [reason],
                 "dispatch_paused_s": pause_s,
                 "in_flight": in_flight,
             }).to_string();
@@ -1019,8 +1070,18 @@ fn hold_request(app: &AppHandle, query: &str) -> String {
     }
     let in_flight = state.work.lock().unwrap().in_flight.len();
     let unsettled = unsettled(&state);
+    let safe = unsettled.is_empty();
+    let ms = started.elapsed().as_millis();
+    // The app's own record of the handshake: moment, what was asked, how long it took, what happened.
+    log(&format!(
+        "update hold: {} in {ms} ms (ceiling {timeout_s} s, pause {pause_s} s, {in_flight} in flight){}",
+        if safe { "safe" } else { "not safe" },
+        if unsettled.is_empty() { String::new() } else { format!(" — still in flight: {}", unsettled.join(", ")) }
+    ));
+    let why = if safe { None } else { Some(unsettled.join(", ")) };
+    record_hold_attempt("hold", timeout_s, ms, safe, in_flight, why.as_deref());
     serde_json::json!({
-        "safe": unsettled.is_empty(),
+        "safe": safe,
         "unsettled": unsettled,
         "dispatch_paused_s": pause_s,
         "in_flight": in_flight,
@@ -1036,7 +1097,7 @@ fn resume_request(app: &AppHandle) -> String {
         hold.generation += 1;
         hold.until = None;
     }
-    tell_helper(app, "resume");
+    tell_helper(app, "resume", 0);
     log("resumed; new work is accepted again");
     emit_snapshot(app);
     let in_flight = state.work.lock().unwrap().in_flight.len();

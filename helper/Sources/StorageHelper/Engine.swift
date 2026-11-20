@@ -145,7 +145,7 @@ public final class Engine {
                 announce()
             }
         case "hold":
-            hold()
+            hold(ceiling: command.ceiling)
         case "resume":
             resume()
         case "quit":
@@ -209,12 +209,14 @@ public final class Engine {
     /// Every ask is answered, including a repeat: an installer that renews its hold while the
     /// helper is already paused must hear "paused", not silence (a silent repeat reads as a
     /// helper that never paused, and the install is refused every 7 s forever).
-    private func hold() {
+    private func hold(ceiling: Int?) {
+        let limit = "settle ceiling \(ceiling.map(String.init) ?? "20") s"
+        let work = "\(inFlight.count) in flight, \(queued.count) queued"
         if paused {
-            emit(Event.log(level: "info", message: "already holding new work for an update").json)
+            emit(Event.log(level: "info", message: "already holding new work for an update (\(limit), \(work))").json)
         } else {
             paused = true
-            emit(Event.log(level: "info", message: "holding new work for an update").json)
+            emit(Event.log(level: "info", message: "holding new work for an update (\(limit), \(work))").json)
         }
         announce()
     }
