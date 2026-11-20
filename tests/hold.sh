@@ -271,6 +271,35 @@ del >/dev/null
 pass "a helper that cannot answer is refused in plain words, recorded, and recovers"
 quit_app "$PID"
 
+# 7. A process answers more than one hold. Angkor 2026-11-20: the first hold after a restart was
+#    accepted and the next was refused - one answerable hold per process, and whoever asked second
+#    was refused for as long as the process ran. Hold, resume, hold, resume: every answer emitted,
+#    with its ceiling and its time.
+write_one repeat-hold 'Repeat hold' true
+start_app
+wait_text 0 "Repeat hold needs attention"
+records_before=$( [ -f "$SUPPORT/hold-attempts.jsonl" ] && grep -c . "$SUPPORT/hold-attempts.jsonl" || echo 0 )
+mark=$(wc -l < "$LOG")
+for i in 1 2 3 4; do
+  body=$(post "timeout_s=20&pause_s=120")
+  [ "$(printf '%s' "$body" | field safe)" = "true" ] || fail "hold #$i was not answered: $body"
+  [ "$(printf '%s' "$body" | field dispatch_paused_s)" = "120" ] || fail "hold #$i did not pause: $body"
+  del >/dev/null
+done
+announced=$(tail -n +$((mark + 1)) "$LOG" | grep -c "holding new work for an update (settle ceiling 20 s")
+[ "$announced" -ge 4 ] || fail "the helper announced $announced of 4 holds"
+/usr/bin/python3 -I -c '
+import json, sys
+rows = [json.loads(l) for l in open(sys.argv[1]) if l.strip()][int(sys.argv[2]):]
+assert len(rows) == 4, f"expected 4 recorded holds, got {len(rows)}"
+for i, row in enumerate(rows, 1):
+    assert row["request"] == "hold" and row["safe"] is True, (i, row)
+    assert row["asked_s"] == 20 and isinstance(row["answered_in_ms"], int), (i, row)
+print("records:", json.dumps([{k: r[k] for k in ("answered_in_ms", "safe")} for r in rows]))
+' "$SUPPORT/hold-attempts.jsonl" "$records_before" || fail "not every hold was recorded with its ceiling and time"
+pass "hold, resume, hold, resume: every answer is emitted, with its ceiling and its time"
+quit_app "$PID"
+
 # 4. A hold with no DELETE expires by itself and work resumes — including after a repeat, the way
 #    the Launcher renews its hold. The pause must not outlive the asking (contract rule 3).
 write_one expire-hold 'Expire hold' true
