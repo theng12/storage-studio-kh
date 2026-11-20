@@ -2381,6 +2381,26 @@ fn shutdown_helper(app: &AppHandle) {
     }
 }
 
+/// A hidden test instance must never collide with the owner's running app. The plugin's guard is
+/// `/tmp/<identifier>_si.sock`, fixed by the build's identifier, so a test copy would forward to
+/// the live app and exit — and the live app would show its window. A test copy therefore takes an
+/// identifier derived from its own data folder: a second instance of the same test still counts as
+/// one, and nothing on the machine's installed app is touched (gate rule 9).
+fn test_scoped_context() -> tauri::Context {
+    let mut context = tauri::generate_context!();
+    let test_dir = std::env::var("STORAGE_STUDIO_TEST_DATA_DIR").unwrap_or_default();
+    let trimmed = test_dir.trim();
+    if !trimmed.is_empty() {
+        let mut hash: u64 = 0xcbf2_9ce4_8422_2325;
+        for byte in trimmed.bytes() {
+            hash ^= byte as u64;
+            hash = hash.wrapping_mul(0x0000_0100_0000_01b3);
+        }
+        context.config_mut().identifier = format!("app.storagestudiokh.desktop.test.{hash:016x}");
+    }
+    context
+}
+
 fn main() {
     // Hidden verification hooks for the release gate; they never open a window.
     let arguments: Vec<String> = std::env::args().collect();
@@ -2625,7 +2645,7 @@ fn main() {
                 hide_settings(window);
             }
         })
-        .build(tauri::generate_context!())
+        .build(test_scoped_context())
         .expect("Storage Studio KH could not start");
 
     app.run(|app, event| match event {
