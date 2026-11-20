@@ -36,8 +36,15 @@ fail() { printf 'FAIL  %s\n' "$1" >&2; exit 1; }
 
 # The URL macOS holds for this app's login item (it writes no plist). A record naming a build
 # tree would launch that copy at the owner's next login — issue 20261119-73.
-btm_urls() { sfltool dumpbtm 2>/dev/null | awk '/Identifier: 2\.app\.storagestudiokh/{f=1;next} f && /URL:/{print; f=0}'; }
-BTM_BEFORE="$(btm_urls)"
+# `sfltool dumpbtm` blocks forever in a non-interactive session (issue 20261120-120: it produced
+# nothing for 28 min at 0% CPU and held the shared lane). It is bounded here, and a bound that is
+# hit means "cannot classify" — a NOTE, never this step's failure.
+btm_urls() {
+  local out
+  out=$(/usr/bin/timeout 5 sfltool dumpbtm 2>/dev/null) || return 1
+  printf '%s\n' "$out" | awk '/Identifier: 2\.app\.storagestudiokh/{f=1;next} f && /URL:/{print; f=0}'
+}
+BTM_BEFORE=""; if ! BTM_BEFORE="$(btm_urls)"; then BTM_BEFORE=""; fi
 
 cleanup() {
   [ -n "${PID:-}" ] && kill "$PID" 2>/dev/null || true
@@ -127,8 +134,10 @@ pass "no launchd job or launch agent left behind"
 # STORAGE_STUDIO_NO_LOGIN_ITEM=1 set, a launch from a clean record writes nothing, but a
 # launch from a build tree rewrites the owner's record to that build tree). No test can
 # prevent it, so say it plainly: a gate run on the owner's Mac must put the record back.
-BTM_AFTER="$(btm_urls)"
-if [ "$BTM_AFTER" != "$BTM_BEFORE" ]; then
+BTM_AFTER=""; if ! BTM_AFTER="$(btm_urls)"; then BTM_AFTER=""; fi
+if [ -z "$BTM_BEFORE" ] || [ -z "$BTM_AFTER" ]; then
+  printf 'NOTE  login item not classified this run (sfltool bounded at 5 s or unavailable) — check it by hand where the app is installed\n'
+elif [ "$BTM_AFTER" != "$BTM_BEFORE" ]; then
   printf 'NOTE  login item now names %s — restore it to the installed app\n' \
     "$(printf '%s\n' "$BTM_AFTER" | sed -n 's/^ *URL: //p')"
 else
