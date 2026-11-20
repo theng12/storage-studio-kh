@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-17T10:56:28.949Z",
+  "generatedAt": "2026-11-20T00:49:12.923Z",
   "appVersion": "0.1.10",
   "checks": [
     {
@@ -1859,7 +1859,7 @@
       "expected": "row menu",
       "actual": "true",
       "pass": true,
-      "evidence": "row-s1794912947625-menu"
+      "evidence": "row-s1795135711702-menu"
     },
     {
       "page": "Dialog",
@@ -2179,7 +2179,7 @@
       "expected": "Storage list checked",
       "actual": "true",
       "pass": true,
-      "evidence": "Storage list checked 84 h ago"
+      "evidence": "Storage list checked 146 h ago"
     },
     {
       "page": "Footer",
@@ -2395,7 +2395,7 @@
       "expected": "the focused control is visible",
       "actual": "true",
       "pass": true,
-      "evidence": "{\"fk\":\"row-s1794912984809-menu\",\"top\":606,\"bottom\":634,\"h\":812}"
+      "evidence": "{\"fk\":\"row-s1795135748944-menu\",\"top\":606,\"bottom\":634,\"h\":812}"
     },
     {
       "page": "Layout",
