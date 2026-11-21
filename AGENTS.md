@@ -32,5 +32,7 @@ bash tests/gate.sh                 # hidden launch, retries, second instance, qu
 - Passwords live only in the app's private secrets file (0600, atomic writes). Never log them, never put them in `settings.json`, never pass them
   on a command line.
 - Check the mount table before mounting. A storage that is already mounted is never mounted twice.
-- Retries are bounded (5 s, 15 s, 60 s) and end in `needs_attention` with one notification.
+- Retries are bounded (5 s, 15 s, 60 s); after that a storage the owner asked to restore is
+tried every 5 minutes for at most an hour (`STORAGE_STUDIO_SLOW_RETRY_S`,
+`STORAGE_STUDIO_SLOW_RETRIES`), then it stops in `needs_attention` with one notification.
 - `appearance` is `system` | `light` | `dark`; a stored `default` reads as `system`.

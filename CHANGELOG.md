@@ -3,6 +3,7 @@
 ## 0.1.23 — 2026-11-22
 
 - **Your saved storages can no longer be wiped by a bad reply from the app's own helper.** The app read the helper's share list in the wrong spelling, called the answer a fault every time, and then saved that empty list over your storages. Both halves are fixed: the helper's answer now reads correctly, and a save that would replace a saved list with none is refused and logged.
+- **A storage comes back by itself when its NAS does.** After the usual quick retries, a storage you asked to restore is tried again every 5 minutes for an hour, so a NAS that was off for an update is reconnected without a relaunch or a click. If it is still away after that it stops and says Needs attention; Mount now starts it again.
 - Removing your last storage or archive still saves normally, so nothing is stuck.
 
 ## 0.1.22 — 2026-11-21

@@ -9,8 +9,9 @@ mirrors or syncs anything in the background.
 
 - Adds an SMB share (`smb://host/share`) or an attached disk from Settings and
   reconnects it on the events above.
-- Retries at 5 s, 15 s and 60 s, then stops and marks the storage Needs attention
-  until you choose Mount now.
+- Retries at 5 s, 15 s and 60 s, then keeps trying every 5 minutes for an hour so a
+  NAS that was off for an update reconnects by itself; if it is still away it stops
+  and marks the storage Needs attention until you choose Mount now.
 - Reads the mount table first, so an already mounted share is reflected rather
   than mounted twice.
 - Keeps share passwords in `secrets.json` in its own data folder, readable only by

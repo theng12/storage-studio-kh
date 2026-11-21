@@ -22,7 +22,7 @@ Storage Studio KH reconnects the network shares and attached disks a person choo
 
 ## Positioning
 
-Bounded, honest reconnection for macOS storage: it reads the mount table first so it never mounts twice, retries a fixed schedule (5 s, 15 s, 60 s), then stops and marks the storage *Needs attention* until the person chooses Mount now. Passwords live only in the app's own private file.
+Bounded, honest reconnection for macOS storage: it reads the mount table first so it never mounts twice, retries a fixed schedule (5 s, 15 s, 60 s) and then every 5 minutes for up to an hour, so a NAS that was off reconnects by itself; if it is still away it stops and marks the storage *Needs attention* until the person chooses Mount now. Passwords live only in the app's own private file.
 
 ## Operating Context
 

@@ -332,6 +332,9 @@ test("retry sentence follows the chosen number", () => {
   assert.match(retrySentence(3), /after 5 s, 15 s and 60 s/);
   assert.match(retrySentence(5), /up to 5 more attempts/);
   assert.match(retrySentence(5), /60 s for each later try/);
+  // The note must not promise a stop it no longer makes: a NAS off for an update comes back.
+  assert.match(retrySentence(3), /keeps trying every 5 minutes for an hour/);
+  assert.doesNotMatch(retrySentence(3), /then stops and marks/);
 });
 
 test("Settings opens from launch, the app menu and the tray, rebuilding if missing", () => {

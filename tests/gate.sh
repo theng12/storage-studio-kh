@@ -28,6 +28,9 @@ export STORAGE_STUDIO_TEST_DATA_DIR="$DATA"
 export STORAGE_STUDIO_NO_NOTIFICATIONS=1
 export STORAGE_STUDIO_NO_LOGIN_ITEM=1
 export STORAGE_STUDIO_RETRY_DELAYS=0.2,0.3
+# The slow schedule that keeps trying a storage the NAS took away, shortened for the gate.
+export STORAGE_STUDIO_SLOW_RETRY_S=0.2
+export STORAGE_STUDIO_SLOW_RETRIES=2
 # Its own loopback port for the update hold, so a running copy of the app never collides.
 export STORAGE_STUDIO_HOLD_PORT=8913
 
@@ -96,6 +99,21 @@ for _ in $(seq 1 40); do grep -q "Gate Fake NAS needs attention" "$LOG" 2>/dev/n
 grep -q "Gate Fake NAS needs attention" "$LOG" || { tail -20 "$LOG" 2>/dev/null; fail "needs-attention path did not happen"; }
 [ "$(grep -c "Gate Fake NAS needs attention" "$LOG")" -eq 1 ] || fail "needs attention was reported more than once"
 pass "bounded retry then needs attention (one report)"
+
+# 2b. A storage the owner asked to restore is tried again by itself on a slow schedule, and that
+# schedule is bounded: it stops instead of spinning for ever (0.1.23 — the NAS was off all night).
+for _ in $(seq 1 40); do
+  [ "$(grep -c "Gate Fake NAS: trying again" "$LOG" 2>/dev/null)" -ge 2 ] && break
+  sleep 0.5
+done
+grep -q "Gate Fake NAS: trying again" "$LOG" \
+  || { tail -20 "$LOG" 2>/dev/null; fail "a failed storage was never tried again by itself"; }
+tries="$(grep -c "Gate Fake NAS: trying again" "$LOG")"
+[ "$tries" -eq 2 ] || fail "the slow schedule ran $tries times, not the bounded 2"
+sleep 6
+[ "$(grep -c "Gate Fake NAS: trying again" "$LOG")" -eq 2 ] || fail "the slow schedule kept going past its bound"
+grep -q "Gate Fake NAS needs attention" "$LOG" || fail "needs attention was lost after the slow schedule"
+pass "slow retry reconnects by itself, then stops at its bound"
 
 # 3. A second copy is handled plainly: it exits, the running one keeps going.
 "$BIN" >"$RUN/second.out" 2>&1 &

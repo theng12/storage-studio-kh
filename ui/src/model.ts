@@ -271,7 +271,7 @@ export function readableTarget(target: string): string {
 
 export function retrySentence(retries: number): string {
   const n = Math.min(Math.max(Math.round(retries) || 1, 1), 8);
-  const tail = "then stops and marks the storage Needs attention until you choose Mount now.";
+  const tail = "then keeps trying every 5 minutes for an hour, and stops with Needs attention if it is still away.";
   if (n === 1) return `After a failure it tries once more, 5 s later, ${tail}`;
   if (n === 2) return `After a failure it tries again after 5 s and 15 s, ${tail}`;
   if (n === 3) return `After a failure it tries again after 5 s, 15 s and 60 s, ${tail}`;

@@ -61,6 +61,12 @@ public final class Engine {
     private var wakeWork: DispatchWorkItem?
     private var networkWork: DispatchWorkItem?
     private var networkSignature: String?
+    /// A NAS can be off for an update and come back an hour later: keep trying on a slow, bounded
+    /// schedule, then settle. Nothing runs while every storage is mounted (owner, 2026-11-22).
+    private var slowDue: [String: Date] = [:]
+    private var slowTries: [String: Int] = [:]
+    /// Needs attention is said once per episode, not once per slow try.
+    private var attentionNotified = Set<String>()
 
     public init(emit: @escaping Emitter) {
         self.emit = emit
@@ -202,6 +208,9 @@ public final class Engine {
             work.cancel()
             scheduled[id] = nil
         }
+        slowDue = slowDue.filter { ids.contains($0.key) }
+        slowTries = slowTries.filter { ids.contains($0.key) }
+        attentionNotified = attentionNotified.filter { ids.contains($0) }
         var next: [String: StorageState] = [:]
         let table = MountTable.current()
         for storage in storages {
@@ -356,6 +365,10 @@ public final class Engine {
 
     private func mountNow(_ storage: Storage) {
         attempts[storage.id] = 0
+        // The owner asked: start the whole path again, including the slow schedule.
+        slowTries[storage.id] = nil
+        slowDue[storage.id] = nil
+        attentionNotified.remove(storage.id)
         scheduled[storage.id]?.cancel()
         scheduled[storage.id] = nil
         begin(storage)
@@ -600,6 +613,9 @@ public final class Engine {
     private func markMounted(_ storage: Storage, path: String) {
         let wasTrouble = [StorageStatus.needsAttention, .unreachable, .retrying].contains(states[storage.id]?.status)
         attempts[storage.id] = 0
+        slowTries[storage.id] = nil
+        slowDue[storage.id] = nil
+        attentionNotified.remove(storage.id)
         scheduled[storage.id]?.cancel()
         scheduled[storage.id] = nil
         queued.remove(storage.id)
@@ -629,7 +645,6 @@ public final class Engine {
     }
 
     private func failed(_ storage: Storage, _ failure: MountFailure) {
-        let previous = states[storage.id]?.status
         let attempt = (attempts[storage.id] ?? 0) + 1
         attempts[storage.id] = attempt
         if failure.needsCredentials {
@@ -660,11 +675,41 @@ public final class Engine {
             queued.insert(storage.id)
             queue.asyncAfter(deadline: .now() + wait, execute: work)
         } else {
-            set(storage, .needsAttention, detail: reason)
-            if previous != .needsAttention {
+            // The ladder is done, but a storage the owner asked to restore is tried again on a
+            // slow schedule so a NAS that was off comes back by itself; then it settles for good.
+            let wanted = storage.reconnectAtLogin || storage.reconnectAfterWake
+            let tries = slowTries[storage.id] ?? 0
+            if wanted && tries < slowRetryLimit {
+                slowTries[storage.id] = tries + 1
+                let interval = slowRetryInterval
+                slowDue[storage.id] = Date().addingTimeInterval(interval)
+                let when = interval >= 60 ? "\(Int(interval / 60)) min"
+                    : (interval < 10 ? String(format: "%.1f s", interval) : "\(Int(interval)) s")
+                set(storage, .needsAttention, detail: "\(reason) Trying again in \(when).")
+                emit(Event.log(level: "info", message: "\(storage.name): trying again in \(when)").json)
+            } else {
+                slowTries[storage.id] = nil
+                slowDue[storage.id] = nil
+                set(storage, .needsAttention, detail: reason)
+            }
+            if attentionNotified.insert(storage.id).inserted {
                 emit(Event.attention(id: storage.id, name: storage.name, reason: reason).json)
             }
         }
+    }
+
+    private var slowRetryInterval: TimeInterval {
+        if let raw = environment["STORAGE_STUDIO_SLOW_RETRY_S"], let seconds = Double(raw), seconds > 0 {
+            return seconds
+        }
+        return 300
+    }
+
+    private var slowRetryLimit: Int {
+        if let raw = environment["STORAGE_STUDIO_SLOW_RETRIES"], let count = Int(raw), count >= 0 {
+            return count
+        }
+        return 12
     }
 
     private func retryDelay(_ attempt: Int) -> TimeInterval? {
@@ -714,6 +759,12 @@ public final class Engine {
 
     private func tick() {
         let now = sample()
+        let nowDate = Date()
+        for (id, due) in slowDue where due <= nowDate {
+            slowDue[id] = nil
+            guard let storage = storage(id), states[id]?.status == .needsAttention else { continue }
+            begin(storage)
+        }
         if SleepDetector.didWake(from: lastSample, to: now) {
             emit(Event.log(level: "info", message: "wake detected").json)
             wakeWork?.cancel()
