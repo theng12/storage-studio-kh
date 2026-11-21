@@ -1,0 +1,23 @@
+{
+  "apps": {
+    "Storage Studio KH": {
+      "files": {
+        "Storage Studio KH-0.1.19.dmg": {
+          "bytes": 4655912,
+          "sha256": "eba538b578225c8fe95be87793a63d1a80d6f1f118bf716e7117258a666f8b24",
+          "version": "0.1.19",
+          "provenance": "built 2026-11-21 from commit e3b4a91; served by 1301 and the public mirror, both verified byte for byte",
+          "evidence": "RECEIPT-0.1.19.md; feed readback and artifact hash check 2026-11-21"
+        },
+        "Storage Studio KH-0.1.18.dmg": {
+          "bytes": 4655731,
+          "sha256": "65b673558dc2f9af98cf1604ca4c4a9e3fb173c56a10c05820a16253dbbd341c",
+          "version": "0.1.18",
+          "provenance": "built 2026-11-21 from commit dd2d4f2; never published on its own; named as previous by the 1301 feed entry for 0.1.19",
+          "evidence": "RECEIPT-0.1.18.md"
+        }
+      }
+    }
+  },
+  "schema": 1
+}
