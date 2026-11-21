@@ -338,8 +338,8 @@ test("the app menu offers Close Window with the standard shortcut", () => {
 
 test("only the installed app may register a login item, once", () => {
   const rust = readFileSync(new URL("../src-tauri/src/main.rs", import.meta.url), "utf8");
-  assert.match(rust, /fn is_app_bundle_path/);
-  assert.match(rust, /\.app\/Contents\/MacOS\//);
+  assert.match(rust, /fn is_installed_copy/);
+  assert.match(rust, /Path::new\("\/Applications"\)/);
   assert.match(rust, /fn login_item_needs_change/);
   assert.match(rust, /login_item::can_register\(\)/);
 });

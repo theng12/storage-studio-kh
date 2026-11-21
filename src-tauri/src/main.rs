@@ -878,10 +878,23 @@ fn notify(app: &AppHandle, title: String, body: String) {
 
 // ---------------------------------------------------------------- login item
 
-/// Only a real .app bundle may register a login item. A bare `target/release` binary
-/// registers under a phantom identity that no installed app can match (owner-reported).
-fn is_app_bundle_path(exe: &std::path::Path) -> bool {
-    exe.to_string_lossy().contains(".app/Contents/MacOS/")
+/// Only the installed copy may touch the login item. A bare `target/release` binary
+/// registers under a phantom identity (owner-reported), and macOS re-points an existing
+/// record at whichever .app copy registers — so a build-tree bundle takes the owner's item
+/// too, not just a loose binary (issue 20261119-73).
+fn is_installed_copy(exe: &std::path::Path) -> bool {
+    let Some(app) = exe
+        .ancestors()
+        .find(|part| part.extension().is_some_and(|ext| ext == "app"))
+    else {
+        return false;
+    };
+    let Some(dir) = app.parent() else {
+        return false;
+    };
+    dir == std::path::Path::new("/Applications")
+        || std::env::var_os("HOME")
+            .is_some_and(|home| std::path::Path::new(&home).join("Applications") == dir)
 }
 
 /// Registration is keyed to the app's identity: only call it when the state differs.
@@ -905,7 +918,12 @@ mod login_item {
     }
 
     /// 0 = not registered, 1 = enabled, 2 = requires approval, 3 = not found.
+    /// A copy that is not installed answers 3 without asking macOS: its own status is not
+    /// the owner's record, and asking risks nothing but tells the truth less.
     pub fn status() -> i64 {
+        if !can_register() {
+            return 3;
+        }
         match service() {
             Some(service) => unsafe { msg_send![&*service, status] },
             None => 3,
@@ -916,16 +934,22 @@ mod login_item {
         status() == 1
     }
 
-    /// A development build (`cargo run`, a bare release binary) must never register.
+    /// Only the copy in /Applications owns the login item. A development build (`cargo run`,
+    /// a bare release binary, or a .app inside a build tree) must never register.
     pub fn can_register() -> bool {
         std::env::current_exe()
-            .map(|exe| super::is_app_bundle_path(&exe))
+            .map(|exe| super::is_installed_copy(&exe))
             .unwrap_or(false)
     }
 
     pub fn set(enabled: bool) -> Result<(), String> {
         if enabled && !can_register() {
             return Err("Launch at login needs the installed app. Open Storage Studio KH from Applications.".into());
+        }
+        if !enabled && !can_register() {
+            // Nothing to unregister for this copy, and unregistering here must never touch
+            // the installed app's record.
+            return Ok(());
         }
         let Some(service) = service() else {
             return Err("Login items are not available on this version of macOS.".into());
@@ -2335,14 +2359,18 @@ mod tests {
     }
 
     #[test]
-    fn only_an_app_bundle_may_register_a_login_item() {
-        assert!(super::is_app_bundle_path(std::path::Path::new(
-            "/Applications/Storage Studio KH.app/Contents/MacOS/Storage Studio KH"
-        )));
-        assert!(!super::is_app_bundle_path(std::path::Path::new(
+    fn only_the_installed_copy_may_register_a_login_item() {
+        let installed = |path: &str| super::is_installed_copy(std::path::Path::new(path));
+        assert!(installed("/Applications/Storage Studio KH.app/Contents/MacOS/Storage Studio KH"));
+        // A build-tree bundle used to pass: macOS re-pointed the owner's record at it.
+        assert!(!installed(
+            "/Users/x/Developer/My Own Apps/storage-studio-kh/src-tauri/target/release/bundle/macos/Storage Studio KH.app/Contents/MacOS/Storage Studio KH"
+        ));
+        assert!(!installed("/Volumes/Storage Studio KH/Storage Studio KH.app/Contents/MacOS/Storage Studio KH"));
+        assert!(!installed(
             "/Users/x/Developer/My Own Apps/storage-studio-kh/src-tauri/target/release/Storage Studio KH"
-        )));
-        assert!(!super::is_app_bundle_path(std::path::Path::new("/tmp/Storage Studio KH")));
+        ));
+        assert!(!installed("/tmp/Storage Studio KH"));
     }
 
     #[test]

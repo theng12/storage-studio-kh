@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.20 — 2026-11-21
+
+- **Only the installed app can change the login item.** A copy run from a build folder or a mounted installer no longer asks macOS for "launch at login" at all, so a test copy can't take over the item that opens the app at login. Switching Launch at login in a copy that isn't installed now says it needs the installed app instead of half-doing it.
+
 ## 0.1.19 — 2026-11-21
 
 - **The share address is chosen, not typed.** Type the device's address once and the dialog lists the shares that device actually offers; choosing one fills the address in for you, and Refresh list asks it again. The field is read-only while the list is showing.

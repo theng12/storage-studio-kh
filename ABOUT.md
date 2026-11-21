@@ -17,7 +17,8 @@ mirrors or syncs anything in the background.
   the signed-in user (0600), with atomic writes.
 - Keeps the Swift helper as a child inside the app bundle; launch, quit and
   force-quit leave no helper or launchd job behind.
-- Registers launch-at-login only from the installed `.app`, and stores the
+- Registers launch-at-login only from the copy in `/Applications` (since 0.1.20 a
+  build-tree or mounted-DMG copy never touches the login item at all), and stores the
   appearance choice as system, light or dark.
 - Shows mount and attention state in the menu bar and settings window; UI checks
   cover 375, 768, 820 and 1440 widths in light and dark.
