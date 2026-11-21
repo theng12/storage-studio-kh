@@ -38,6 +38,16 @@ The last argument is the Launcher card's one sentence (62 characters or fewer, t
 `ABOUT.md`). It stages the DMG and changelog on 1301, publishes with the host's own key (the only
 feed writer), and reads the served feed back to prove the version and tagline it offers.
 
+Then carry the row onto the public page — a release is not finished until the page serves it:
+
+```sh
+bash packaging/page-sync.sh --app storage-studio --accepted <sha256> \
+  --repo theng12/kh-releases --feed-url http://100.82.91.102:8790/release.json
+```
+
+`--accepted` must be the sha256 `feed-verify.sh` passed. Run `--dry-run` first and read the nine
+steps; check no other app's page-sync is mid-run (step 8 rebuilds the whole page).
+
 ## Verification status (0.1.10)
 
 Verified on this Mac: mount-table detection against the real attached volumes and the real NAS
