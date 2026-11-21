@@ -790,7 +790,7 @@ function renderArchiveRow(archive: Archive): string {
     <div class="setting-copy">
       <span class="setting-title">${esc(archive.name)}</span>
       <p class="setting-hint">${esc(line)}</p>
-      ${last ? `<p class="setting-hint path-text">${esc(last.path)}</p>` : ""}
+      ${last ? `<p class="setting-hint path-text">Archived to ${esc(last.path)}</p>` : ""}
       ${
         archive.roots.length > 1
           ? `<p class="setting-hint">Heavy media: ${esc(archive.roots[1])}</p>`
@@ -826,8 +826,8 @@ function renderArchives(): string {
       ${
         archives.length
           ? `<div class="page-head-actions">
-              <button type="button" class="btn" data-action="restore-open" data-fk="restore-open">${icons.download}<span>Restore a channel…</span></button>
               <button type="button" class="btn btn-primary" data-action="add-archive" data-fk="add-archive">${icons.plus}<span>Archive a channel…</span></button>
+              <button type="button" class="btn" data-action="restore-open" data-fk="restore-open">${icons.download}<span>Restore a channel…</span></button>
             </div>`
           : ""
       }
@@ -956,7 +956,7 @@ function renderArchiveSheet(): void {
             archiveSheet.busy ? " disabled" : ""
           }>Choose…</button>
         </div>
-        <p class="field-note field-note-hint">A folder inside one Mac's folder is created here, named after the channel and the day.</p>
+        <p class="field-note field-note-hint">The copy goes inside the folder you choose, named after the channel and the date.</p>
       </div>
     </div>
     <div class="sheet-actions">
@@ -1274,7 +1274,7 @@ function renderGeneral(): string {
       <div class="setting-row">
         <div class="setting-copy">
           <span class="setting-title" id="notifications-title">Notifications</span>
-          <p class="setting-hint">Tell me when a storage reconnects or stops trying.</p>
+          <p class="setting-hint">Tell you when a storage reconnects or stops trying.</p>
         </div>
         <label class="switch">
           <input type="checkbox" data-general="notifications" data-fk="general-notifications" aria-labelledby="notifications-title" ${
@@ -1622,11 +1622,9 @@ function renderEditor(): void {
   const savedVolumeMissing = d.kind === "volume" && d.volumeUUID && !volumes.some((volume) => volume.uuid === d.volumeUUID);
   const savedDiskMissing = Boolean(savedVolumeMissing) || savedStorage?.status === "unreachable";
   const blockReason = editorBlockReason();
-  // A list still on its way is not a mistake: no red address error until it settles.
-  const listing = d.kind === "smb" && !editor.shareListSkipped && !editor.listSettled;
-  const showReason = Boolean(editor.touched && blockReason && !editor.browseBusy && !listing && !shareListShown());
+  const showReason = editorShowReason() && blockReason;
   const connectedShares =
-    !isEdit && d.kind === "smb" && !editor.connectedChosen
+    !isEdit && d.kind === "smb" && !editor.connectedChosen && !d.target.trim()
       ? (snapshot?.mountedShares ?? []).filter(
           (candidate) =>
             candidate.url !== d.target &&
@@ -1907,10 +1905,20 @@ function syncEditorField(target: HTMLInputElement | HTMLSelectElement): void {
 }
 
 /// Keeps the reason beside Save and the Save button in step with what is typed.
+/** One rule for the red reason: not before the person has touched anything, never while a list is
+ *  on its way or on screen, and never for a sheet that is busy finishing something. */
+function editorShowReason(): boolean {
+  if (!editor?.touched) return false;
+  if (editor.browseBusy) return false;
+  if (editor.draft.kind === "smb" && !editor.shareListSkipped && !editor.listSettled) return false;
+  if (shareListShown()) return false;
+  return true;
+}
+
 function updateEditorBlockState(): void {
   if (!editor) return;
   const blockReason = editorBlockReason();
-  const showReason = editor.touched && blockReason;
+  const showReason = editorShowReason() && blockReason;
   const save = editorEl.querySelector<HTMLButtonElement>('[data-editor-action="save"]');
   if (save) {
     save.disabled = Boolean(editor.busy || blockReason);

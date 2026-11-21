@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.22 — 2026-11-21
+
+- **The add/edit sheet no longer hides its own sections.** With a share list showing, "Sign in" used to open cut in half and Advanced could not be reached; the sections keep their full height and the sheet scrolls when it needs to.
+- **No red message while the share list is doing its job.** "Choose a share from the list." waited until there is no list and the typing has settled.
+- **Archives reads in the right order:** the main action first, then Restore; the icon is a box with its own lid instead of Storage's stacked drives; and each archive names where it was put — "Archived to /Volumes/…".
+- **Small copy fixes:** "Tell you when a storage reconnects…", and the archive sheet says "The copy goes inside the folder you choose, named after the channel and the date."
+- Sign in and Advanced now show a chevron, so they read as sections rather than empty fields.
+
 ## 0.1.21 — 2026-11-21
 
 - **Adding a storage is now one address and a list of shares.** Paste anything you have — an IP, a host name, `//host`, `smb://host`, or a whole share address, with or without `%20` — and the app finds that device's shares and shows each as a row with Add. Typed share names with spaces now save, and the address you see is the readable name, never `%20`.
