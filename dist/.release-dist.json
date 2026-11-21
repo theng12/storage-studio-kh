@@ -2,19 +2,19 @@
   "apps": {
     "Storage Studio KH": {
       "files": {
+        "Storage Studio KH-0.1.23.dmg": {
+          "bytes": 4671440,
+          "sha256": "8c991d6632c6e4ef49105fc4caef8b522961c33262c68636422277424d410b08",
+          "version": "0.1.23",
+          "provenance": "built 2026-11-22 from commit 858c43c; served by 1301, verified byte for byte against dist/",
+          "evidence": "RECEIPT-0.1.23.md; feed-verify.sh storage-studio PASS with tagline, 2026-11-22"
+        },
         "Storage Studio KH-0.1.22.dmg": {
           "bytes": 4658177,
           "sha256": "a78eccd31c4083e4cd200b2ff66cd4508543e64bc5a55b5a58be47a58dda80da",
           "version": "0.1.22",
-          "provenance": "built 2026-11-21 from commit dd694d7; served by 1301, verified byte for byte; public page not yet synced",
-          "evidence": "RECEIPT-0.1.22.md; feed readback and artifact hash check 2026-11-21"
-        },
-        "Storage Studio KH-0.1.21.dmg": {
-          "bytes": 4658122,
-          "sha256": "27b2729a32403252910e684a1e2db7cf21dcfa7b6586d34d3a83ff75cc0db0e4",
-          "version": "0.1.21",
-          "provenance": "built 2026-11-21 from commit 8ef329a; named as previous by the 1301 feed entry for 0.1.22",
-          "evidence": "RECEIPT-0.1.21.md"
+          "provenance": "built 2026-11-21 from commit dd694d7; named as previous by the 1301 feed entry for 0.1.23",
+          "evidence": "RECEIPT-0.1.22.md; feed readback 2026-11-22"
         }
       }
     }
