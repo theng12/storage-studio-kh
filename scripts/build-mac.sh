@@ -50,8 +50,19 @@ step "Free build space"
 free_gb="$(df -g /System/Volumes/Data | awk 'NR==2 {print $4}')"
 [ "${free_gb:-0}" -ge 10 ] || fail "Free build space is ${free_gb:-unknown} GiB (expected at least 10 GiB on /System/Volumes/Data); free space or choose a less busy build machine"
 
+not_run=""
+
 step "Helper tests"
-(cd helper && swift test 2>&1 | tail -5)
+# XCTest ships with Xcode, not with the Command Line Tools. Where it is absent this says so
+# loudly and the archive checks in tests/gate.sh still prove archive, resume and restore
+# against the real helper binary.
+if echo 'import XCTest' | swiftc -typecheck - >/dev/null 2>&1; then
+  (cd helper && swift test 2>&1 | tail -5)
+else
+  printf 'NOT RUN  helper unit tests: this Mac has no XCTest module (Command Line Tools only).\n'
+  printf '         tests/gate.sh proves archive, resume and restore against the real helper binary.\n'
+  not_run="helper unit tests — no XCTest module on this Mac (Command Line Tools only)"
+fi
 
 step "Building the helper (release)"
 # Swift records absolute source and object paths unless they are remapped, and the
@@ -90,7 +101,16 @@ codesign --force --sign "KH Studio Local Signing" "$helper_app"
 codesign --verify --strict "$helper_app"
 
 step "What's New from CHANGELOG.md"
-python3 -I "$HOME/Developer/Shared Tools/kh-shared-ui/whats-new.py" CHANGELOG.md src-tauri/whats-new.json
+# The shared script lives in Shared Tools on a Mac that has it; the Updater's checkout carries
+# the same file where that folder has not been restored (measured on the new Mac, 2026-11-21).
+whats_new=""
+for candidate in \
+  "$HOME/Developer/Shared Tools/kh-shared-ui/whats-new.py" \
+  "$HOME/Developer/My Own Apps/update-studio-kh/packaging/shared-ui/whats-new.py"; do
+  [ -f "$candidate" ] && { whats_new="$candidate"; break; }
+done
+[ -n "$whats_new" ] || fail "whats-new.py is missing: looked in Shared Tools/kh-shared-ui and the Updater's packaging/shared-ui"
+python3 -I "$whats_new" CHANGELOG.md src-tauri/whats-new.json
 [ "$(python3 -c "import json;print(json.load(open('src-tauri/whats-new.json'))[0]['version'])")" = "$version" ] \
   || fail "whats-new.json's newest entry is not $version"
 
@@ -172,4 +192,7 @@ with open(f"dist/receipt-{version}.json", "w") as stream:
     json.dump(receipt, stream, indent=2)
 print(json.dumps(receipt, indent=2))
 PY
+if [ -n "$not_run" ]; then
+  printf '\n\033[33mNOT RUN, and not claimed as passed: %s\033[0m\n' "$not_run"
+fi
 printf '\n\033[32mRelease ready: %s\033[0m\n' "$dmg"

@@ -11,6 +11,12 @@ public struct Command: Decodable {
     public var host: String?
     /// The hold's settle ceiling in seconds, sent by the app so the helper can name it.
     public var ceiling: Int? = nil
+    /// The saved archive rows, sent with every configure so a start needs only its row id.
+    public var archives: [ArchiveSpec]? = nil
+    /// Discovery and restore: the folder to scan, and where the copy goes.
+    public var root: String? = nil
+    public var destination: String? = nil
+    public var archivePath: String? = nil
 }
 
 public enum Event {
@@ -24,6 +30,8 @@ public enum Event {
     case needsCredentials(id: String, name: String)
     case shares(host: String, shares: [String], needsCredentials: Bool, error: String?)
     case smbMounts([ShareCandidate])
+    case archive(JobView)
+    case restorable(root: String, items: [Restorable], error: String?)
     case log(level: String, message: String)
 
     public var json: Data {
@@ -69,6 +77,14 @@ public enum Event {
                 "shares": shares,
                 "needsCredentials": needsCredentials,
             ]
+            if let error { object["error"] = error }
+        case .archive(let job):
+            object["type"] = "archive"
+            object["job"] = (try? JSONSerialization.jsonObject(with: job.json)) ?? [:]
+        case .restorable(let root, let items, let error):
+            object["type"] = "restorable"
+            object["root"] = root
+            object["items"] = items.map(\.json)
             if let error { object["error"] = error }
         case .log(let level, let message):
             object = ["type": "log", "level": level, "message": message]

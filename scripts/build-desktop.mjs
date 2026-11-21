@@ -11,7 +11,10 @@ import { homedir, tmpdir } from "node:os";
 import { basename, join } from "node:path";
 
 const home = homedir();
-const markers = [`/Users/${basename(home)}`, "_orchestra", ".cargo/registry", ".rustup"];
+// Bounded to paths under this Mac's home. The bare suffixes were too broad: this toolchain's
+// precompiled std already carries `/cargo/registry/<hash>/…` strings from the machine that built
+// it (no owner name, no home path), and a bare `.cargo/registry` matched those instead of a leak.
+const markers = [`/Users/${basename(home)}`, home, "_orchestra", `${home}/.cargo/registry`, `${home}/.rustup`];
 
 // Returns true when the image is clean; prints one proof line either way.
 function scan(dmg) {

@@ -296,7 +296,8 @@ test("footer keeps Support, pill + updates and the status line on one grid", () 
 test("Return saves and a click outside never discards typed input", () => {
   assert.match(mainSource, /event\.key !== "Enter"[\s\S]{0,420}saveEditor\(\)/);
   assert.match(mainSource, /A click outside a sheet must never throw away typed input/);
-  assert.match(mainSource, /dialog === editorEl \|\| dialog === credentialsEl\) return/);
+  // Every sheet except What's New ignores an outside click; only What's New closes on it.
+  assert.match(mainSource, /if \(dialog !== whatsnewEl\) return/);
 });
 
 test("the app menu offers Close Window with the standard shortcut", () => {

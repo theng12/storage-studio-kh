@@ -127,6 +127,12 @@ done
 pgrep -f "$APP/Contents/Helpers/Storage Studio KH Helper" >/dev/null && fail "the helper survived a force-quit"
 pass "helper ends with a force-quit"
 
+# 5b. Channel archive and restore, against the helper inside the shipped bundle: a temp channel
+# copied and checked byte for byte, stopped at a file boundary by an update hold, killed,
+# resumed from the journal on the destination, discovered and restored without merging.
+bash tests/archive.sh "$HELPER" || fail "the channel archive checks failed"
+pass "channel archive and restore, checked byte for byte"
+
 # 6. Nothing was installed behind the app's back.
 launchctl list 2>/dev/null | grep -i "storagestudio" && fail "a launchd job was left behind"
 [ -z "$(ls "$DATA/Library/LaunchAgents" 2>/dev/null || true)" ] || fail "a launch agent was written"

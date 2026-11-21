@@ -480,3 +480,207 @@ final class EngineTests: XCTestCase {
         XCTAssertEqual(latestItem(recorder.all, id: "u1")?["detail"] as? String, "Disconnected just now.")
     }
 }
+
+/// The archive job: every byte verified on the destination, resumable from its journal, and a
+/// restore that never merges or overwrites. All of it on temp folders, never a real share.
+final class ArchiveRunnerTests: XCTestCase {
+    var root: URL!
+    var jobs: URL!
+    var destination: URL!
+
+    override func setUpWithError() throws {
+        root = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent("archive-tests-\(UUID().uuidString)")
+        jobs = root.appendingPathComponent("jobs")
+        destination = root.appendingPathComponent("Channel Archives")
+        try FileManager.default.createDirectory(at: jobs, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: destination, withIntermediateDirectories: true)
+    }
+
+    override func tearDownWithError() throws {
+        try? FileManager.default.removeItem(at: root)
+    }
+
+    private func channel(named slug: String, files: [String: String]) throws -> URL {
+        let folder = root.appendingPathComponent(slug)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        let meta = #"{"name":"Night Atlas","slug":"\#(slug)","project_id":"p-1"}"#
+        try meta.write(to: folder.appendingPathComponent("project.json"), atomically: true, encoding: .utf8)
+        for (path, text) in files {
+            let url = folder.appendingPathComponent(path)
+            try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+            try text.write(to: url, atomically: true, encoding: .utf8)
+        }
+        return folder
+    }
+
+    private func spec(_ channel: URL, slug: String = "night-atlas") -> ArchiveSpec {
+        ArchiveSpec(id: "a1", name: "Night Atlas", slug: slug, roots: [channel.path], destination: destination.path)
+    }
+
+    @discardableResult
+    private func run(_ spec: ArchiveSpec) -> (views: [JobView], last: JobView?) {
+        var views: [JobView] = []
+        var last: JobView?
+        let runner = ArchiveRunner(archive: spec, jobsDirectory: jobs,
+                                   emit: { views.append($0) }, finished: { last = $0 })
+        runner.run()
+        return (views, last)
+    }
+
+    private func archiveDirectory(_ slug: String = "night-atlas") throws -> URL {
+        let channelDir = destination.appendingPathComponent(slug)
+        let runs = try FileManager.default.contentsOfDirectory(at: channelDir, includingPropertiesForKeys: nil)
+        return try XCTUnwrap(runs.first)
+    }
+
+    func testEveryFileIsCheckedAndTheManifestSaysVerified() throws {
+        let folder = try channel(named: "night-atlas", files: [
+            "episodes/EP0110/script.txt": "alpha",
+            "assets/logo.txt": String(repeating: "x", count: 200_000),
+        ])
+        let result = run(spec(folder))
+        XCTAssertEqual(result.last?.state, "archived")
+        XCTAssertEqual(result.last?.filesTotal, 2)
+        XCTAssertNil(result.last?.detail)
+
+        let directory = try archiveDirectory()
+        let manifest = try JSONDecoder().decode(
+            Manifest.self,
+            from: Data(contentsOf: directory.appendingPathComponent("manifest.json"))
+        )
+        XCTAssertEqual(manifest.state, "verified")
+        XCTAssertEqual(manifest.totals.files, 2)
+        XCTAssertTrue(manifest.changedWhileCopying.isEmpty)
+        XCTAssertEqual(manifest.files.count, 2)
+        XCTAssertEqual(manifest.channel.slug, "night-atlas")
+
+        let copied = directory.appendingPathComponent("roots/01-night-atlas/episodes/EP0110/script.txt")
+        XCTAssertEqual(try String(contentsOf: copied, encoding: .utf8), "alpha")
+        // The job file is gone once the archive is finished: nothing left to resume.
+        let left = try FileManager.default.contentsOfDirectory(at: jobs, includingPropertiesForKeys: nil)
+        XCTAssertTrue(left.isEmpty)
+    }
+
+    func testAPausedJobResumesAndFinishes() throws {
+        let folder = try channel(named: "night-atlas", files: ["a.txt": "one", "b.txt": "two"])
+        var last: JobView?
+        var views: [JobView] = []
+        let first = ArchiveRunner(archive: spec(folder), jobsDirectory: jobs,
+                                  emit: { views.append($0) }, finished: { last = $0 })
+        first.requestPause()
+        first.run()
+        XCTAssertEqual(last?.state, "paused")
+        XCTAssertEqual(last?.filesDone, 0)
+
+        // A new process (or a resumed one) reads the job file and carries on.
+        let second = ArchiveRunner(archive: spec(folder), jobsDirectory: jobs,
+                                   emit: { _ in }, finished: { last = $0 })
+        second.run()
+        XCTAssertEqual(last?.state, "archived")
+        XCTAssertEqual(last?.filesDone, 2)
+    }
+
+    func testTheJournalIsBelievedOnlyWhenTheDestinationReallyMatches() throws {
+        let folder = try channel(named: "night-atlas", files: ["keep.txt": "checked", "redo.txt": "correct"])
+        run(spec(folder))
+        let directory = try archiveDirectory()
+
+        // Rebuild an interrupted job by hand: the manifest is gone, the journal keeps one true
+        // line and one false one, and the destination holds one good file and one bad one.
+        try FileManager.default.removeItem(at: directory.appendingPathComponent("manifest.json"))
+        let roots = directory.appendingPathComponent("roots/01-night-atlas")
+        let keep = roots.appendingPathComponent("keep.txt")
+        let redo = roots.appendingPathComponent("redo.txt")
+        try FileManager.default.setAttributes([.posixPermissions: 0o400], ofItemAtPath: keep.path)
+        try "wrong".write(to: redo, atomically: true, encoding: .utf8)
+
+        let sourceKeep = folder.appendingPathComponent("keep.txt")
+        let sourceRedo = folder.appendingPathComponent("redo.txt")
+        let keepAttributes = try FileManager.default.attributesOfItem(atPath: sourceKeep.path)
+        let redoAttributes = try FileManager.default.attributesOfItem(atPath: sourceRedo.path)
+        let keepLine = Manifest.File(
+            root: 0, path: "keep.txt",
+            bytes: ((keepAttributes[.size] as? NSNumber)?.int64Value ?? 0),
+            sha256: try ArchiveRunner.sha256(of: sourceKeep),
+            modified: (keepAttributes[.modificationDate] as? Date ?? Date()).timeIntervalSince1970
+        )
+        let redoLine = Manifest.File(
+            root: 0, path: "redo.txt",
+            bytes: ((redoAttributes[.size] as? NSNumber)?.int64Value ?? 0),
+            sha256: String(repeating: "0", count: 64),
+            modified: (redoAttributes[.modificationDate] as? Date ?? Date()).timeIntervalSince1970
+        )
+        let encoder = JSONEncoder()
+        var journal = ""
+        for line in [keepLine, redoLine] {
+            journal += String(data: try encoder.encode(line), encoding: .utf8)! + "\n"
+        }
+        try journal.write(to: directory.appendingPathComponent("manifest.partial.jsonl"), atomically: true, encoding: .utf8)
+        let archiveId = directory.lastPathComponent
+        let record = JobRecord(
+            id: "a1", kind: "archive", name: "Night Atlas", state: "paused", archiveId: archiveId,
+            directory: directory.path, destination: destination.path,
+            roots: [folder.path], slug: "night-atlas",
+            filesDone: 0, filesTotal: 2, bytesDone: 0, bytesTotal: 0, detail: nil
+        )
+        try encoder.encode(record).write(to: jobs.appendingPathComponent("archive-a1.json"))
+
+        let result = run(spec(folder))
+        XCTAssertEqual(result.last?.state, "archived")
+        // The checked file was skipped (its read-only mode survives); the false line was re-copied.
+        let keepMode = (try FileManager.default.attributesOfItem(atPath: keep.path)[.posixPermissions] as? NSNumber)?.intValue
+        XCTAssertEqual(keepMode, 0o400)
+        XCTAssertEqual(try String(contentsOf: redo, encoding: .utf8), "correct")
+    }
+
+    func testDiscoveryFindsAnArchiveItHasNeverSeen() throws {
+        let folder = try channel(named: "night-atlas", files: ["a.txt": "one"])
+        run(spec(folder))
+        let found = ArchiveRunner.scan(root: destination.path)
+        XCTAssertEqual(found.count, 1)
+        XCTAssertEqual(found.first?.name, "Night Atlas")
+        XCTAssertEqual(found.first?.files, 1)
+        XCTAssertEqual(found.first?.roots, ["night-atlas"])
+    }
+
+    func testRestoreChecksEverythingAndNeverOverwrites() throws {
+        let folder = try channel(named: "night-atlas", files: ["episodes/a.txt": "one", "b.txt": "two"])
+        run(spec(folder))
+        let archive = try archiveDirectory()
+        let target = root.appendingPathComponent("Restored")
+        try FileManager.default.createDirectory(at: target, withIntermediateDirectories: true)
+
+        var last: JobView?
+        let first = ArchiveRunner(restore: archive.path, destination: target.path, jobsDirectory: jobs,
+                                  emit: { _ in }, finished: { last = $0 })
+        first.run()
+        XCTAssertEqual(last?.state, "restored")
+        XCTAssertEqual(try String(contentsOf: target.appendingPathComponent("night-atlas/episodes/a.txt"), encoding: .utf8), "one")
+
+        // A second restore of the same channel must not merge into the first copy.
+        let second = ArchiveRunner(restore: archive.path, destination: target.path, jobsDirectory: jobs,
+                                   emit: { _ in }, finished: { last = $0 })
+        second.run()
+        XCTAssertEqual(last?.state, "restored")
+        let names = try FileManager.default.contentsOfDirectory(atPath: target.path).sorted()
+        XCTAssertEqual(names.count, 2)
+        XCTAssertTrue(names.contains("night-atlas"))
+        XCTAssertTrue(names.contains { $0.hasPrefix("night-atlas (archived ") })
+        XCTAssertFalse(names.contains { $0.hasPrefix(".restoring-") }, "staging must not be left behind")
+    }
+
+    func testRestoreWithoutAManifestSaysSoAndCopiesNothing() throws {
+        let empty = root.appendingPathComponent("someone-copied-this")
+        try FileManager.default.createDirectory(at: empty, withIntermediateDirectories: true)
+        let target = root.appendingPathComponent("Target")
+        try FileManager.default.createDirectory(at: target, withIntermediateDirectories: true)
+        var last: JobView?
+        let runner = ArchiveRunner(restore: empty.path, destination: target.path, jobsDirectory: jobs,
+                                   emit: { _ in }, finished: { last = $0 })
+        runner.run()
+        XCTAssertEqual(last?.state, "failed")
+        XCTAssertEqual(last?.detail?.contains("no manifest"), true)
+        XCTAssertTrue(try FileManager.default.contentsOfDirectory(atPath: target.path).isEmpty)
+    }
+}

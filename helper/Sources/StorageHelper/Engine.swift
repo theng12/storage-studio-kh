@@ -11,6 +11,9 @@ public final class Engine {
     private let queue = DispatchQueue(label: "app.storagestudiokh.helper.engine")
     /// Mounts run here, never on `queue`: a wedged NetFS call must not block commands or a hold.
     private let mountQueue = DispatchQueue(label: "app.storagestudiokh.helper.mount", attributes: .concurrent)
+    /// Copying a channel can take hours: it never shares the engine queue, so a hold or a mount
+    /// command is answered while a file is being copied.
+    private let archiveQueue = DispatchQueue(label: "app.storagestudiokh.helper.archive")
     private let environment = ProcessInfo.processInfo.environment
 
     private var storages: [Storage] = []
@@ -41,6 +44,12 @@ public final class Engine {
     /// Held for an update: no new attempt starts. In memory only, so a restart takes work again.
     private var paused = false
     private var deferred = Set<String>()
+    /// One archive row set by the app; one job at a time, in its own queue.
+    private var archives: [ArchiveSpec] = []
+    private var runner: ArchiveRunner?
+    /// A job that stopped at a file boundary for an update: it restarts when the hold resumes.
+    private var pausedArchive: ArchiveSpec?
+    private var listedLeftoverJobs = false
 
     private var ticker: DispatchSourceTimer?
     private var monitor: NWPathMonitor?
@@ -144,6 +153,31 @@ public final class Engine {
                 notice[id] = nil
                 announce()
             }
+        case "archive_start":
+            if let id = command.id, let spec = archives.first(where: { $0.id == id }) {
+                startArchive(spec)
+            } else {
+                emit(Event.log(level: "warn", message: "that archive is no longer in the list").json)
+            }
+        case "restore_scan":
+            let root = (command.root ?? "").trimmingCharacters(in: .whitespaces)
+            guard !root.isEmpty else {
+                emit(Event.restorable(root: "", items: [], error: "Choose the folder that holds the archives.").json)
+                return
+            }
+            archiveQueue.async { [weak self] in
+                let items = ArchiveRunner.scan(root: root)
+                guard let self else { return }
+                self.queue.async { self.emit(Event.restorable(root: root, items: items, error: nil).json) }
+            }
+        case "restore_start":
+            let path = (command.archivePath ?? "").trimmingCharacters(in: .whitespaces)
+            let destination = (command.destination ?? "").trimmingCharacters(in: .whitespaces)
+            guard !path.isEmpty, !destination.isEmpty else {
+                emit(Event.log(level: "warn", message: "restore needs an archive and a folder to restore into").json)
+                return
+            }
+            startRestore(path: path, destination: destination)
         case "hold":
             hold(ceiling: command.ceiling)
         case "resume":
@@ -159,6 +193,8 @@ public final class Engine {
 
     private func configure(_ command: Command) {
         retries = RetryPolicy.retryCount(command.retries ?? 3)
+        archives = command.archives ?? []
+        announceLeftoverJobs()
         let previousIds = Set(storages.map(\.id))
         storages = command.storages ?? []
         let ids = Set(storages.map(\.id))
@@ -211,11 +247,14 @@ public final class Engine {
     /// helper that never paused, and the install is refused every 7 s forever).
     private func hold(ceiling: Int?) {
         let limit = "settle ceiling \(ceiling.map(String.init) ?? "20") s"
-        let work = "\(inFlight.count) in flight, \(queued.count) queued"
+        let job = runner == nil ? "" : ", an archive running"
+        let work = "\(inFlight.count) in flight, \(queued.count) queued\(job)"
         if paused {
             emit(Event.log(level: "info", message: "already holding new work for an update (\(limit), \(work))").json)
         } else {
             paused = true
+            // The copy stops at the next file boundary, never inside a file, and says so.
+            runner?.requestPause()
             emit(Event.log(level: "info", message: "holding new work for an update (\(limit), \(work))").json)
         }
         announce()
@@ -233,6 +272,86 @@ public final class Engine {
         for id in waiting {
             if let storage = storage(id), states[id]?.status != .mounted { begin(storage) }
         }
+        if let spec = pausedArchive {
+            pausedArchive = nil
+            startArchive(spec)
+        }
+    }
+
+    // MARK: archives
+
+    private func jobsDirectory() -> URL {
+        Secrets.fileURL.deletingLastPathComponent().appendingPathComponent("jobs", isDirectory: true)
+    }
+
+    /// A job the last run left behind is offered as Paused once, after the first configure.
+    private func announceLeftoverJobs() {
+        guard !listedLeftoverJobs else { return }
+        listedLeftoverJobs = true
+        for job in ArchiveRunner.leftoverJobs(jobsDirectory: jobsDirectory()) {
+            emit(Event.archive(job).json)
+        }
+    }
+
+    private func startArchive(_ spec: ArchiveSpec) {
+        guard runner == nil else {
+            emit(Event.archive(Self.refused(spec.id, spec.name, "Another archive job is already running. It finishes first.")).json)
+            return
+        }
+        if paused {
+            pausedArchive = spec
+            emit(Event.archive(JobView(
+                id: spec.id, kind: "archive", name: spec.name, state: "paused",
+                filesDone: 0, filesTotal: 0, bytesDone: 0, bytesTotal: 0,
+                detail: "Held for an update. It starts by itself when the update finishes.", path: nil
+            )).json)
+            return
+        }
+        let job = ArchiveRunner(
+            archive: spec,
+            jobsDirectory: jobsDirectory(),
+            emit: { [weak self] view in self?.emit(Event.archive(view).json) },
+            finished: { [weak self] view in self?.queue.async { self?.finishJob(view) } }
+        )
+        runner = job
+        announce()
+        archiveQueue.async { job.run() }
+    }
+
+    private func startRestore(path: String, destination: String) {
+        guard runner == nil else {
+            emit(Event.archive(Self.refused("restore", "Restore", "Another archive job is already running. It finishes first.")).json)
+            return
+        }
+        let job = ArchiveRunner(
+            restore: path,
+            destination: destination,
+            jobsDirectory: jobsDirectory(),
+            emit: { [weak self] view in self?.emit(Event.archive(view).json) },
+            finished: { [weak self] view in self?.queue.async { self?.finishJob(view) } }
+        )
+        runner = job
+        announce()
+        archiveQueue.async { job.run() }
+    }
+
+    private func finishJob(_ view: JobView) {
+        runner = nil
+        if view.kind == "archive", view.state == "paused" {
+            pausedArchive = archives.first { $0.id == view.id }
+        }
+        if view.state == "archived" || view.state == "restored" {
+            pausedArchive = nil
+        }
+        announce()
+    }
+
+    private static func refused(_ id: String, _ name: String, _ detail: String) -> JobView {
+        JobView(
+            id: id, kind: "archive", name: name, state: "failed",
+            filesDone: 0, filesTotal: 0, bytesDone: 0, bytesTotal: 0,
+            detail: detail, path: nil
+        )
     }
 
     private func mountNow(_ storage: Storage) {
@@ -694,6 +813,9 @@ public final class Engine {
             return state
         }
         let queued = Set(scheduled.keys).union(deferred).sorted()
-        emit(Event.state(items, inFlight: inFlight.sorted(), queued: queued, deferred: deferred.sorted(), paused: paused).json)
+        // An archive job is in flight too: a hold must name it, and wait for it at a file boundary.
+        var flight = inFlight
+        if let runner { flight.insert(runner.ownerId) }
+        emit(Event.state(items, inFlight: flight.sorted(), queued: queued, deferred: deferred.sorted(), paused: paused).json)
     }
 }

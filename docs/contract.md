@@ -146,6 +146,89 @@ within 90 s. Mount now starts again." and nothing retries on its own. The attemp
 helper's command queue, so a wedged share never blocks other commands or the hold; a mount that
 lands late is still reflected by the next mount-table read.
 
+## Channel archives
+
+A channel is the folder the person chose; Storage never interprets what is inside it. It reads
+four fields from `project.json` when one exists — `name`, `slug`, `project_id`, and whether
+`media_root` is set — and copies everything else byte for byte.
+
+```ts
+interface Archive {
+  id: string;
+  name: string;
+  slug: string;             // the archive's folder name on the destination
+  projectId: string | null;
+  roots: string[];          // [channel folder, heavy-media folder?]
+  destination: string;      // the archive root the person chose
+  last: ArchiveLast | null;
+}
+
+interface ArchiveLast { at: number; path: string; files: number; bytes: number; }
+
+interface JobView {
+  id: string;               // the archive row id, or a restore's own id
+  kind: "archive" | "restore";
+  name: string;
+  state: "copying" | "verifying" | "archived" | "restoring" | "restored" | "paused" | "failed";
+  filesDone: number; filesTotal: number;
+  bytesDone: number; bytesTotal: number;
+  detail: string | null;    // a plain reason, never an error list
+  path: string | null;      // the archive folder, or the folder restored into
+}
+
+interface RestorableItem {
+  name: string; slug: string; path: string; createdAt: string; machine: string;
+  files: number; bytes: number; roots: string[];
+}
+
+interface RestorableList { root: string; items: RestorableItem[]; error: string | null; }
+
+interface ChannelInspect {
+  isChannel: boolean; name: string | null; slug: string | null;
+  hasMediaRoot: boolean; looksLikeLibrary: boolean;
+}
+```
+
+`Snapshot` gains `archives: Archive[]`, `job: JobView | null` (the one job that can run) and
+`restorable: RestorableList | null` (the last discovery, so the Restore sheet draws from a
+snapshot).
+
+| Command | Arguments | Returns |
+| --- | --- | --- |
+| `inspect_channel` | `{ folder }` | `ChannelInspect` — read-only, for the Add sheet |
+| `archive_add` | `{ input: { id?, name?, folder, mediaFolder?, destination } }` | `Snapshot` — saves the row; nothing is copied |
+| `archive_remove` | `{ id }` | `Snapshot` — forgets the row; the archive is untouched |
+| `archive_start` | `{ id }` | `null` — starts (or resumes) that row's archive; refused while an update holds new work |
+| `archive_reveal` | `{ id }` | `null` — opens the last archive folder, or the destination |
+| `restore_scan` | `{ root }` | `null` — the archives arrive as `restorable` in the next snapshot |
+| `restore_start` | `{ archivePath, destination }` | `null` — restores and checks before moving into place |
+
+`pick_mount_point` takes an optional `message`, so an archive's folder is not asked for with a
+sentence about mounting.
+
+One job at a time. While a job runs, the helper reports `archive:<row id>` in the state event's
+`inFlight`, so an update hold names it and waits for it to stop at a file boundary; a paused job
+carries on by itself when the hold resumes. Progress is files and bytes only — no percentage, no
+finish time.
+
+### What an archive looks like on the destination
+
+```
+<destination>/<slug>/<yyyyMMdd'T'HHmmss'Z'-xxxx>/
+    roots/01-<label>/…      the channel folder's own tree
+    roots/02-<label>/…      the heavy-media folder, when one was added
+    manifest.partial.jsonl  append-only journal during the run; removed on success
+    manifest.json           written only after every file is verified, then read back
+```
+
+`manifest.json` (`format: 1`) carries `archiveId`, `createdAt`, `machine`, `channel`
+(`name`, `slug`, `projectId`), `roots` (`kind`, `label`, `source`), `totals`, `files` (relative
+`path`, `bytes`, `sha256`, `modified`), `changedWhileCopying`, `skipped`, `state: "verified"`.
+The manifests are the index: discovery is a bounded fold over the chosen folder, so a Mac that
+has never seen the channel can still restore it. A restore moves each root into place under
+`<destination>/<label>`; an existing folder of that name is never merged or replaced — the
+second copy becomes `<label> (archived 21 Nov 2026)`.
+
 ## Copy rules
 
 - Say what happened and what to do: "The share couldn't be mounted (code 13)." →

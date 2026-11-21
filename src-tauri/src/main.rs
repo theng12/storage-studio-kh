@@ -60,6 +60,79 @@ impl Default for General {
     }
 }
 
+/// One saved archive row: the channel folder (and its heavy-media folder, when it keeps one
+/// elsewhere) and the archive root it is copied to. Storage never interprets what is inside.
+#[derive(Serialize, Deserialize, Clone, Debug)]
+#[serde(rename_all = "camelCase")]
+struct Archive {
+    id: String,
+    name: String,
+    slug: String,
+    #[serde(default)]
+    project_id: Option<String>,
+    roots: Vec<String>,
+    destination: String,
+    #[serde(default)]
+    last: Option<ArchiveLast>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+#[serde(rename_all = "camelCase")]
+struct ArchiveLast {
+    at: u64,
+    path: String,
+    files: u64,
+    bytes: u64,
+}
+
+/// What the helper reports about the one job that can run.
+#[derive(Serialize, Deserialize, Clone, Debug, Default)]
+#[serde(rename_all = "camelCase")]
+struct JobView {
+    #[serde(default)]
+    id: String,
+    #[serde(default)]
+    kind: String,
+    #[serde(default)]
+    name: String,
+    #[serde(default)]
+    state: String,
+    #[serde(default)]
+    files_done: u64,
+    #[serde(default)]
+    files_total: u64,
+    #[serde(default)]
+    bytes_done: u64,
+    #[serde(default)]
+    bytes_total: u64,
+    #[serde(default)]
+    detail: Option<String>,
+    #[serde(default)]
+    path: Option<String>,
+}
+
+/// One archive found on a destination, read from its manifest alone.
+#[derive(Serialize, Deserialize, Clone, Debug)]
+#[serde(rename_all = "camelCase")]
+struct RestorableItem {
+    name: String,
+    slug: String,
+    path: String,
+    created_at: String,
+    machine: String,
+    files: u64,
+    bytes: u64,
+    roots: Vec<String>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, Default)]
+#[serde(rename_all = "camelCase")]
+struct RestorableList {
+    root: String,
+    items: Vec<RestorableItem>,
+    error: Option<String>,
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 #[serde(rename_all = "camelCase")]
 struct Settings {
@@ -69,6 +142,8 @@ struct Settings {
     list_view: String, // "cards" | "table"
     general: General,
     storages: Vec<Storage>,
+    #[serde(default)]
+    archives: Vec<Archive>,
 }
 
 fn default_list_view() -> String {
@@ -78,11 +153,12 @@ fn default_list_view() -> String {
 impl Default for Settings {
     fn default() -> Self {
         Self {
-            schema: 1,
+            schema: 2,
             appearance: "system".into(),
             list_view: default_list_view(),
             general: General::default(),
             storages: Vec::new(),
+            archives: Vec::new(),
         }
     }
 }
@@ -279,6 +355,11 @@ struct Snapshot {
     holding: bool,
     /// Storages with a running attempt or a waiting retry: the rows that offer Stop trying.
     queued: Vec<String>,
+    archives: Vec<Archive>,
+    /// The one archive or restore job, while one is running or paused.
+    job: Option<JobView>,
+    /// The last discovery result, so the restore sheet can draw it from a snapshot.
+    restorable: Option<RestorableList>,
 }
 
 #[derive(Serialize, Clone)]
@@ -355,6 +436,8 @@ struct AppState {
     work_version: Mutex<u64>,
     work_pending: Mutex<Option<HoldWork>>,
     work_type: Mutex<&'static str>,
+    job: Mutex<Option<JobView>>,
+    restorable: Mutex<Option<RestorableList>>,
 }
 
 impl AppState {
@@ -376,6 +459,8 @@ impl AppState {
             work_version: Mutex::new(0),
             work_pending: Mutex::new(None),
             work_type: Mutex::new("hold"),
+            job: Mutex::new(None),
+            restorable: Mutex::new(None),
         }
     }
 }
@@ -437,6 +522,8 @@ fn snapshot(app: &AppHandle) -> Snapshot {
         ids.dedup();
         ids
     };
+    let job = state.job.lock().unwrap().clone();
+    let restorable = state.restorable.lock().unwrap().clone();
     Snapshot {
         app_name: APP_NAME.into(),
         version: APP_VERSION.into(),
@@ -456,6 +543,9 @@ fn snapshot(app: &AppHandle) -> Snapshot {
         second_instance,
         holding,
         queued,
+        archives: settings.archives.clone(),
+        job,
+        restorable,
     }
 }
 
@@ -535,6 +625,7 @@ fn helper_config(settings: &Settings) -> serde_json::Value {
         "type": "configure",
         "retries": settings.general.retries,
         "storages": settings.storages,
+        "archives": settings.archives,
     })
 }
 
@@ -638,6 +729,15 @@ enum HelperEvent {
     Shares { host: String, shares: Vec<String>, needs_credentials: bool, error: Option<String> },
     #[serde(rename = "smb_mounts")]
     SmbMounts { items: Vec<ShareCandidate> },
+    #[serde(rename = "archive")]
+    Archive { job: JobView },
+    #[serde(rename = "restorable")]
+    Restorable {
+        root: String,
+        items: Vec<RestorableItem>,
+        #[serde(default)]
+        error: Option<String>,
+    },
 }
 
 #[derive(Deserialize)]
@@ -718,6 +818,30 @@ fn handle_helper_line(app: &AppHandle, line: &str) {
         }
         HelperEvent::SmbMounts { items } => {
             *state.smb_mounts.lock().unwrap() = items;
+            emit_snapshot(app);
+        }
+        HelperEvent::Archive { job } => {
+            log(&format!(
+                "archive [{}] {}: {} of {} files",
+                job.state, job.name, job.files_done, job.files_total
+            ));
+            if job.state == "archived" {
+                let mut settings = state.settings.lock().unwrap();
+                if let Some(archive) = settings.archives.iter_mut().find(|item| item.id == job.id) {
+                    archive.last = Some(ArchiveLast {
+                        at: unix_millis() as u64,
+                        path: job.path.clone().unwrap_or_default(),
+                        files: job.files_total,
+                        bytes: job.bytes_total,
+                    });
+                    let _ = save_settings(&settings);
+                }
+            }
+            *state.job.lock().unwrap() = Some(job);
+            emit_snapshot(app);
+        }
+        HelperEvent::Restorable { root, items, error } => {
+            *state.restorable.lock().unwrap() = Some(RestorableList { root, items, error });
             emit_snapshot(app);
         }
         HelperEvent::Log { level, message } => {
@@ -946,7 +1070,19 @@ fn unsettled(state: &AppState) -> Vec<String> {
     let mut out: Vec<String> = work
         .in_flight
         .iter()
-        .map(|id| format!("{} (mounting)", name(id)))
+        .map(|id| {
+            // The helper names an archive job `archive:<row id>`; say what it is, not "(mounting)".
+            if let Some(archive_id) = id.strip_prefix("archive:") {
+                let label = settings
+                    .archives
+                    .iter()
+                    .find(|archive| archive.id == archive_id)
+                    .map(|archive| archive.name.clone())
+                    .unwrap_or_else(|| archive_id.to_string());
+                return format!("{label} (archiving)");
+            }
+            format!("{} (mounting)", name(id))
+        })
         .collect();
     // A hold-deferred claim is resumable by this helper. A retry timer dies with the process, so
     // it is only stranded when the next start would not re-dispatch it (no login reconnect).
@@ -1617,16 +1753,247 @@ fn reveal_storage(state: State<'_, AppState>, id: String) -> Result<(), String> 
     Ok(())
 }
 
+// ---------------------------------------------------------------- channel archives
+
+/// A Story channel's `project.json`, read for four fields only. Nothing else in a channel is
+/// interpreted: Storage copies bytes, it does not learn what an episode is.
+#[derive(Deserialize)]
+struct ChannelMeta {
+    #[serde(default)]
+    name: Option<String>,
+    #[serde(default)]
+    slug: Option<String>,
+    #[serde(default)]
+    project_id: Option<String>,
+    #[serde(default)]
+    media_root: Option<String>,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct ArchiveInput {
+    #[serde(default)]
+    id: Option<String>,
+    #[serde(default)]
+    name: Option<String>,
+    folder: String,
+    #[serde(default)]
+    media_folder: Option<String>,
+    destination: String,
+}
+
+fn channel_meta(folder: &Path) -> Option<ChannelMeta> {
+    let text = std::fs::read_to_string(folder.join("project.json")).ok()?;
+    serde_json::from_str::<ChannelMeta>(&text).ok()
+}
+
+fn child_channel_count(folder: &Path) -> usize {
+    let Ok(entries) = std::fs::read_dir(folder) else { return 0 };
+    entries
+        .filter_map(|entry| entry.ok())
+        .filter(|entry| entry.path().is_dir() && entry.path().join("project.json").is_file())
+        .count()
+}
+
+fn require_folder(raw: &str, what: &str) -> Result<PathBuf, String> {
+    let text = raw.trim();
+    if text.is_empty() {
+        return Err(format!("Choose {what}."));
+    }
+    let path = PathBuf::from(text);
+    if !path.is_absolute() {
+        return Err(format!("{what} needs a full path. Choose it with the folder panel."));
+    }
+    if !path.is_dir() {
+        return Err(format!("{text} isn't a folder on this Mac right now."));
+    }
+    Ok(path)
+}
+
+fn inside(child: &Path, parent: &Path) -> bool {
+    let child = child.canonicalize().unwrap_or_else(|_| child.to_path_buf());
+    let parent = parent.canonicalize().unwrap_or_else(|_| parent.to_path_buf());
+    child != parent && child.starts_with(&parent)
+}
+
+/// What the Add sheet needs to know about a picked folder before it is saved. Read-only.
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct ChannelInspect {
+    is_channel: bool,
+    name: Option<String>,
+    slug: Option<String>,
+    has_media_root: bool,
+    looks_like_library: bool,
+}
+
+#[tauri::command]
+fn inspect_channel(folder: String) -> Result<ChannelInspect, String> {
+    let path = require_folder(&folder, "the channel's folder")?;
+    let meta = channel_meta(&path);
+    Ok(ChannelInspect {
+        is_channel: meta.is_some(),
+        name: meta.as_ref().and_then(|meta| meta.name.clone()),
+        slug: meta.as_ref().and_then(|meta| meta.slug.clone()),
+        has_media_root: meta
+            .as_ref()
+            .and_then(|meta| meta.media_root.clone())
+            .map(|root| !root.trim().is_empty())
+            .unwrap_or(false),
+        looks_like_library: path.join("_trash").is_dir() || child_channel_count(&path) > 1,
+    })
+}
+
+/// The Add sheet saves the row; nothing is copied until Archive is pressed. A picked folder is
+/// the channel: the app never scans a disk for channels or guesses which one is meant.
+#[tauri::command]
+fn archive_add(app: AppHandle, state: State<'_, AppState>, input: ArchiveInput) -> Result<Snapshot, String> {
+    let folder = require_folder(&input.folder, "the channel's folder")?;
+    if folder.join("_trash").is_dir() || child_channel_count(&folder) > 1 {
+        return Err("That looks like the Library, not one channel. Choose the channel's own folder.".into());
+    }
+    let destination = require_folder(&input.destination, "where the archive goes")?;
+    let media = match input.media_folder.as_deref().map(str::trim).filter(|text| !text.is_empty()) {
+        Some(raw) => {
+            let media = require_folder(raw, "the channel's media folder")?;
+            if media == folder || inside(&media, &folder) {
+                return Err("That media folder is already inside the channel's folder, so it is copied with it.".into());
+            }
+            Some(media)
+        }
+        None => None,
+    };
+
+    let meta = channel_meta(&folder);
+    let folder_name = folder.file_name().map(|name| name.to_string_lossy().into_owned()).unwrap_or_default();
+    if folder_name.is_empty() {
+        return Err("That folder can't be used as a channel.".into());
+    }
+    let slug = meta
+        .as_ref()
+        .and_then(|meta| meta.slug.clone())
+        .filter(|slug| !slug.trim().is_empty() && !slug.contains('/'))
+        .unwrap_or(folder_name.clone());
+    let name = input
+        .name
+        .as_deref()
+        .map(clean)
+        .filter(|name| !name.is_empty())
+        .or_else(|| meta.as_ref().and_then(|meta| meta.name.clone()).filter(|name| !name.trim().is_empty()))
+        .unwrap_or(folder_name);
+    let project_id = meta.as_ref().and_then(|meta| meta.project_id.clone()).filter(|id| !id.trim().is_empty());
+
+    let mut roots = vec![folder.to_string_lossy().into_owned()];
+    if let Some(media) = media {
+        roots.push(media.to_string_lossy().into_owned());
+    }
+
+    {
+        let mut settings = state.settings.lock().unwrap();
+        let id = input.id.clone().unwrap_or_else(|| format!("a{}", unix_millis()));
+        let previous_last = settings.archives.iter().find(|item| item.id == id).and_then(|item| item.last.clone());
+        let archive = Archive {
+            id: id.clone(),
+            name,
+            slug,
+            project_id,
+            roots,
+            destination: destination.to_string_lossy().into_owned(),
+            last: previous_last,
+        };
+        if let Some(existing) = settings.archives.iter_mut().find(|item| item.id == id) {
+            *existing = archive;
+        } else {
+            settings.archives.push(archive);
+        }
+        save_settings(&settings)?;
+        let _ = send_to_helper(&state, &helper_config(&settings));
+    }
+    emit_snapshot(&app);
+    Ok(snapshot(&app))
+}
+
+/// Forgetting a row deletes nothing: the archive stays where it is on the destination.
+#[tauri::command]
+fn archive_remove(app: AppHandle, state: State<'_, AppState>, id: String) -> Result<Snapshot, String> {
+    {
+        let mut settings = state.settings.lock().unwrap();
+        settings.archives.retain(|archive| archive.id != id);
+        save_settings(&settings)?;
+        let _ = send_to_helper(&state, &helper_config(&settings));
+    }
+    emit_snapshot(&app);
+    Ok(snapshot(&app))
+}
+
+#[tauri::command]
+fn archive_start(state: State<'_, AppState>, id: String) -> Result<(), String> {
+    refuse_new_work(&state)?;
+    send_to_helper(&state, &serde_json::json!({ "type": "archive_start", "id": id }))
+}
+
+#[tauri::command]
+fn archive_reveal(state: State<'_, AppState>, id: String) -> Result<(), String> {
+    let path = {
+        let settings = state.settings.lock().unwrap();
+        let archive = settings.archives.iter().find(|item| item.id == id).ok_or("That row is no longer in the list.")?;
+        archive
+            .last
+            .as_ref()
+            .map(|last| last.path.clone())
+            .unwrap_or_else(|| archive.destination.clone())
+    };
+    if !Path::new(&path).exists() {
+        return Err(format!("{path} is not available right now."));
+    }
+    Command::new("open")
+        .arg(&path)
+        .spawn()
+        .map_err(|_| "Could not open that folder in Finder.".to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
+fn restore_scan(app: AppHandle, state: State<'_, AppState>, root: String) -> Result<(), String> {
+    *state.restorable.lock().unwrap() = None;
+    emit_snapshot(&app);
+    send_to_helper(&state, &serde_json::json!({ "type": "restore_scan", "root": root.trim() }))
+}
+
+#[tauri::command]
+fn restore_start(
+    state: State<'_, AppState>,
+    archive_path: String,
+    destination: String,
+) -> Result<(), String> {
+    refuse_new_work(&state)?;
+    send_to_helper(
+        &state,
+        &serde_json::json!({
+            "type": "restore_start",
+            "archivePath": archive_path,
+            "destination": destination,
+        }),
+    )
+}
+
 /// The storage form never types a filesystem path: macOS's own folder panel is the only way to
 /// set a mount point, and the field is read-only afterwards. A cancelled panel answers `None`.
+/// `message` names what the panel is for, so an archive's folder is not asked for with a
+/// sentence about mounting.
 #[tauri::command]
-async fn pick_mount_point(app: AppHandle, start_dir: Option<String>) -> Result<Option<String>, String> {
+async fn pick_mount_point(
+    app: AppHandle,
+    start_dir: Option<String>,
+    message: Option<String>,
+) -> Result<Option<String>, String> {
     #[cfg(target_os = "macos")]
     {
         let (sender, receiver) = std::sync::mpsc::channel();
         let start = start_dir.unwrap_or_default();
+        let message = message.unwrap_or_else(|| "Choose a folder to mount the share at".into());
         app.run_on_main_thread(move || {
-            let _ = sender.send(folder_panel(&start));
+            let _ = sender.send(folder_panel(&start, &message));
         })
         .map_err(|e| format!("The folder chooser could not open: {e}"))?;
         // The panel is modal on the main thread; wait off it so the rest of the app keeps painting.
@@ -1636,13 +2003,13 @@ async fn pick_mount_point(app: AppHandle, start_dir: Option<String>) -> Result<O
     }
     #[cfg(not(target_os = "macos"))]
     {
-        let _ = (app, start_dir);
+        let _ = (app, start_dir, message);
         Err("Choosing a folder needs macOS.".into())
     }
 }
 
 #[cfg(target_os = "macos")]
-fn folder_panel(start: &str) -> Option<String> {
+fn folder_panel(start: &str, message: &str) -> Option<String> {
     use objc2::rc::Retained;
     use objc2::runtime::AnyObject;
     use objc2::{class, msg_send};
@@ -1655,7 +2022,7 @@ fn folder_panel(start: &str) -> Option<String> {
         let _: () = msg_send![&*panel, setCanCreateDirectories: true];
         let _: () = msg_send![&*panel, setAllowsMultipleSelection: false];
         let _: () = msg_send![&*panel, setResolvesAliases: true];
-        let message = CString::new("Choose a folder to mount the share at").ok()?;
+        let message = CString::new(message).ok()?;
         let text: *mut AnyObject = msg_send![class!(NSString), stringWithUTF8String: message.as_ptr()];
         let _: () = msg_send![&*panel, setMessage: text];
         let prompt = CString::new("Choose").ok()?;
@@ -1944,9 +2311,10 @@ fn unix_millis() -> u128 {
 mod tests {
     use super::feed::{is_newer, parse_version};
     use super::{
-        hold_seconds, query_value, record_hold_outcome, refuse_new_work, route_hold_request, unsettled,
-        validate_input, AppState, Hold, HoldDispatch, HoldWork, Storage, StorageInput, Work,
-        HOLD_PAUSE_DEFAULT_S, HOLD_PAUSE_MAX_S, HOLD_PATH, HOLD_TIMEOUT_DEFAULT_S, HOLD_TIMEOUT_MAX_S,
+        channel_meta, child_channel_count, hold_seconds, inside, query_value, record_hold_outcome,
+        refuse_new_work, require_folder, route_hold_request, unix_millis, unsettled, validate_input,
+        AppState, Hold, HoldDispatch, HoldWork, Storage, StorageInput, Work, HOLD_PAUSE_DEFAULT_S,
+        HOLD_PAUSE_MAX_S, HOLD_PATH, HOLD_TIMEOUT_DEFAULT_S, HOLD_TIMEOUT_MAX_S,
     };
     use std::time::{Duration, Instant};
 
@@ -2360,6 +2728,71 @@ mod tests {
         assert_eq!(std::fs::read_to_string(&path).unwrap(), r#"{"schema":1}"#);
         std::fs::remove_dir_all(&dir).ok();
     }
+
+    fn scratch(name: &str) -> std::path::PathBuf {
+        let dir = std::env::temp_dir().join(format!("storage-studio-{name}-{}", unix_millis()));
+        std::fs::create_dir_all(&dir).unwrap();
+        dir
+    }
+
+    #[test]
+    fn a_channel_meta_reads_four_fields_and_ignores_the_rest() {
+        let dir = scratch("channel-meta");
+        std::fs::write(
+            dir.join("project.json"),
+            r#"{"name":"Night Atlas","slug":"night-atlas","project_id":"p-1","media_root":"${MEDIA}","episodes":[{"never":"read"}]}"#,
+        )
+        .unwrap();
+        let meta = channel_meta(&dir).expect("project.json decodes");
+        assert_eq!(meta.name.as_deref(), Some("Night Atlas"));
+        assert_eq!(meta.slug.as_deref(), Some("night-atlas"));
+        assert_eq!(meta.project_id.as_deref(), Some("p-1"));
+        assert!(meta.media_root.is_some());
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    #[test]
+    fn one_channel_and_a_library_are_told_apart() {
+        let library = scratch("library-shape");
+        std::fs::create_dir_all(library.join("_trash").join("night-atlas")).unwrap();
+        let first = library.join("night-atlas");
+        let second = library.join("komsan");
+        std::fs::create_dir_all(&first).unwrap();
+        std::fs::create_dir_all(&second).unwrap();
+        std::fs::write(first.join("project.json"), "{}").unwrap();
+        std::fs::write(second.join("project.json"), "{}").unwrap();
+        // The Library itself: a `_trash` and two channels below it.
+        assert!(library.join("_trash").is_dir());
+        assert_eq!(child_channel_count(&library), 2);
+        // One of its channels: no `_trash`, no channel below it.
+        assert!(!first.join("_trash").is_dir());
+        assert_eq!(child_channel_count(&first), 0);
+        std::fs::remove_dir_all(&library).ok();
+    }
+
+    #[test]
+    fn an_archive_folder_must_be_absolute_and_real() {
+        assert!(require_folder("", "the channel's folder").is_err());
+        assert!(require_folder("relative/path", "the channel's folder").is_err());
+        assert!(require_folder("/definitely/not/here-20261121", "the channel's folder").is_err());
+        let dir = scratch("folder-check");
+        assert!(require_folder(&dir.to_string_lossy(), "the channel's folder").is_ok());
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    #[test]
+    fn a_media_folder_inside_the_channel_is_caught() {
+        let dir = scratch("inside");
+        let channel = dir.join("night-atlas");
+        let media = channel.join("media");
+        std::fs::create_dir_all(&media).unwrap();
+        assert!(inside(&media, &channel));
+        let other = dir.join("elsewhere");
+        std::fs::create_dir_all(&other).unwrap();
+        assert!(!inside(&other, &channel));
+        assert!(!inside(&channel, &other));
+        std::fs::remove_dir_all(&dir).ok();
+    }
 }
 
 // ---------------------------------------------------------------- lifecycle
@@ -2471,6 +2904,13 @@ fn main() {
             open_support,
             restart_helper,
             set_list_view,
+            inspect_channel,
+            archive_add,
+            archive_remove,
+            archive_start,
+            archive_reveal,
+            restore_scan,
+            restore_start,
         ])
         .setup(move |app| {
             let handle = app.handle().clone();

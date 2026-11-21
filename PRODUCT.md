@@ -18,7 +18,7 @@ People who keep files on a home or studio NAS share, or on an external disk, and
 
 ## Product Purpose
 
-Storage Studio KH reconnects the network shares and attached disks a person chooses. It mounts and unmounts; it never copies, mirrors or syncs anything. Success means the chosen storage is connected when needed, and when it cannot connect the app says so plainly and stops instead of pretending.
+Storage Studio KH reconnects the network shares and attached disks a person chooses, and copies one channel's folder to and from an archive when they ask it to. It never mirrors or syncs in the background. Success means the chosen storage is connected when needed, a channel can be moved to a new Mac without the old one, and when the app cannot do it it says so plainly and stops instead of pretending.
 
 ## Positioning
 
@@ -34,6 +34,7 @@ A single Settings window opened from the menu-bar item. The person adds SMB shar
 - Add/Edit: name, kind (SMB share or attached disk), SMB address, optional user name and password, optional mount point, or a connected-volume picker.
 - Reconnect at login and reconnect after wake per storage, read-only as facts in the list.
 - Row actions: Mount now, Stop trying (while a mount or retry runs), Unmount, Open in Finder, Test, Edit.
+- Archives page: one row per channel folder, an Archive a channel… sheet, and a Restore a channel… sheet. Every file is hashed, copied into place, read back and compared before the row says Archived; an interrupted copy resumes from the last checked file; a restore stages and checks the copy before moving it, and never merges or replaces an existing folder. Nothing is deleted by the app.
 - Credentials prompt when the helper needs a user name and password; saved in the app's own private file.
 - General: notifications, launch at login, retries before it stops (1–8, default 3).
 - Appearance: System (default), Light, Dark; a stored `default` reads as System.

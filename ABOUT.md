@@ -1,8 +1,9 @@
 # Storage Studio KH — what it is
 
 Storage Studio KH is a macOS menu-bar app that reconnects the network shares and
-attached disks you choose after login, after wake and after a network change. It
-only mounts and unmounts storage; it never copies, mirrors or syncs anything.
+attached disks you choose after login, after wake and after a network change, and
+copies one channel's folder to and from an archive when you ask it to. It never
+mirrors or syncs anything in the background.
 
 ## What it does
 
@@ -20,6 +21,11 @@ only mounts and unmounts storage; it never copies, mirrors or syncs anything.
   appearance choice as system, light or dark.
 - Shows mount and attention state in the menu bar and settings window; UI checks
   cover 375, 768, 820 and 1440 widths in light and dark.
+- Channel archives: copies one channel folder (and its heavy-media folder, when
+  it keeps one elsewhere) to a folder you choose, verifies every file on the
+  destination, resumes from the last checked file after an interruption, and can
+  restore it on a new Mac from the manifest alone. A restore stages and checks
+  the copy before moving it and never merges over an existing folder.
 
 ## How it is built
 

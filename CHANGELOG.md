@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.18 — 2026-11-21
+
+- **Channel archives.** One channel's folder can now be copied to a folder you choose — on a share you pick once, or a disk — so it can be carried to a new Mac without the old one. A channel that keeps its heavy media in another folder can include that folder too.
+- **Checked, not assumed.** Every file is read back off the destination and compared before the app says "Archived". An interrupted copy (an update, a lost share, a restart) carries on from the last checked file, and a file that was still being written while it copied is named instead of going missing.
+- **Restore on a new Mac.** Choose the folder that holds the archives; each channel is found by its own manifest, so a Mac that has never seen it can restore it. The copy is checked in a staging folder first, then moved into place, and an existing folder of the same name is never merged over — a second copy takes a dated name.
+- **A new Archives page** with the two in-app sheets. Nothing is deleted: forgetting a row only forgets the row, and the archive stays where it is.
+
 ## 0.1.17 — 2026-11-20
 
 - The update pause now says what it did and how long it took: the helper's log names the ceiling it answers inside, the app's log gives the time in milliseconds, and both are kept in a small `hold-attempts.jsonl` beside settings, with the reason when a pause cannot be taken.

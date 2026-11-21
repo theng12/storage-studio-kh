@@ -22,7 +22,12 @@ import {
   validateStorageDraft,
 } from "./model";
 import type {
+  Archive,
+  ArchiveInput,
+  ChannelInspect,
   General,
+  JobView,
+  RestorableItem,
   Snapshot,
   StorageInput,
   StorageKind,
@@ -35,7 +40,7 @@ interface Backend {
   listen<T>(event: string, handler: (payload: T) => void): Promise<() => void>;
 }
 
-type View = "storage" | "general" | "appearance" | "support";
+type View = "storage" | "archives" | "general" | "appearance" | "support";
 type ThemeChoice = "system" | "light" | "dark";
 
 interface Draft {
@@ -95,6 +100,26 @@ interface ToastItem {
   timer: number;
 }
 
+interface ArchiveSheetState {
+  draft: { id?: string; name: string; folder: string; mediaFolder: string; destination: string };
+  inspect: ChannelInspect | null;
+  inspecting: boolean;
+  /** Shown only when project.json says the channel keeps heavy media somewhere else. */
+  showMedia: boolean;
+  error: string | null;
+  busy: boolean;
+}
+
+interface RestoreSheetState {
+  root: string;
+  destination: string;
+  scanning: boolean;
+  chosen: string | null;
+  error: string | null;
+  busy: boolean;
+  scanTimer: number;
+}
+
 const root = document.documentElement;
 const navEl = document.querySelector<HTMLElement>("#nav")!;
 const footEl = document.querySelector<HTMLElement>("#foot")!;
@@ -104,6 +129,8 @@ const rowMenuEl = document.querySelector<HTMLElement>("#row-menu")!;
 const editorEl = document.querySelector<HTMLDialogElement>("#editor")!;
 const whatsnewEl = document.querySelector<HTMLDialogElement>("#whatsnew")!;
 const credentialsEl = document.querySelector<HTMLDialogElement>("#credentials")!;
+const archiveSheetEl = document.querySelector<HTMLDialogElement>("#archive-sheet")!;
+const restoreSheetEl = document.querySelector<HTMLDialogElement>("#restore-sheet")!;
 const darkQuery = window.matchMedia("(prefers-color-scheme: dark)");
 const isTauri = "__TAURI_INTERNALS__" in window;
 const isDev = import.meta.env.DEV && !isTauri;
@@ -118,6 +145,14 @@ let snapshot: Snapshot | null = null;
 let view: View = "storage";
 let editor: EditorState | null = null;
 let credentials: CredentialsState | null = null;
+let archiveSheet: ArchiveSheetState | null = null;
+let restoreSheet: RestoreSheetState | null = null;
+let archiveSheetOpener: string | undefined;
+let restoreSheetOpener: string | undefined;
+/** The last job state shown in a toast, so a finished job says it once. */
+let announcedJob: string | null = null;
+/** The last discovery result the restore sheet drew, so an unrelated snapshot doesn't redraw it. */
+let restoreSignature = "none";
 let checkingUpdates = false;
 let afterSharesRendered = false;
 let refreshingStorage = false;
@@ -292,6 +327,7 @@ function renderBootError(error: unknown): void {
 function renderNav(): void {
   const items: { view: View; label: string; icon: string }[] = [
     { view: "storage", label: "Storage", icon: icons.storage },
+    { view: "archives", label: "Archives", icon: icons.drive },
     { view: "general", label: "General", icon: icons.general },
     { view: "appearance", label: "Appearance", icon: icons.appearance },
   ];
@@ -338,6 +374,10 @@ function renderFoot(): void {
 
 function renderMain(): void {
   if (!snapshot) return;
+  if (view === "archives") {
+    mainEl.innerHTML = renderArchives();
+    return;
+  }
   if (view === "general") {
     mainEl.innerHTML = renderGeneral();
     return;
@@ -588,7 +628,8 @@ function renderRowMenu(storage: StorageView): void {
 
 function openRowMenu(id: string, anchor: HTMLElement): void {
   const storage = snapshot?.storages.find((item) => item.id === id);
-  if (!storage) return;
+  const archive = snapshot?.archives.find((item) => item.id === id);
+  if (!storage && !archive) return;
   if (openMenuFor && openMenuFor !== id) {
     document
       .querySelector<HTMLElement>(`[data-row-menu][data-id="${openMenuFor.replace(/["\\]/g, "")}"]`)
@@ -596,7 +637,8 @@ function openRowMenu(id: string, anchor: HTMLElement): void {
   }
   openMenuFor = id;
   menuOpenedAt = performance.now();
-  renderRowMenu(storage);
+  if (storage) renderRowMenu(storage);
+  else if (archive) renderArchiveMenu(archive);
   rowMenuEl.hidden = false;
   const rect = anchor.getBoundingClientRect();
   const width = rowMenuEl.offsetWidth;
@@ -642,6 +684,556 @@ function showWarningRow(id: string): void {
   if (!row) return;
   row.scrollIntoView({ block: "nearest" });
   row.querySelector<HTMLElement>(".row-primary, .row-menu-btn")?.focus();
+}
+
+/* Channel archives ------------------------------------------------------ */
+
+function sizeLabel(bytes: number): string {
+  if (bytes < 1000) return `${bytes} B`;
+  const units = ["KB", "MB", "GB", "TB"];
+  let value = bytes / 1000;
+  let unit = 0;
+  while (value >= 1000 && unit < units.length - 1) {
+    value /= 1000;
+    unit += 1;
+  }
+  return `${value >= 10 ? Math.round(value) : value.toFixed(1)} ${units[unit]}`;
+}
+
+function dayLabel(at: number): string {
+  return new Date(at).toLocaleDateString([], { day: "numeric", month: "short" });
+}
+
+function archiveDay(iso: string): string {
+  const date = new Date(iso);
+  return Number.isNaN(date.getTime()) ? iso.slice(0, 10) : dayLabel(date.getTime());
+}
+
+function runningJob(): JobView | null {
+  const job = snapshot?.job ?? null;
+  if (!job) return null;
+  return ["copying", "verifying", "restoring"].includes(job.state) ? job : null;
+}
+
+function jobFor(id: string): JobView | null {
+  return snapshot?.job && snapshot.job.id === id ? snapshot.job : null;
+}
+
+function jobLine(job: JobView): string {
+  const files = `${job.filesDone.toLocaleString()} of ${job.filesTotal.toLocaleString()} files`;
+  if (job.state === "verifying") return `Checking ${files} on the destination.`;
+  if (job.state === "restoring") return `Restoring ${files}.`;
+  return `${files} · ${sizeLabel(job.bytesDone)} of ${sizeLabel(job.bytesTotal)}`;
+}
+
+function renderJobBanner(job: JobView): string {
+  if (job.state === "paused") {
+    return `<div class="banner banner-hold" role="status">
+      ${icons.clock}
+      <div>
+        <p class="banner-title">${job.kind === "restore" ? "Restore" : "Archive"} paused${job.kind === "archive" ? ` — ${esc(job.name)}` : ""}</p>
+        <p class="banner-text">${esc(job.detail ?? "It stopped at a checked file. Resume carries on from there.")}</p>
+      </div>
+      ${
+        job.kind === "archive"
+          ? `<button type="button" class="btn banner-btn" data-action="archive-start" data-id="${esc(job.id)}" data-fk="job-resume">Resume</button>`
+          : ""
+      }
+    </div>`;
+  }
+  if (job.state === "failed") {
+    return `<div class="banner" role="alert">
+      ${icons.warning}
+      <div>
+        <p class="banner-title">${job.kind === "restore" ? "Restore" : `Archiving ${esc(job.name)}`} stopped</p>
+        <p class="banner-text">${esc(job.detail ?? "It stopped without saying why.")}</p>
+      </div>
+      ${
+        job.kind === "archive"
+          ? `<button type="button" class="btn banner-btn" data-action="archive-start" data-id="${esc(job.id)}" data-fk="job-retry">Try again</button>`
+          : ""
+      }
+    </div>`;
+  }
+  const done = job.filesTotal ? Math.min(100, Math.round((job.filesDone / job.filesTotal) * 100)) : 0;
+  return `<div class="banner banner-job" role="status">
+    ${icons.drive}
+    <div class="job-body">
+      <p class="banner-title">${job.state === "verifying" ? "Checking" : job.kind === "restore" ? "Restoring" : "Copying"} ${esc(job.name)}</p>
+      <p class="banner-text">${esc(jobLine(job))}</p>
+      <div class="job-bar" aria-hidden="true"><span style="width: ${done}%"></span></div>
+    </div>
+  </div>`;
+}
+
+function renderArchiveRow(archive: Archive): string {
+  const id = esc(archive.id);
+  const job = jobFor(archive.id);
+  const running = Boolean(job && ["copying", "verifying"].includes(job.state));
+  const last = archive.last;
+  const line = running && job ? jobLine(job) : last
+    ? `Archived ${dayLabel(last.at)} · ${sizeLabel(last.bytes)} · ${last.files.toLocaleString()} files`
+    : "Not archived yet";
+  return `<div class="setting-row archive-row" data-archive="${id}">
+    <div class="setting-copy">
+      <span class="setting-title">${esc(archive.name)}</span>
+      <p class="setting-hint">${esc(line)}</p>
+      ${last ? `<p class="setting-hint path-text">${esc(last.path)}</p>` : ""}
+      ${
+        archive.roots.length > 1
+          ? `<p class="setting-hint">Heavy media: ${esc(archive.roots[1])}</p>`
+          : ""
+      }
+    </div>
+    <div class="row-actions">
+      <button type="button" class="row-primary row-primary-accent" data-action="archive-start" data-id="${id}" data-fk="archive-${id}-start"${
+        running || snapshot?.holding ? " disabled" : ""
+      }>${running ? "Archiving…" : last ? "Archive again" : "Archive now"}</button>
+      <button type="button" class="row-menu-btn" data-row-menu data-id="${id}" data-fk="archive-${id}-menu" aria-haspopup="menu" aria-expanded="${
+        openMenuFor === archive.id
+      }" aria-label="More actions for ${esc(archive.name)}" title="More actions">${icons.more}</button>
+    </div>
+  </div>`;
+}
+
+function renderArchives(): string {
+  if (!snapshot) return "";
+  const archives = snapshot.archives ?? [];
+  const job = snapshot.job;
+  const banner = job && (runningJob() || job.state === "paused" || job.state === "failed") ? renderJobBanner(job) : "";
+  return `
+    <header class="page-head">
+      <div>
+        <h1>Channel archives</h1>
+        <p class="lede">${
+          archives.length
+            ? "One channel folder per archive, checked file by file on the destination."
+            : "Copy a channel to one folder, so it can be carried to a new Mac and checked back in."
+        }</p>
+      </div>
+      ${
+        archives.length
+          ? `<div class="page-head-actions">
+              <button type="button" class="btn" data-action="restore-open" data-fk="restore-open">${icons.download}<span>Restore a channel…</span></button>
+              <button type="button" class="btn btn-primary" data-action="add-archive" data-fk="add-archive">${icons.plus}<span>Archive a channel…</span></button>
+            </div>`
+          : ""
+      }
+    </header>
+    ${renderHoldBannerIfNeeded()}
+    ${renderEngineBannerIfNeeded()}
+    ${banner}
+    ${
+      archives.length
+        ? `<section class="group archive-group" aria-label="Channel archives">${archives.map(renderArchiveRow).join("")}</section>`
+        : `<div class="empty">
+            <div class="empty-icon">${icons.drive}</div>
+            <p class="empty-title">No channel archived yet</p>
+            <p class="empty-text">Choose one channel's folder and the folder it should be copied to. Every file is checked on the destination before the app says it is archived.</p>
+            <div class="empty-actions">
+              <button type="button" class="btn" data-action="restore-open" data-fk="restore-open-empty">${icons.download}<span>Restore a channel…</span></button>
+              <button type="button" class="btn btn-primary" data-action="add-archive" data-fk="add-archive-empty">${icons.plus}<span>Archive a channel…</span></button>
+            </div>
+          </div>`
+    }`;
+}
+
+function renderArchiveMenu(archive: Archive): void {
+  const running = Boolean(runningJob());
+  const job = jobFor(archive.id);
+  const item = (action: string, label: string, disabled: boolean): string =>
+    `<button type="button" class="row-menu-item" role="menuitem" data-action="${action}" data-id="${esc(
+      archive.id,
+    )}" data-fk="archive-${esc(archive.id)}-${action}"${disabled ? " disabled" : ""}>${label}</button>`;
+  rowMenuEl.innerHTML = `
+    ${item("archive-start", job && job.state === "paused" ? "Resume" : "Archive now", running || !snapshot?.engineRunning)}
+    ${item("restore-open", "Restore a channel…", running)}
+    ${item("archive-reveal", "Show on the NAS", !archive.last)}
+    ${item("archive-edit", "Edit…", false)}
+    ${item("archive-forget", "Forget this row", running)}`;
+}
+
+function openArchiveSheet(archive?: Archive): void {
+  if (!snapshot) return;
+  archiveSheetOpener = focusedKey();
+  archiveSheet = {
+    draft: {
+      id: archive?.id,
+      name: archive?.name ?? "",
+      folder: archive?.roots[0] ?? "",
+      mediaFolder: archive?.roots[1] ?? "",
+      destination: archive?.destination ?? "",
+    },
+    inspect: null,
+    inspecting: false,
+    showMedia: Boolean(archive && archive.roots.length > 1),
+    error: null,
+    busy: false,
+  };
+  renderArchiveSheet();
+  archiveSheetEl.showModal();
+  focusTopDialog();
+}
+
+function closeArchiveSheet(): void {
+  const opener = archiveSheetOpener;
+  archiveSheet = null;
+  archiveSheetEl.close();
+  archiveSheetEl.innerHTML = "";
+  restoreFocus(opener);
+}
+
+function renderArchiveSheet(): void {
+  if (!archiveSheet) return;
+  const d = archiveSheet.draft;
+  const isEdit = Boolean(d.id);
+  const inspect = archiveSheet.inspect;
+  const channelNote = inspect
+    ? inspect.looksLikeLibrary
+      ? `<p class="field-note field-note-error" role="alert">That looks like the Library, not one channel. Choose the channel's own folder.</p>`
+      : inspect.isChannel
+        ? `<p class="field-note field-note-hint">${esc(inspect.name ?? d.folder)}</p>`
+        : `<p class="field-note field-note-warn" role="status">This folder has no project.json, so the channel's name and id can't be saved. It is still copied as a folder.</p>`
+    : "";
+  archiveSheetEl.innerHTML = `
+    <div class="sheet-head">
+      <h2 id="archive-sheet-title">${isEdit ? "Edit this archive" : "Archive a channel"}</h2>
+      <p class="sheet-sub">The whole folder is copied and every file is checked on the destination. Nothing on this Mac is moved or deleted.</p>
+    </div>
+    <div class="sheet-body">
+      ${archiveSheet.error ? `<p class="form-error" role="alert">${esc(archiveSheet.error)}</p>` : ""}
+      <div class="field">
+        <span class="field-label" id="archive-folder-label">Channel folder</span>
+        <div class="browse-row">
+          <input type="text" name="folder" value="${esc(d.folder)}" placeholder="Choose the channel's folder" readonly aria-labelledby="archive-folder-label"${
+            archiveSheet.busy ? " disabled" : ""
+          } />
+          <button type="button" class="btn" data-archive-action="pick-folder" data-fk="archive-pick-folder"${
+            archiveSheet.busy || archiveSheet.inspecting ? " disabled" : ""
+          }>${archiveSheet.inspecting ? "Looking…" : "Choose…"}</button>
+        </div>
+        ${channelNote}
+      </div>
+      <label class="field">
+        <span class="field-label">Name</span>
+        <input type="text" name="archive-name" value="${esc(d.name)}" placeholder="The channel's name"${archiveSheet.busy ? " disabled" : ""} />
+      </label>
+      ${
+        archiveSheet.showMedia
+          ? `<div class="field">
+              <span class="field-label" id="archive-media-label">Heavy media folder</span>
+              <div class="browse-row">
+                <input type="text" name="media" value="${esc(d.mediaFolder)}" placeholder="Where this channel keeps its images and video" readonly aria-labelledby="archive-media-label"${
+                  archiveSheet.busy ? " disabled" : ""
+                } />
+                <button type="button" class="btn" data-archive-action="pick-media" data-fk="archive-pick-media"${
+                  archiveSheet.busy ? " disabled" : ""
+                }>Choose…</button>
+              </div>
+              <p class="field-note field-note-hint">This channel keeps its heavy media somewhere else. Add that folder too, or the copy will be missing its images and video.</p>
+            </div>`
+          : ""
+      }
+      <div class="field">
+        <span class="field-label" id="archive-destination-label">Copy to</span>
+        <div class="browse-row">
+          <input type="text" name="destination" value="${esc(d.destination)}" placeholder="Choose the folder to copy into" readonly aria-labelledby="archive-destination-label"${
+            archiveSheet.busy ? " disabled" : ""
+          } />
+          <button type="button" class="btn" data-archive-action="pick-destination" data-fk="archive-pick-destination"${
+            archiveSheet.busy ? " disabled" : ""
+          }>Choose…</button>
+        </div>
+        <p class="field-note field-note-hint">A folder inside one Mac's folder is created here, named after the channel and the day.</p>
+      </div>
+    </div>
+    <div class="sheet-actions">
+      <button type="button" class="btn" data-archive-action="cancel" data-fk="archive-cancel"${archiveSheet.busy ? " disabled" : ""}>Cancel</button>
+      <span class="spacer"></span>
+      <button type="button" class="btn btn-primary" data-archive-action="save" data-fk="archive-save"${
+        archiveSheet.busy || !d.folder || !d.destination || Boolean(inspect?.looksLikeLibrary) ? " disabled" : ""
+      }>${archiveSheet.busy ? "Starting…" : isEdit ? "Save and archive" : "Archive"}</button>
+    </div>`;
+}
+
+async function pickArchiveFolder(which: "folder" | "media" | "destination"): Promise<void> {
+  if (!archiveSheet) return;
+  const start =
+    which === "folder" ? archiveSheet.draft.folder : which === "media" ? archiveSheet.draft.mediaFolder : archiveSheet.draft.destination;
+  const messages = {
+    folder: "Choose the channel's folder",
+    media: "Choose the folder that holds this channel's heavy media",
+    destination: "Choose the folder to copy the archive into",
+  };
+  try {
+    const picked = await backend.invoke<string | null>("pick_mount_point", {
+      startDir: start || undefined,
+      message: messages[which],
+    });
+    if (!picked || !archiveSheet) return;
+    if (which === "folder") {
+      archiveSheet.draft.folder = picked;
+      archiveSheet.inspecting = true;
+      renderArchiveSheet();
+      const inspect = await backend.invoke<ChannelInspect>("inspect_channel", { folder: picked });
+      if (!archiveSheet) return;
+      archiveSheet.inspect = inspect;
+      archiveSheet.inspecting = false;
+      if (!archiveSheet.draft.name && inspect.name) archiveSheet.draft.name = inspect.name;
+      archiveSheet.showMedia = inspect.hasMediaRoot || Boolean(archiveSheet.draft.mediaFolder);
+    } else if (which === "media") {
+      archiveSheet.draft.mediaFolder = picked;
+      archiveSheet.showMedia = true;
+    } else {
+      archiveSheet.draft.destination = picked;
+    }
+    renderArchiveSheet();
+  } catch (error) {
+    if (!archiveSheet) return;
+    archiveSheet.inspecting = false;
+    archiveSheet.error = errText(error);
+    renderArchiveSheet();
+  }
+}
+
+async function saveArchiveSheet(): Promise<void> {
+  if (!archiveSheet || archiveSheet.busy) return;
+  const d = archiveSheet.draft;
+  if (!d.folder || !d.destination) return;
+  archiveSheet.busy = true;
+  archiveSheet.error = null;
+  renderArchiveSheet();
+  try {
+    const input: ArchiveInput = {
+      id: d.id,
+      name: d.name.trim() || undefined,
+      folder: d.folder,
+      mediaFolder: d.mediaFolder || undefined,
+      destination: d.destination,
+    };
+    const next = await backend.invoke<Snapshot>("archive_add", { input });
+    applySnapshot(next);
+    const id = d.id ?? next.archives[next.archives.length - 1]?.id;
+    closeArchiveSheet();
+    if (id) await startArchiveRow(id);
+  } catch (error) {
+    if (!archiveSheet) return;
+    archiveSheet.busy = false;
+    archiveSheet.error = errText(error);
+    renderArchiveSheet();
+  }
+}
+
+async function startArchiveRow(id: string): Promise<void> {
+  if (!snapshot || busy[`archive-${id}`]) return;
+  busy[`archive-${id}`] = true;
+  render();
+  try {
+    await backend.invoke("archive_start", { id });
+  } catch (error) {
+    toast(errText(error), { error: true });
+  } finally {
+    window.setTimeout(() => {
+      delete busy[`archive-${id}`];
+      render();
+    }, 400);
+  }
+}
+
+function openRestoreSheet(): void {
+  restoreSheetOpener = focusedKey();
+  restoreSheet = { root: "", destination: "", scanning: false, chosen: null, error: null, busy: false, scanTimer: 0 };
+  renderRestoreSheet();
+  restoreSheetEl.showModal();
+  focusTopDialog();
+}
+
+function closeRestoreSheet(): void {
+  const opener = restoreSheetOpener;
+  if (restoreSheet) window.clearTimeout(restoreSheet.scanTimer);
+  restoreSheet = null;
+  restoreSheetEl.close();
+  restoreSheetEl.innerHTML = "";
+  restoreFocus(opener);
+}
+
+function renderRestoreSheet(): void {
+  if (!restoreSheet) return;
+  const list = snapshot?.restorable ?? null;
+  const items = list && list.root === restoreSheet.root ? list.items : [];
+  const scanning = restoreSheet.scanning;
+  const chosen = items.find((item) => item.path === restoreSheet?.chosen) ?? null;
+  restoreSheetEl.innerHTML = `
+    <div class="sheet-head">
+      <h2 id="restore-sheet-title">Restore a channel</h2>
+      <p class="sheet-sub">Choose the folder that holds the archives. Each one is read from its own manifest, so a channel this Mac has never seen is still found.</p>
+    </div>
+    <div class="sheet-body">
+      ${restoreSheet.error ? `<p class="form-error" role="alert">${esc(restoreSheet.error)}</p>` : ""}
+      <div class="field">
+        <span class="field-label" id="restore-root-label">Folder with the archives</span>
+        <div class="browse-row">
+          <input type="text" name="restore-root" value="${esc(restoreSheet.root)}" placeholder="Choose the folder you archived into" readonly aria-labelledby="restore-root-label"${
+            restoreSheet.busy ? " disabled" : ""
+          } />
+          <button type="button" class="btn" data-restore-action="pick-root" data-fk="restore-pick-root"${
+            restoreSheet.busy || scanning ? " disabled" : ""
+          }>${scanning ? "Looking…" : "Choose…"}</button>
+        </div>
+      </div>
+      ${
+        restoreSheet.root
+          ? `<div class="field">
+              <span class="field-label">Archives found</span>
+              ${
+                list?.error
+                  ? `<p class="field-note field-note-error" role="alert">${esc(list.error)}</p>`
+                  : scanning
+                    ? `<p class="field-note field-note-hint" role="status">Looking…</p>`
+                    : items.length
+                      ? `<ul class="archive-choices" role="radiogroup" aria-label="Archives found">${items
+                          .map(
+                            (item: RestorableItem) => `<li>
+                              <label class="archive-choice${restoreSheet?.chosen === item.path ? " is-chosen" : ""}">
+                                <input type="radio" name="archive-choice" value="${esc(item.path)}"${
+                                  restoreSheet?.chosen === item.path ? " checked" : ""
+                                } />
+                                <span class="archive-choice-name">${esc(item.name)}</span>
+                                <span class="archive-choice-detail">${archiveDay(item.createdAt)} · ${sizeLabel(
+                                  item.bytes,
+                                )} · ${item.files.toLocaleString()} files · from ${esc(item.machine)}</span>
+                                <span class="archive-choice-roots">${esc(item.roots.join(" + "))}</span>
+                              </label>
+                            </li>`,
+                          )
+                          .join("")}</ul>`
+                      : `<p class="field-note field-note-warn" role="status">No archive with a manifest was found in that folder.</p>`
+              }
+            </div>`
+          : ""
+      }
+      <div class="field">
+        <span class="field-label" id="restore-destination-label">Restore into</span>
+        <div class="browse-row">
+          <input type="text" name="restore-destination" value="${esc(restoreSheet.destination)}" placeholder="Choose the folder the channel should land in" readonly aria-labelledby="restore-destination-label"${
+            restoreSheet.busy ? " disabled" : ""
+          } />
+          <button type="button" class="btn" data-restore-action="pick-destination" data-fk="restore-pick-destination"${
+            restoreSheet.busy ? " disabled" : ""
+          }>Choose…</button>
+        </div>
+        <p class="field-note field-note-hint">${esc(
+          chosen
+            ? `The copy is checked into a staging folder first, then moved here as ${chosen.roots[0]}. An existing folder of that name is never merged or replaced.`
+            : "The copy is checked into a staging folder first, then moved here. Nothing that already exists is merged or replaced.",
+        )}</p>
+      </div>
+    </div>
+    <div class="sheet-actions">
+      <button type="button" class="btn" data-restore-action="cancel" data-fk="restore-cancel"${restoreSheet.busy ? " disabled" : ""}>Cancel</button>
+      <span class="spacer"></span>
+      <button type="button" class="btn btn-primary" data-restore-action="start" data-fk="restore-start"${
+        restoreSheet.busy || !restoreSheet.chosen || !restoreSheet.destination ? " disabled" : ""
+      }>${restoreSheet.busy ? "Starting…" : "Restore"}</button>
+    </div>`;
+}
+
+async function pickRestoreRoot(): Promise<void> {
+  if (!restoreSheet) return;
+  try {
+    const picked = await backend.invoke<string | null>("pick_mount_point", {
+      startDir: restoreSheet.root || undefined,
+      message: "Choose the folder that holds the archives",
+    });
+    if (!picked || !restoreSheet) return;
+    restoreSheet.root = picked;
+    restoreSheet.chosen = null;
+    restoreSheet.scanning = true;
+    restoreSheet.error = null;
+    renderRestoreSheet();
+    // A settle bound of its own: a share that stops answering must not leave "Looking…" forever.
+    window.clearTimeout(restoreSheet.scanTimer);
+    restoreSheet.scanTimer = window.setTimeout(() => {
+      if (!restoreSheet || !restoreSheet.scanning) return;
+      restoreSheet.scanning = false;
+      restoreSheet.error = "That folder didn't answer in time. Try again, or choose another folder.";
+      renderRestoreSheet();
+    }, 20000);
+    await backend.invoke("restore_scan", { root: picked });
+  } catch (error) {
+    if (!restoreSheet) return;
+    restoreSheet.scanning = false;
+    restoreSheet.error = errText(error);
+    renderRestoreSheet();
+  }
+}
+
+async function pickRestoreDestination(): Promise<void> {
+  if (!restoreSheet) return;
+  try {
+    const picked = await backend.invoke<string | null>("pick_mount_point", {
+      startDir: restoreSheet.destination || undefined,
+      message: "Choose the folder the channel should be restored into",
+    });
+    if (!picked || !restoreSheet) return;
+    restoreSheet.destination = picked;
+    renderRestoreSheet();
+  } catch (error) {
+    if (!restoreSheet) return;
+    restoreSheet.error = errText(error);
+    renderRestoreSheet();
+  }
+}
+
+async function startRestore(): Promise<void> {
+  if (!restoreSheet || restoreSheet.busy || !restoreSheet.chosen || !restoreSheet.destination) return;
+  restoreSheet.busy = true;
+  restoreSheet.error = null;
+  renderRestoreSheet();
+  try {
+    await backend.invoke("restore_start", {
+      archivePath: restoreSheet.chosen,
+      destination: restoreSheet.destination,
+    });
+    closeRestoreSheet();
+    if (view !== "archives") {
+      view = "archives";
+      render();
+    }
+  } catch (error) {
+    if (!restoreSheet) return;
+    restoreSheet.busy = false;
+    restoreSheet.error = errText(error);
+    renderRestoreSheet();
+  }
+}
+
+async function revealArchive(id: string): Promise<void> {
+  try {
+    await backend.invoke("archive_reveal", { id });
+  } catch (error) {
+    toast(errText(error), { error: true });
+  }
+}
+
+function archivedSentence(job: JobView): string {
+  const where = job.path ? ` In ${job.path}.` : "";
+  const note = job.detail ? ` ${job.detail}` : "";
+  return `Archived ${job.name} — ${job.filesTotal.toLocaleString()} files, ${sizeLabel(
+    job.bytesTotal,
+  )}, every check passed.${where}${note}`;
+}
+
+// Forgetting a row deletes nothing: the archive on the destination is untouched.
+async function forgetArchive(id: string): Promise<void> {
+  const archive = snapshot?.archives.find((item) => item.id === id);
+  try {
+    const next = await backend.invoke<Snapshot>("archive_remove", { id });
+    applySnapshot(next);
+    toast(`${archive?.name ?? "That row"} is no longer listed. The archive is still where it was.`);
+  } catch (error) {
+    toast(errText(error), { error: true });
+  }
 }
 
 function renderGeneral(): string {
@@ -1951,6 +2543,34 @@ function applySnapshot(next: Snapshot): void {
     }
   }
   if (next.secondInstance) showSecondInstance();
+  const job = next.job;
+  if (job && ["archived", "restored", "failed"].includes(job.state)) {
+    const key = `${job.state}:${job.id}:${job.filesTotal}`;
+    if (announcedJob !== key) {
+      announcedJob = key;
+      if (job.state === "archived") {
+        toast(archivedSentence(job));
+      } else if (job.state === "restored") {
+        toast(job.detail ?? "Restored, and every check passed.");
+        toast("YouTube sign-in, Content Packs and the Gateway address belong to each Mac: set them again in Story Studio KH here.");
+      } else {
+        toast(job.detail ?? "It stopped without saying why.", { error: true });
+      }
+    }
+  }
+  if (restoreSheet) {
+    if (next.restorable && next.restorable.root === restoreSheet.root) {
+      window.clearTimeout(restoreSheet.scanTimer);
+      restoreSheet.scanning = false;
+    }
+    const signature = next.restorable
+      ? `${next.restorable.root}:${next.restorable.items.length}:${next.restorable.error ?? ""}`
+      : "none";
+    if (signature !== restoreSignature) {
+      restoreSignature = signature;
+      renderRestoreSheet();
+    }
+  }
   render();
   if (pendingRowFocus) {
     const ready = pendingRowFocus.some((fk) =>
@@ -2025,7 +2645,15 @@ function wireEvents(): void {
       else if (action === "edit") {
         const storage = snapshot?.storages.find((item) => item.id === id);
         if (storage) openEditor(storage, `row-${id}-menu`);
-      } else if (action === "show-warning") showWarningRow(id);
+      } else if (action === "add-archive") openArchiveSheet();
+      else if (action === "archive-start") void startArchiveRow(id);
+      else if (action === "restore-open") openRestoreSheet();
+      else if (action === "archive-reveal") void revealArchive(id);
+      else if (action === "archive-edit") {
+        const archive = snapshot?.archives.find((item) => item.id === id);
+        if (archive) openArchiveSheet(archive);
+      } else if (action === "archive-forget") void forgetArchive(id);
+      else if (action === "show-warning") showWarningRow(id);
       else if (action === "remove") {
         const storage = snapshot?.storages.find((item) => item.id === id);
         if (storage) {
@@ -2251,6 +2879,66 @@ function wireEvents(): void {
     }
   });
 
+  archiveSheetEl.addEventListener("click", (event) => {
+    const button = (event.target as HTMLElement).closest<HTMLElement>("[data-archive-action]");
+    if (!button) return;
+    switch (button.dataset.archiveAction) {
+      case "cancel":
+        closeArchiveSheet();
+        break;
+      case "pick-folder":
+        void pickArchiveFolder("folder");
+        break;
+      case "pick-media":
+        void pickArchiveFolder("media");
+        break;
+      case "pick-destination":
+        void pickArchiveFolder("destination");
+        break;
+      case "save":
+        void saveArchiveSheet();
+        break;
+    }
+  });
+
+  archiveSheetEl.addEventListener("input", (event) => {
+    if (!archiveSheet || !(event.target instanceof HTMLInputElement)) return;
+    if (event.target.name === "archive-name") archiveSheet.draft.name = event.target.value;
+  });
+
+  archiveSheetEl.addEventListener("keydown", (event) => {
+    if (event.key !== "Enter" || !archiveSheet || archiveSheet.busy) return;
+    if (!(event.target instanceof HTMLInputElement) || event.target.type === "checkbox") return;
+    event.preventDefault();
+    void saveArchiveSheet();
+  });
+
+  restoreSheetEl.addEventListener("click", (event) => {
+    const button = (event.target as HTMLElement).closest<HTMLElement>("[data-restore-action]");
+    if (!button) return;
+    switch (button.dataset.restoreAction) {
+      case "cancel":
+        closeRestoreSheet();
+        break;
+      case "pick-root":
+        void pickRestoreRoot();
+        break;
+      case "pick-destination":
+        void pickRestoreDestination();
+        break;
+      case "start":
+        void startRestore();
+        break;
+    }
+  });
+
+  restoreSheetEl.addEventListener("change", (event) => {
+    const target = event.target;
+    if (!restoreSheet || !(target instanceof HTMLInputElement) || target.name !== "archive-choice") return;
+    restoreSheet.chosen = target.value;
+    renderRestoreSheet();
+  });
+
   // Escape is routed here so every step (results, confirmations, close) is ours and
   // a prevented cancel can never fall through to the dialog's native close.
   editorEl.addEventListener("keydown", (event) => {
@@ -2269,18 +2957,20 @@ function wireEvents(): void {
     void saveEditor();
   });
 
-  for (const dialog of [editorEl, whatsnewEl, credentialsEl]) {
+  for (const dialog of [editorEl, whatsnewEl, credentialsEl, archiveSheetEl, restoreSheetEl]) {
     dialog.addEventListener("keydown", (event) => trapTab(dialog, event));
     dialog.addEventListener("click", (event) => {
       if (event.target !== dialog) return;
       // A click outside a sheet must never throw away typed input; Escape or Cancel closes it.
-      if (dialog === editorEl || dialog === credentialsEl) return;
+      if (dialog !== whatsnewEl) return;
       closeWhatsNew();
     });
     dialog.addEventListener("cancel", (event) => {
       event.preventDefault();
       if (dialog === editorEl) handleEditorEscape();
       else if (dialog === whatsnewEl) closeWhatsNew();
+      else if (dialog === archiveSheetEl) closeArchiveSheet();
+      else if (dialog === restoreSheetEl) closeRestoreSheet();
       else closeCredentials();
     });
   }

@@ -159,6 +159,27 @@ function buildSnapshot(hash: string): Snapshot {
     secondInstance: params.get("second") === "1",
     holding: params.get("holding") === "1",
     queued: [],
+    archives: params.get("no-archives") === "1" ? [] : [
+      {
+        id: "a1",
+        name: "Night Atlas",
+        slug: "night-atlas",
+        projectId: "p-1",
+        roots: ["/Users/studio/Story Studio KH Library/night-atlas"],
+        destination: "/Volumes/Studio NAS/Channel Archives",
+        last: { at: Date.now() - 86400000, path: "/Volumes/Studio NAS/Channel Archives/night-atlas/20261120T101500Z-7f3a", files: 3891, bytes: 48200000000 },
+      },
+    ],
+    job: params.get("job-paused") === "1"
+      ? { id: "a2", kind: "archive", name: "Komsan", state: "paused", filesDone: 1204, filesTotal: 3891, bytesDone: 15200000000, bytesTotal: 48100000000, detail: "Stopped before it finished. Resume carries on from the last checked file.", path: null }
+      : params.get("job-copying") === "1"
+        ? { id: "a1", kind: "archive", name: "Night Atlas", state: "copying", filesDone: 1204, filesTotal: 3891, bytesDone: 15200000000, bytesTotal: 48200000000, detail: null, path: null }
+        : null,
+    restorable: params.get("restorable") === "1"
+      ? { root: "/Volumes/Studio NAS/Channel Archives", items: [
+          { name: "Night Atlas", slug: "night-atlas", path: "/Volumes/Studio NAS/Channel Archives/night-atlas/20261120T101500Z-7f3a", createdAt: "2026-11-20T10:15:00Z", machine: "Mac Studio", files: 3891, bytes: 48200000000, roots: ["night-atlas"] },
+        ], error: null }
+      : null,
   };
 }
 
@@ -403,6 +424,78 @@ export function createDevBackend(hash: string): {
         snapshot.engineRunning = true;
         snapshot.engineError = null;
         emit("snapshot", snapshot);
+        return null;
+      }
+
+      case "inspect_channel":
+        return { isChannel: true, name: "Night Atlas", slug: "night-atlas", hasMediaRoot: false, looksLikeLibrary: false };
+
+      case "archive_add": {
+        const input = (args?.input ?? {}) as {
+          id?: string; name?: string; folder: string; mediaFolder?: string; destination: string;
+        };
+        const id = input.id ?? `a${Date.now()}`;
+        const row = {
+          id,
+          name: input.name || input.folder.split("/").pop() || "Channel",
+          slug: input.folder.split("/").pop() || "channel",
+          projectId: "p-1",
+          roots: input.mediaFolder ? [input.folder, input.mediaFolder] : [input.folder],
+          destination: input.destination,
+          last: null,
+        };
+        const existing = snapshot.archives.findIndex((item) => item.id === id);
+        if (existing >= 0) snapshot.archives.splice(existing, 1, row);
+        else snapshot.archives.push(row);
+        emit("snapshot", snapshot);
+        return snapshot;
+      }
+
+      case "archive_remove": {
+        snapshot.archives = snapshot.archives.filter((item) => item.id !== args?.id);
+        emit("snapshot", snapshot);
+        return snapshot;
+      }
+
+      case "archive_reveal":
+        return null;
+
+      case "archive_start": {
+        const archive = snapshot.archives.find((item) => item.id === args?.id);
+        if (!archive) return null;
+        snapshot.job = { id: archive.id, kind: "archive", name: archive.name, state: "copying", filesDone: 0, filesTotal: 3891, bytesDone: 0, bytesTotal: 48200000000, detail: null, path: null };
+        emit("snapshot", snapshot);
+        window.setTimeout(() => {
+          if (!snapshot.job || snapshot.job.id !== archive.id) return;
+          snapshot.job = { ...snapshot.job, filesDone: 3891, bytesDone: 48200000000, state: "archived", path: `${archive.destination}/${archive.slug}/20261121T101500Z-7f3a` };
+          archive.last = { at: Date.now(), path: snapshot.job.path ?? archive.destination, files: 3891, bytes: 48200000000 };
+          emit("snapshot", snapshot);
+        }, 900);
+        return null;
+      }
+
+      case "restore_scan": {
+        const root = String(args?.root ?? "");
+        snapshot.restorable = null;
+        emit("snapshot", snapshot);
+        window.setTimeout(() => {
+          snapshot.restorable = {
+            root,
+            items: [{ name: "Night Atlas", slug: "night-atlas", path: `${root}/night-atlas/20261120T101500Z-7f3a`, createdAt: "2026-11-20T10:15:00Z", machine: "Mac Studio", files: 3891, bytes: 48200000000, roots: ["night-atlas"] }],
+            error: null,
+          };
+          emit("snapshot", snapshot);
+        }, 300);
+        return null;
+      }
+
+      case "restore_start": {
+        snapshot.job = { id: "restore", kind: "restore", name: "Night Atlas", state: "restoring", filesDone: 0, filesTotal: 3891, bytesDone: 0, bytesTotal: 48200000000, detail: null, path: null };
+        emit("snapshot", snapshot);
+        window.setTimeout(() => {
+          snapshot.job = { ...snapshot.job!, filesDone: 3891, bytesDone: 48200000000, state: "restored", detail: "Restored night-atlas into /Users/studio/Story Studio KH Library." };
+          emit("snapshot", snapshot);
+        }, 900);
         return null;
       }
 
