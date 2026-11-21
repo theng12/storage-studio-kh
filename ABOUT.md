@@ -48,7 +48,7 @@ Support/Storage Studio KH/`.
 
 ## Current version
 
-0.1.22, from the `version` field in `package.json`; the newest `CHANGELOG.md` entry
+0.1.23, from the `version` field in `package.json`; the newest `CHANGELOG.md` entry
 agrees.
 
 Adding a storage is one field — "Device address (or share)" — that takes an IP, a host

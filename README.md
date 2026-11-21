@@ -33,9 +33,10 @@ is built from `helper/` and lives only inside the app.
 
 ## Release
 
-Build here, then `packaging/release-push.sh storage-studio 0.1.10 "dist/Storage Studio KH-0.1.10.dmg" CHANGELOG.md`.
-It stages the DMG and changelog on 1301, publishes with the host's own key (the only feed
-writer), and reads the served feed back to prove the version it offers.
+Build here, then `packaging/release-push.sh storage-studio 0.1.10 "dist/Storage Studio KH-0.1.10.dmg" CHANGELOG.md "Reconnects your network shares after login"`.
+The last argument is the Launcher card's one sentence (62 characters or fewer, taken from
+`ABOUT.md`). It stages the DMG and changelog on 1301, publishes with the host's own key (the only
+feed writer), and reads the served feed back to prove the version and tagline it offers.
 
 ## Verification status (0.1.10)
 

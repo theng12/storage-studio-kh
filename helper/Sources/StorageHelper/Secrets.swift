@@ -89,7 +89,7 @@ public enum Secrets {
         let key = account(host: host, username: username)
         var items = read()
         guard items.removeValue(forKey: key) != nil else { return }
-        _ = write(items)
+        _ = write(items, allowEmpty: true)
     }
 
     // MARK: storage
@@ -114,7 +114,10 @@ public enum Secrets {
         }
     }
 
-    private static func write(_ items: [String: Credentials]) -> Bool {
+    /// An empty store never replaces saved passwords; only an explicit forget may empty it
+    /// (the same rule as the app's settings save, 2026-11-22). Internal so a test can prove it.
+    static func write(_ items: [String: Credentials], allowEmpty: Bool = false) -> Bool {
+        if items.isEmpty && !allowEmpty, !(readStrict() ?? [:]).isEmpty { return false }
         let manager = FileManager.default
         let directory = fileURL.deletingLastPathComponent()
         do {

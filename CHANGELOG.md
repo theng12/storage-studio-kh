@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.23 — 2026-11-22
+
+- **Your saved storages can no longer be wiped by a bad reply from the app's own helper.** The app read the helper's share list in the wrong spelling, called the answer a fault every time, and then saved that empty list over your storages. Both halves are fixed: the helper's answer now reads correctly, and a save that would replace a saved list with none is refused and logged.
+- Removing your last storage or archive still saves normally, so nothing is stuck.
+
 ## 0.1.22 — 2026-11-21
 
 - **The add/edit sheet no longer hides its own sections.** With a share list showing, "Sign in" used to open cut in half and Advanced could not be reached; the sections keep their full height and the sheet scrolls when it needs to.

@@ -252,10 +252,37 @@ fn load_settings() -> Settings {
 }
 
 fn save_settings(settings: &Settings) -> Result<(), String> {
-    let dir = data_dir();
-    std::fs::create_dir_all(&dir).map_err(|e| format!("Could not create {APP_NAME}'s data folder: {e}"))?;
+    log_failure(save_settings_to(&data_dir(), settings, false))
+}
+
+/// Removing the owner's last row is the one honest empty save; only the two removals skip the guard.
+fn save_settings_after_removal(settings: &Settings) -> Result<(), String> {
+    log_failure(save_settings_to(&data_dir(), settings, true))
+}
+
+fn log_failure(result: Result<(), String>) -> Result<(), String> {
+    if let Err(message) = &result {
+        log(message);
+    }
+    result
+}
+
+/// An empty store never replaces saved rows. A helper reply this app failed to decode once
+/// left it holding defaults, and the next ordinary save wrote that empty list over the
+/// owner's storages (2026-11-22, 0.1.22).
+fn save_settings_to(dir: &Path, settings: &Settings, may_be_empty: bool) -> Result<(), String> {
+    if !may_be_empty && settings.storages.is_empty() && settings.archives.is_empty() {
+        let saved = std::fs::read_to_string(dir.join("settings.json")).unwrap_or_default();
+        let has_rows = serde_json::from_str::<Settings>(&saved)
+            .map(|saved| !saved.storages.is_empty() || !saved.archives.is_empty())
+            .unwrap_or(false);
+        if has_rows {
+            return Err("Refused to save an empty list over the saved one.".into());
+        }
+    }
+    std::fs::create_dir_all(dir).map_err(|e| format!("Could not create {APP_NAME}'s data folder: {e}"))?;
     let text = serde_json::to_string_pretty(settings).map_err(|e| e.to_string())?;
-    write_private(&settings_path(), &text).map_err(|e| format!("Could not save settings: {e}"))
+    write_private(&dir.join("settings.json"), &text).map_err(|e| format!("Could not save settings: {e}"))
 }
 
 /// Settings name a share's user, so the file stays owner-only (0600): written to a
@@ -725,8 +752,17 @@ enum HelperEvent {
     NeedsCredentials { id: String, name: String },
     #[serde(rename = "log")]
     Log { level: String, message: String },
+    // The helper writes these keys in camelCase and leaves `error` out when there is none;
+    // reading snake_case here made every share list decode as a fault (2026-11-22, 0.1.22).
     #[serde(rename = "shares")]
-    Shares { host: String, shares: Vec<String>, needs_credentials: bool, error: Option<String> },
+    Shares {
+        host: String,
+        shares: Vec<String>,
+        #[serde(rename = "needsCredentials")]
+        needs_credentials: bool,
+        #[serde(default)]
+        error: Option<String>,
+    },
     #[serde(rename = "smb_mounts")]
     SmbMounts { items: Vec<ShareCandidate> },
     #[serde(rename = "archive")]
@@ -1685,7 +1721,7 @@ fn remove_storage(app: AppHandle, state: State<'_, AppState>, id: String) -> Res
         // One visible row may stand for several legacy entries; removing it removes them all.
         removed_ids = settings.storages.iter().filter(|s| same_storage(s, &removed)).map(|s| s.id.clone()).collect();
         settings.storages.retain(|s| !same_storage(s, &removed));
-        save_settings(&settings)?;
+        save_settings_after_removal(&settings)?;
         let _ = send_to_helper(&state, &helper_config(&settings));
     }
     {
@@ -1943,7 +1979,7 @@ fn archive_remove(app: AppHandle, state: State<'_, AppState>, id: String) -> Res
     {
         let mut settings = state.settings.lock().unwrap();
         settings.archives.retain(|archive| archive.id != id);
-        save_settings(&settings)?;
+        save_settings_after_removal(&settings)?;
         let _ = send_to_helper(&state, &helper_config(&settings));
     }
     emit_snapshot(&app);
@@ -2761,6 +2797,46 @@ mod tests {
         let dir = std::env::temp_dir().join(format!("storage-studio-{name}-{}", unix_millis()));
         std::fs::create_dir_all(&dir).unwrap();
         dir
+    }
+
+    /// The exact line the helper sent on 1301 on 2026-11-22, verbatim.
+    const CAPTURED_SHARES_LINE: &str = r#"{"host":"192.168.0.217","needsCredentials":false,"shares":["Public Space-Media - 4TB - Music","Public Space-System pool","Public Space-Media - 6TB - TV Show","Public Space-Media - 6TB - Movies"],"type":"shares"}"#;
+
+    #[test]
+    fn the_captured_share_list_from_1301_decodes() {
+        let event: super::HelperEvent = serde_json::from_str(CAPTURED_SHARES_LINE)
+            .expect("the payload this app's own helper sends must decode");
+        match event {
+            super::HelperEvent::Shares { host, shares, needs_credentials, error } => {
+                assert_eq!(host, "192.168.0.217");
+                assert!(!needs_credentials);
+                assert_eq!(shares.len(), 4);
+                assert_eq!(shares[0], "Public Space-Media - 4TB - Music");
+                assert!(error.is_none(), "an absent error key means no error, not a failed decode");
+            }
+            _ => panic!("expected a shares event"),
+        }
+    }
+
+    #[test]
+    fn a_failed_decode_cannot_empty_settings_or_secrets() {
+        let dir = scratch("empty-store");
+        let saved = super::Settings { storages: vec![storage("s1", true)], ..super::Settings::default() };
+        super::save_settings_to(&dir, &saved, false).unwrap();
+        let secrets = dir.join("secrets.json");
+        std::fs::write(&secrets, r#"{"schema":1,"items":{"user@host":{"username":"user","password":"pw"}}}"#).unwrap();
+        let settings_before = std::fs::read(dir.join("settings.json")).unwrap();
+        let secrets_before = std::fs::read(&secrets).unwrap();
+        // What a decode fault leaves the app holding: defaults, no rows.
+        assert!(
+            super::save_settings_to(&dir, &super::Settings::default(), false).is_err(),
+            "an empty store must not replace a saved list"
+        );
+        assert_eq!(std::fs::read(dir.join("settings.json")).unwrap(), settings_before);
+        assert_eq!(std::fs::read(&secrets).unwrap(), secrets_before);
+        // Removing the owner's last row is a real empty save and still goes through.
+        assert!(super::save_settings_to(&dir, &super::Settings::default(), true).is_ok());
+        std::fs::remove_dir_all(&dir).ok();
     }
 
     #[test]

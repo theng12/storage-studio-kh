@@ -185,6 +185,21 @@ final class SecretsTests: XCTestCase {
         XCTAssertGreaterThan(free ?? 0, 0)
     }
 
+    /// An empty store never replaces saved passwords; only an explicit forget may empty the file
+    /// (0.1.23 — the settings save lost the owner's list the same night).
+    func testAnEmptyStoreNeverReplacesSavedPasswords() throws {
+        let temp = FileManager.default.temporaryDirectory.appendingPathComponent("storage-secrets-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: temp) }
+        setenv("STORAGE_STUDIO_TEST_DATA_DIR", temp.path, 1)
+        defer { unsetenv("STORAGE_STUDIO_TEST_DATA_DIR") }
+        XCTAssertTrue(Secrets.save(host: "nas.local", username: "user", password: "pw"))
+        let before = try Data(contentsOf: Secrets.fileURL)
+        XCTAssertFalse(Secrets.write([:]), "an empty store must not replace saved passwords")
+        XCTAssertEqual(try Data(contentsOf: Secrets.fileURL), before)
+        XCTAssertTrue(Secrets.write([:], allowEmpty: true), "an explicit forget may empty the file")
+    }
+
     /// A save that cannot land — a blocked folder stands in for a full disk — fails instead of
     /// pretending, and the free-space read still answers so the row can print the number.
     func testBlockedDataFolderFailsTheSaveAndStillMeasuresFreeSpace() throws {
