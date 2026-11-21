@@ -77,7 +77,7 @@ function buildSnapshot(hash: string): Snapshot {
   ];
   return {
     appName: "Storage Studio KH",
-    version: "0.1.10",
+    version: "0.1.21",
     appearance: theme === "dark" || theme === "light" ? theme : "system",
     listView: params.get("list") === "table" ? "table" : "cards",
     general: { notifications: true, launchAtLogin: true, retries: 3 },
@@ -101,7 +101,12 @@ function buildSnapshot(hash: string): Snapshot {
         mountPoint: "/Volumes/studio",
       },
     ],
-    update: { state: "available", version: "0.2.0", reason: null },
+    update:
+      params.get("update") === "idle"
+        ? { state: "idle", version: null, reason: null }
+        : params.get("update") === "up-to-date"
+          ? { state: "up-to-date", version: null, reason: null }
+          : { state: "available", version: "0.2.0", reason: null },
     whatsNew: [
       {
         version: "0.1.10",
@@ -390,6 +395,7 @@ export function createDevBackend(hash: string): {
         const shares = ["Public Space-Media - 4TB - Music", "Public Space-System pool", "Studio Projects"];
         // Fixtures for the headless share-picker checks: a device that cannot be listed, one
         // that wants a sign-in, and one that answers with an empty list.
+        const delay = host.includes("slow") ? 1500 : 250;
         setTimeout(() => {
           if (host.includes("unreachable")) {
             emit("shares", { host, shares: [], needsCredentials: false, error: "That device didn't answer." });
@@ -400,7 +406,7 @@ export function createDevBackend(hash: string): {
           } else {
             emit("shares", { host, shares, needsCredentials: false, error: null });
           }
-        }, 250);
+        }, delay);
         return null;
       }
       case "pick_mount_point": {

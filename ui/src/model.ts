@@ -54,13 +54,9 @@ export interface DraftValidation {
 export function validateStorageDraft(draft: DraftValidation): string | null {
   if (!draft.name.trim()) return "Give the storage a name.";
   if (draft.kind === "smb") {
-    const target = draft.target.trim();
-    if (!/^smb:\/\//.test(target)) {
-      return "Use an smb:// address, like smb://nas.local/studio.";
-    }
-    if (!/^smb:\/\/[^\s/]+\/\S+$/.test(target)) {
-      return "Use a share address like smb://nas.local/studio.";
-    }
+    const address = normaliseShareAddress(draft.target);
+    if (!address) return "Use an smb:// address, like smb://nas.local/studio.";
+    if (!address.share) return "Choose a share below, or add one to the address.";
     return null;
   }
   if (draft.kind === "volume") {
@@ -70,11 +66,38 @@ export function validateStorageDraft(draft: DraftValidation): string | null {
   return "Choose SMB share or attached disk.";
 }
 
+export interface ShareAddress {
+  host: string;
+  share: string | null;
+  target: string;
+}
+
+/**
+ * Anything a person may paste becomes one canonical address: `smb://host/<encoded share>`.
+ * Accepts `100.69.137.42`, `nas`, `//nas`, `smb://nas`, `nas/share`, `smb://nas/share`, with
+ * the share typed plainly or already percent-encoded — the same storage either way.
+ */
+export function normaliseShareAddress(input: string): ShareAddress | null {
+  const rest = input.trim().replace(/^smb:\/\//i, "").replace(/^\/+/, "");
+  if (!rest || rest.includes("://")) return null;
+  const slash = rest.indexOf("/");
+  const host = (slash >= 0 ? rest.slice(0, slash) : rest).trim();
+  const rawShare = slash >= 0 ? rest.slice(slash + 1).replace(/^\/+/, "") : "";
+  if (!host || /\s/.test(host)) return null;
+  let share = rawShare.trim().split(/[?#]/)[0]?.replace(/\/+$/, "") ?? "";
+  if (share) {
+    try {
+      share = decodeURIComponent(share);
+    } catch {
+      // A stray % is a share name as typed, not a reason to refuse the address.
+    }
+  }
+  if (!share) return { host, share: null, target: `smb://${host}` };
+  return { host, share, target: shareTarget(host, share) };
+}
+
 export function parseShareHost(address: string): string | null {
-  let rest = address.trim().replace(/^smb:\/\//i, "").replace(/^\/\//, "");
-  rest = rest.split("/")[0]?.split("?")[0] ?? "";
-  if (!rest || /\s/.test(rest)) return null;
-  return rest;
+  return normaliseShareAddress(address)?.host ?? null;
 }
 
 /** One place turns a chosen share into an address: host, then the share percent-encoded. */
@@ -85,7 +108,7 @@ export function shareTarget(host: string, share: string): string {
 export function shareNameFromTarget(target: string): string | null {
   const match = /^smb:\/\/[^/]+\/(.+)$/i.exec(target.trim());
   if (!match) return null;
-  const raw = match[1].split("?")[0] ?? "";
+  const raw = (match[1].split("?")[0] ?? "").replace(/\/+$/, "");
   if (!raw) return null;
   try {
     return decodeURIComponent(raw);
@@ -98,10 +121,10 @@ export function saveBlockReason(draft: DraftValidation, hasVolumes = true): stri
   // The same rule that Save would fail on, so the reason can sit beside the button.
   if (!draft.name.trim()) return "Give this storage a name.";
   if (draft.kind === "smb") {
-    const target = draft.target.trim();
-    if (!target) return "Enter the device address first, like smb://studio.local/photos.";
-    if (!/^smb:\/\//.test(target)) return "Use an smb:// address, like smb://nas.local/studio.";
-    if (!/^smb:\/\/[^\s/]+\/\S+$/.test(target)) return "Add the share name to the address, like smb://nas.local/studio.";
+    if (!draft.target.trim()) return "Enter the device address first, like smb://studio.local/photos.";
+    const address = normaliseShareAddress(draft.target);
+    if (!address) return "Use an smb:// address, like smb://nas.local/studio.";
+    if (!address.share) return "Add the share name to the address, like smb://nas.local/studio.";
     return null;
   }
   if (draft.kind === "volume") {
@@ -168,7 +191,8 @@ export function duplicateStorageReason(
     return false;
   });
   if (!match) return null;
-  return `${draft.kind === "smb" ? "This share" : "This disk"} is already added as ${match.name}.`;
+  const label = draft.kind === "smb" ? (shareNameFromTarget(draft.target) ?? "This share") : "This disk";
+  return `${label} is already added as ${match.name}.`;
 }
 
 export interface StorageRowGroup<T> {
@@ -259,7 +283,7 @@ export function updateWording(update: UpdateState): string {
     case "checking":
       return "Checking for updates…";
     case "up-to-date":
-      return "Up to date";
+      return "You're up to date";
     case "available":
       return update.version ? `Version ${update.version} is available` : "An update is available";
     case "failed": {
@@ -270,9 +294,9 @@ export function updateWording(update: UpdateState): string {
     }
     case "idle":
     case "not-checked":
-      return "Not checked yet";
+      return "Updates not checked yet";
     default:
-      return "Not checked yet";
+      return "Updates not checked yet";
   }
 }
 

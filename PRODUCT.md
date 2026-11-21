@@ -31,7 +31,7 @@ A single Settings window opened from the menu-bar item. The person adds SMB shar
 ## Capabilities and Constraints
 
 - Storage list with status: Mounted, Mounting…, Retrying…, Needs attention, Unreachable, Not mounted.
-- Add/Edit: name, kind (SMB share or attached disk), the SMB device, then a share chosen from that device's own list (Refresh list asks it again); a typed share address remains only as the stated fallback when the device offers no list or cannot be listed. Optional user name and password, optional mount point from the folder panel, or a connected-volume picker.
+- Add/Edit: name, kind (SMB share or attached disk), then one "Device address (or share)" field that takes an IP, host name or any share address (bare, `//host`, `smb://host`, `host/share`, with or without `%20`) and lists that device's shares as full-width rows with Add. Typing a share name remains the fallback when the device offers no list or cannot be listed, and both forms store one canonical address. "Sign in (optional)" holds user name and password and opens by itself when the device asks; "Advanced" holds the folder-panel mount point and the two reconnect switches (on by default).
 - Reconnect at login and reconnect after wake per storage, read-only as facts in the list.
 - Row actions: Mount now, Stop trying (while a mount or retry runs), Unmount, Open in Finder, Test, Edit.
 - Archives page: one row per channel folder, an Archive a channel… sheet, and a Restore a channel… sheet. Every file is hashed, copied into place, read back and compared before the row says Archived; an interrupted copy resumes from the last checked file; a restore stages and checks the copy before moving it, and never merges or replaces an existing folder. Nothing is deleted by the app.

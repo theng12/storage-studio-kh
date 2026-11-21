@@ -129,6 +129,22 @@ if [ -f tests/share-picker.cjs ]; then
     fail "the share-picker checks failed"
   fi
 fi
+if [ -f tests/measure-0.1.21.cjs ]; then
+  # The Archives page and the add-storage form, measured at 820x640 in both states.
+  measure_rc=0
+  node tests/measure-0.1.21.cjs || measure_rc=$?
+  if [ "$measure_rc" -eq 2 ]; then
+    printf 'NOT RUN  measured page checks: Playwright is not installed on this Mac.\n'
+    not_run="${not_run:+$not_run; }measured page checks (no Playwright)"
+  elif [ "$measure_rc" -ne 0 ]; then
+    fail "the measured page checks failed"
+  fi
+fi
+if [ -f tests/share-list.sh ]; then
+  # The real helper lists the owner's NAS; SKIP lines when this Mac cannot reach it.
+  bash tests/share-list.sh "helper/.build/out/Products/Release/Storage Studio KH Helper" || \
+    fail "the share-list checks failed"
+fi
 
 step "Rust tests"
 (cd src-tauri && cargo test --quiet)

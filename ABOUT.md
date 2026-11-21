@@ -48,5 +48,10 @@ Support/Storage Studio KH/`.
 
 ## Current version
 
-0.1.17, from the `version` field in `package.json`; the newest `CHANGELOG.md` entry
+0.1.21, from the `version` field in `package.json`; the newest `CHANGELOG.md` entry
 agrees.
+
+Adding a storage is one field — "Device address (or share)" — that takes an IP, a host
+name or any share address, then lists that device's shares as rows to add. Sign-in is
+optional and opens by itself when the device asks for it; mount folder and the two
+reconnect switches sit under Advanced.

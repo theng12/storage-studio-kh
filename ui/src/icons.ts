@@ -21,6 +21,9 @@ export const icons = {
   check: svg('<path d="m3.2 8.4 3 3 6.6-6.8"/>'),
   dash: svg('<path d="M4 8h8"/>'),
   warning: svg('<path d="M8 2.6 14 13H2L8 2.6Z"/><path d="M8 6.4v3.1M8 11.4h.01"/>'),
+  archive: svg(
+    '<rect x="2.2" y="2.6" width="11.6" height="2.8" rx="0.8"/><path d="M3 5.4v6.9c0 .6.5 1.1 1.1 1.1h7.8c.6 0 1.1-.5 1.1-1.1V5.4"/><path d="M6.5 8.2h3"/>',
+  ),
   drive: svg(
     '<rect x="2.2" y="2.6" width="11.6" height="4.6" rx="1.2"/><rect x="2.2" y="8.8" width="11.6" height="4.6" rx="1.2"/><path d="M4.6 4.9h.01M4.6 11.1h.01"/>',
     "icon icon-large",

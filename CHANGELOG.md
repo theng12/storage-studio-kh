@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.21 — 2026-11-21
+
+- **Adding a storage is now one address and a list of shares.** Paste anything you have — an IP, a host name, `//host`, `smb://host`, or a whole share address, with or without `%20` — and the app finds that device's shares and shows each as a row with Add. Typed share names with spaces now save, and the address you see is the readable name, never `%20`.
+- **Sign in only when it's needed.** "Sign in (optional)" stays closed for a device that lets guests in and opens by itself when the device asks for a user name and password. Mount folder and the two reconnect switches moved under "Advanced"; both switches stay on.
+- **The shares list with a password too.** A password in the form used to make the listing wait out its 15-second ceiling and then say the device didn't answer; it now answers in under a second, guest or signed in.
+- **Messages say what to do next.** "The device didn't answer. Check the address, or press Find shares." while a list is loading there's a hint, never a red address error.
+- **Archives page corrections.** Its nav item has its own icon (it was the same drawing as Storage), the page, heading and list are all called Archives, the lede says an archive is restored on a new Mac, and the footer pill shows just the version and names the app in full for screen readers.
+- **The update line says what it is about:** "Updates not checked yet", "Checking for updates…", "You're up to date".
+
 ## 0.1.20 — 2026-11-21
 
 - **Only the installed app can change the login item.** A copy run from a build folder or a mounted installer no longer asks macOS for "launch at login" at all, so a test copy can't take over the item that opens the app at login. Switching Launch at login in a copy that isn't installed now says it needs the installed app instead of half-doing it.

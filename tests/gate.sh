@@ -111,7 +111,10 @@ pass "second launch handled; running copy kept"
 for _ in $(seq 1 40); do kill -0 "$PID" 2>/dev/null || break; sleep 0.25; done
 kill -0 "$PID" 2>/dev/null && fail "the app did not quit"
 sleep 1
-pgrep -f "$APP/Contents/Helpers/Storage Studio KH Helper" >/dev/null && fail "the helper outlived the app"
+if pgrep -f "$APP/Contents/Helpers/Storage Studio KH Helper" >/dev/null; then
+  pgrep -fl "$APP/Contents/Helpers/Storage Studio KH Helper" >&2 || true
+  fail "the helper outlived the app"
+fi
 pass "quit stops the app and its helper"
 
 # 5. Even a force-quit (crash-like) must not leave the helper running.
@@ -124,7 +127,10 @@ for _ in $(seq 1 20); do
   pgrep -f "$APP/Contents/Helpers/Storage Studio KH Helper" >/dev/null || break
   sleep 0.25
 done
-pgrep -f "$APP/Contents/Helpers/Storage Studio KH Helper" >/dev/null && fail "the helper survived a force-quit"
+if pgrep -f "$APP/Contents/Helpers/Storage Studio KH Helper" >/dev/null; then
+  pgrep -fl "$APP/Contents/Helpers/Storage Studio KH Helper" >&2 || true
+  fail "the helper survived a force-quit"
+fi
 pass "helper ends with a force-quit"
 
 # 5b. Channel archive and restore, against the helper inside the shipped bundle: a temp channel
@@ -133,8 +139,23 @@ pass "helper ends with a force-quit"
 bash tests/archive.sh "$HELPER" || fail "the channel archive checks failed"
 pass "channel archive and restore, checked byte for byte"
 
-# 6. Nothing was installed behind the app's back.
-launchctl list 2>/dev/null | grep -i "storagestudio" && fail "a launchd job was left behind"
+# 5c. Share listing against the device, when this Mac can reach it: names with spaces kept,
+# and a password in hand does not turn a fast answer into a timeout.
+bash tests/share-list.sh "$HELPER" || fail "the share-list checks failed"
+pass "share listing: names with spaces, credentials, and a silent device"
+
+# 6. Nothing was installed behind the app's back. The installed app may be running under the
+# owner's own hand (seen 2026-11-21: RunningBoard's `application.app.storagestudiokh.desktop.*`
+# for /Applications); that is his copy, not something this run left behind, so it is a NOTE.
+JOB_LEFT=0
+while read -r LABEL; do
+  PROGRAM=$(launchctl print "gui/$(id -u)/$LABEL" 2>/dev/null | awk -F' = ' '/^[[:space:]]*program = /{print $2; exit}')
+  case "$PROGRAM" in
+    /Applications/*|"$HOME"/Applications/*) printf 'NOTE  the installed app is running (%s) — not left behind by this run\n' "$PROGRAM" ;;
+    *) JOB_LEFT=1 ;;
+  esac
+done < <(launchctl list 2>/dev/null | awk '/storagestudio/{print $3}')
+[ "$JOB_LEFT" -eq 0 ] || fail "a launchd job was left behind"
 [ -z "$(ls "$DATA/Library/LaunchAgents" 2>/dev/null || true)" ] || fail "a launch agent was written"
 pass "no launchd job or launch agent left behind"
 

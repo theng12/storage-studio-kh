@@ -21,25 +21,35 @@ public enum ShareLister {
             return Result(needsCredentials: false, error: "Enter a device address like 192.168.0.217.")
         }
 
-        var arguments: [String]
-        if let credentials, !credentials.password.isEmpty {
-            arguments = ["/usr/bin/script", "-q", "/dev/null", "/usr/bin/smbutil", "view", "//\(credentials.username)@\(trimmed)"]
-        } else {
-            // No password: ask the server for guest access without prompting anyone.
-            arguments = ["/usr/bin/smbutil", "view", "-N", "//\(trimmed)"]
+        // Guest first: it never prompts, answers in well under a second on a device that
+        // lets guests in, and is what finds the owner's NAS (all five shares, spaces and all).
+        let guest = run(arguments: ["/usr/bin/smbutil", "view", "-N", "//\(trimmed)"], password: nil, timeout: 10)
+        let guestShares = parse(guest.output)
+        if !guestShares.isEmpty {
+            return Result(shares: guestShares)
+        }
+        let guestSaysAuth = saysAuthRejected(guest.output)
+
+        // Only a refused or empty guest answer goes on to the password path; a device that
+        // never answered will not answer a sign-in either, so say so once, not twice.
+        var outcome = guest
+        if let credentials, !credentials.password.isEmpty, !guest.timedOut {
+            let secured = run(
+                arguments: ["/usr/bin/script", "-q", "/dev/null", "/usr/bin/smbutil", "view", "//\(credentials.username)@\(trimmed)"],
+                password: credentials.password,
+                timeout: 10
+            )
+            outcome = secured
+            let shares = parse(secured.output)
+            if !shares.isEmpty {
+                return Result(shares: shares)
+            }
+        } else if guestSaysAuth {
+            return Result(needsCredentials: true, error: "That device needs a user name and password.")
         }
 
-        let outcome = run(arguments: arguments, password: credentials?.password, timeout: 15)
         let text = outcome.output
-        let lower = text.lowercased()
-        let authRejected = text.contains("Authentication error")
-            || text.contains("server rejected")
-            || lower.contains("authentication failed")
-        let shares = parse(text)
-        if !shares.isEmpty {
-            return Result(shares: shares)
-        }
-        if authRejected {
+        if saysAuthRejected(text) {
             return Result(needsCredentials: true, error: "That device needs a user name and password.")
         }
         if outcome.timedOut {
@@ -50,6 +60,12 @@ public enum ShareLister {
             .map { $0.trimmingCharacters(in: .whitespaces) }
             .first { $0.hasPrefix("smbutil:") || $0.hasPrefix("view:") }
         return Result(error: reason ?? "That device did not list any shares.")
+    }
+
+    private static func saysAuthRejected(_ text: String) -> Bool {
+        text.contains("Authentication error")
+            || text.contains("server rejected")
+            || text.lowercased().contains("authentication failed")
     }
 
     /// `smbutil view` prints `name <2+ spaces> type <spaces> comment`. Names contain single
@@ -101,6 +117,12 @@ public enum ShareLister {
         let collected = NSMutableData()
         var answeredPrompts = 0
         var sawEnd = false
+        var inputClosed = false
+        func closeInput() {
+            guard !inputClosed else { return }
+            inputClosed = true
+            input.fileHandleForWriting.closeFile()
+        }
         let deadline = Date().addingTimeInterval(timeout)
         while Date() < deadline {
             if sawEnd {
@@ -127,9 +149,16 @@ public enum ShareLister {
                     answeredPrompts += 1
                 }
             }
+            // `script` exits only when its stdin ends. Left open it hangs until the timeout,
+            // which read as "The device didn't answer" for a device that had just listed.
+            let text = String(data: collected as Data, encoding: .utf8) ?? ""
+            if text.contains("shares listed") || text.contains("smbutil:") {
+                closeInput()
+            }
         }
         let timedOut = process.isRunning
         if timedOut { process.terminate() }
+        closeInput()
         process.waitUntilExit()
         if !sawEnd { collected.append(output.fileHandleForReading.availableData) }
         let text = String(data: collected as Data, encoding: .utf8) ?? ""

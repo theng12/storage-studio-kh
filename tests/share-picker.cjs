@@ -92,8 +92,8 @@ async function main() {
       check("the share field is read-only while the list shows", true, await page.$eval("#share-target", (el) => el.readOnly));
       await page.click('[data-editor-action="pick-share"][data-share="Studio Projects"]');
       check(
-        "choosing a share fills the address, normalised as a typed one is",
-        "smb://nas.local/Studio%20Projects",
+        "choosing a share fills the address and the person sees the readable name",
+        "smb://nas.local/Studio Projects",
         await page.$eval("#share-target", (el) => el.value),
       );
       check(

@@ -23,7 +23,7 @@ mkdir -p "$SUPPORT"
 LOG="$SUPPORT/log.txt"
 # The shipped default port, so the proof covers the URL the signed feed names. Override only
 # when another copy of 0.1.11 already holds it.
-PORT="${HOLD_TEST_PORT:-8646}"
+PORT="${HOLD_TEST_PORT:-18646}"
 export HOME="$DATA"
 export STORAGE_STUDIO_TEST_DATA_DIR="$DATA"
 export STORAGE_STUDIO_NO_NOTIFICATIONS=1

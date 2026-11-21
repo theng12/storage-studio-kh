@@ -4,6 +4,7 @@ import { listen as tauriListen } from "@tauri-apps/api/event";
 import { icons } from "./icons";
 import {
   parseShareHost,
+  normaliseShareAddress,
   shareNameFromTarget,
   shareTarget,
   saveBlockReason,
@@ -69,6 +70,8 @@ interface EditorState {
   shareListSkipped: boolean;
   /** Debounce for listing automatically once a host is typed. */
   shareListTimer: number;
+  /** False from the moment a listing is scheduled until its answer or failure is in. */
+  listSettled: boolean;
   mountPickBusy: boolean;
   draft: Draft;
   originalName: string | null;
@@ -80,6 +83,9 @@ interface EditorState {
   dirty: boolean;
   focusField: string | null;
   connectedChosen: boolean;
+  /** Details sections keep their state across the sheet's frequent re-renders. */
+  signInOpen: boolean;
+  advancedOpen: boolean;
 }
 
 interface PendingTest {
@@ -333,7 +339,7 @@ function renderBootError(error: unknown): void {
 function renderNav(): void {
   const items: { view: View; label: string; icon: string }[] = [
     { view: "storage", label: "Storage", icon: icons.storage },
-    { view: "archives", label: "Archives", icon: icons.drive },
+    { view: "archives", label: "Archives", icon: icons.archive },
     { view: "general", label: "General", icon: icons.general },
     { view: "appearance", label: "Appearance", icon: icons.appearance },
   ];
@@ -361,7 +367,7 @@ function renderFoot(): void {
     <div class="foot-updates">
       <button type="button" class="pill" data-action="whats-new" data-fk="pill" title="What's New" aria-label="What's New, ${esc(
         snapshot.appName,
-      )} v${esc(snapshot.version)}">${icons.drive}<span>${esc(snapshot.appName)} v${esc(snapshot.version)}</span></button>
+      )} v${esc(snapshot.version)}"><span>v${esc(snapshot.version)}</span></button>
       <button type="button" class="icon-btn${checkBusy ? " is-spinning" : ""}" data-action="check-updates" data-fk="check" title="${
         checkBusy ? "Checking for Updates…" : "Check for Updates"
       }" aria-label="${checkBusy ? "Checking for Updates" : "Check for Updates"}"${
@@ -810,11 +816,11 @@ function renderArchives(): string {
   return `
     <header class="page-head">
       <div>
-        <h1>Channel archives</h1>
+        <h1>Archives</h1>
         <p class="lede">${
           archives.length
             ? "One channel folder per archive, checked file by file on the destination."
-            : "Copy a channel to one folder, so it can be carried to a new Mac and checked back in."
+            : "An archive is a copy of one channel's folder, kept ready to restore on a new Mac."
         }</p>
       </div>
       ${
@@ -831,11 +837,11 @@ function renderArchives(): string {
     ${banner}
     ${
       archives.length
-        ? `<section class="group archive-group" aria-label="Channel archives">${archives.map(renderArchiveRow).join("")}</section>`
+        ? `<section class="group archive-group" aria-label="Archives">${archives.map(renderArchiveRow).join("")}</section>`
         : `<div class="empty">
-            <div class="empty-icon">${icons.drive}</div>
+            <div class="empty-icon">${icons.archive}</div>
             <p class="empty-title">No channel archived yet</p>
-            <p class="empty-text">Choose one channel's folder and the folder it should be copied to. Every file is checked on the destination before the app says it is archived.</p>
+            <p class="empty-text">Pick a channel's folder and where to copy it. Every file is checked on the destination.</p>
             <div class="empty-actions">
               <button type="button" class="btn" data-action="restore-open" data-fk="restore-open-empty">${icons.download}<span>Restore a channel…</span></button>
               <button type="button" class="btn btn-primary" data-action="add-archive" data-fk="add-archive-empty">${icons.plus}<span>Archive a channel…</span></button>
@@ -1416,7 +1422,10 @@ function openEditor(storage?: StorageView, openerFk?: string): void {
     browseHost: null,
     shareListSkipped: false,
     shareListTimer: 0,
+    listSettled: true,
     mountPickBusy: false,
+    signInOpen: false,
+    advancedOpen: false,
   };
   renderEditor();
   if (!editorEl.open) editorEl.showModal();
@@ -1506,11 +1515,11 @@ function browsePanel(): string {
       ${editor.shareChoices
         .map(
           (share) =>
-            `<button type="button" class="share-choice${shareNameFromTarget(editor?.draft.target ?? "") === share ? " is-chosen" : ""}" data-editor-action="pick-share" data-share="${esc(
+            `<button type="button" class="share-choice share-row${shareNameFromTarget(editor?.draft.target ?? "") === share ? " is-chosen" : ""}" data-editor-action="pick-share" data-share="${esc(
               share,
             )}" data-fk="share-${esc(share)}" aria-pressed="${
               shareNameFromTarget(editor?.draft.target ?? "") === share
-            }">${esc(share)}</button>`,
+            }"><span class="share-row-name">${esc(share)}</span><span class="share-row-add">Add</span></button>`,
         )
         .join("")}
       <button type="button" class="share-choice share-choice-dismiss" data-editor-action="dismiss-shares">Type the address instead</button>
@@ -1530,6 +1539,7 @@ function shareListShown(): boolean {
 function scheduleShareList(delay = 500): void {
   if (!editor) return;
   window.clearTimeout(editor.shareListTimer);
+  editor.listSettled = false;
   editor.shareListTimer = window.setTimeout(() => autoListShares(), delay);
 }
 
@@ -1547,6 +1557,7 @@ function autoListShares(): void {
 function typeAddressInstead(): void {
   if (!editor) return;
   editor.shareListSkipped = true;
+  editor.listSettled = true;
   editor.shareChoices = null;
   editor.shareNote = null;
   editor.focusField = "target";
@@ -1611,7 +1622,9 @@ function renderEditor(): void {
   const savedVolumeMissing = d.kind === "volume" && d.volumeUUID && !volumes.some((volume) => volume.uuid === d.volumeUUID);
   const savedDiskMissing = Boolean(savedVolumeMissing) || savedStorage?.status === "unreachable";
   const blockReason = editorBlockReason();
-  const showReason = editor.touched && blockReason;
+  // A list still on its way is not a mistake: no red address error until it settles.
+  const listing = d.kind === "smb" && !editor.shareListSkipped && !editor.listSettled;
+  const showReason = Boolean(editor.touched && blockReason && !editor.browseBusy && !listing && !shareListShown());
   const connectedShares =
     !isEdit && d.kind === "smb" && !editor.connectedChosen
       ? (snapshot?.mountedShares ?? []).filter(
@@ -1624,6 +1637,7 @@ function renderEditor(): void {
     ? `
       <div class="field connected-group">
         <span class="field-label">From a connected share</span>
+        <span class="field-hint">Already mounted in Finder? Add it here.</span>
         <div class="connected-list">
           ${connectedShares
             .map(
@@ -1642,50 +1656,7 @@ function renderEditor(): void {
         </div>
       </div>`
     : "";
-  const identityFields =
-    d.kind === "smb"
-      ? `
-        <div class="field">
-          <label class="field-label" for="share-target">Share address (host + share)</label>
-          <div class="browse-row">
-            <input id="share-target" type="text" name="target" value="${esc(d.target)}" placeholder="e.g. smb://nas/studio" spellcheck="false" autocomplete="off"${
-              editor.busy ? " disabled" : ""
-            }${shareListShown() ? ' readonly aria-describedby="share-list-hint"' : ""} />
-            <button type="button" class="btn" data-editor-action="browse" data-fk="editor-browse"${
-              editor.busy || editor.browseBusy ? " disabled" : ""
-            }>${editor.browseBusy ? "Looking…" : shareListShown() ? "Refresh list" : "Find shares"}</button>
-          </div>
-          ${
-            shareListShown()
-              ? `<p class="field-note field-note-hint" id="share-list-hint">Choose a share below. The address is filled in for you.</p>`
-              : ""
-          }
-        </div>
-        ${shareLine(d)}
-        ${browsePanel()}
-        <label class="field">
-          <span class="field-label">User name (optional)</span>
-          <input type="text" name="username" value="${esc(d.username)}" autocomplete="off"${
-            editor.busy ? " disabled" : ""
-          } />
-        </label>
-        <label class="field">
-          <span class="field-label">Password (optional)</span>
-          <input type="password" name="password" value="${esc(d.password)}" placeholder="${
-            d.removeCredentials
-              ? "Saved password will be forgotten"
-              : savedCredentials
-                ? "Leave blank to keep the saved one"
-                : "Stored privately by Storage Studio KH"
-          }" autocomplete="off"${editor.busy || d.removeCredentials ? " disabled" : ""} />
-        </label>
-        ${
-          isEdit && savedCredentials
-            ? `<label class="check-row"><input type="checkbox" name="forgetPassword" data-fk="editor-forget" ${
-                d.removeCredentials ? "checked" : ""
-              }${editor.busy ? " disabled" : ""} /> Forget the saved password</label>`
-            : ""
-        }
+  const mountField = `
         <div class="field">
           <span class="field-label" id="mount-point-label">Mount point (optional)</span>
           <div class="browse-row">
@@ -1704,7 +1675,71 @@ function renderEditor(): void {
             }
           </div>
           <span class="field-hint" id="mount-point-hint">Chosen in the folder panel, so a path is never typed by hand.</span>
-        </div>`
+        </div>`;
+  const reconnectSwitches = `
+      <div class="check-stack">
+        <label class="check-row"><input type="checkbox" name="login" ${d.reconnectAtLogin ? "checked" : ""}${
+          editor.busy ? " disabled" : ""
+        } /> Reconnect at login</label>
+        <label class="check-row"><input type="checkbox" name="wake" ${d.reconnectAfterWake ? "checked" : ""}${
+          editor.busy ? " disabled" : ""
+        } /> Reconnect after wake</label>
+      </div>`;
+  const signInOpen = editor.signInOpen || Boolean(d.username) || Boolean(d.password) || savedCredentials;
+  const identityFields =
+    d.kind === "smb"
+      ? `
+        <div class="field">
+          <label class="field-label" for="share-target">Device address (or share)</label>
+          <div class="browse-row">
+            <input id="share-target" type="text" name="target" value="${esc(readableTarget(d.target))}" placeholder="192.168.0.10 or smb://nas/studio" spellcheck="false" autocomplete="off" aria-describedby="share-target-hint"${
+              editor.busy ? " disabled" : ""
+            }${shareListShown() ? ' readonly aria-describedby="share-list-hint"' : ""} />
+            <button type="button" class="btn" data-editor-action="browse" data-fk="editor-browse"${
+              editor.busy || editor.browseBusy ? " disabled" : ""
+            }>${editor.browseBusy ? "Looking…" : shareListShown() ? "Refresh list" : "Find shares"}</button>
+          </div>
+          <span class="field-hint" id="share-target-hint">The address you type in Finder, or your NAS's IP — we'll find its shares for you.</span>
+          ${
+            shareListShown()
+              ? `<p class="field-note field-note-hint" id="share-list-hint">Choose a share below. The address is filled in for you.</p>`
+              : ""
+          }
+        </div>
+        ${shareLine(d)}
+        ${browsePanel()}
+        <details class="group signin-group"${signInOpen ? " open" : ""}>
+          <summary>Sign in (optional)</summary>
+          <p class="field-hint">Leave this blank if the device lets guests in. If it asks for a user name and password, enter them here and we'll look again.</p>
+          <label class="field">
+            <span class="field-label">User name</span>
+            <input type="text" name="username" value="${esc(d.username)}" autocomplete="off"${
+              editor.busy ? " disabled" : ""
+            } />
+          </label>
+          <label class="field">
+            <span class="field-label">Password</span>
+            <input type="password" name="password" value="${esc(d.password)}" placeholder="${
+              d.removeCredentials
+                ? "Saved password will be forgotten"
+                : savedCredentials
+                  ? "Leave blank to keep the saved one"
+                  : "Stored privately by Storage Studio KH"
+            }" autocomplete="off"${editor.busy || d.removeCredentials ? " disabled" : ""} />
+          </label>
+          ${
+            isEdit && savedCredentials
+              ? `<label class="check-row"><input type="checkbox" name="forgetPassword" data-fk="editor-forget" ${
+                  d.removeCredentials ? "checked" : ""
+                }${editor.busy ? " disabled" : ""} /> Forget the saved password</label>`
+              : ""
+          }
+        </details>
+        <details class="group advanced-group"${editor.advancedOpen ? " open" : ""}>
+          <summary>Advanced</summary>
+          ${mountField}
+          ${reconnectSwitches}
+        </details>`
       : `
         <label class="field">
           <span class="field-label">Disk</span>
@@ -1766,14 +1801,7 @@ function renderEditor(): void {
       </fieldset>
       ${connectedGroup}
       ${identityFields}
-      <div class="check-stack">
-        <label class="check-row"><input type="checkbox" name="login" ${d.reconnectAtLogin ? "checked" : ""}${
-          editor.busy ? " disabled" : ""
-        } /> Reconnect at login</label>
-        <label class="check-row"><input type="checkbox" name="wake" ${d.reconnectAfterWake ? "checked" : ""}${
-          editor.busy ? " disabled" : ""
-        } /> Reconnect after wake</label>
-      </div>
+      ${d.kind === "volume" ? reconnectSwitches : ""}
     </div>
     <div class="sheet-actions">
       ${
@@ -1931,6 +1959,7 @@ function endBrowse(note: string | null = null, tone: "warn" | "error" = "warn"):
   cancelBrowseWait();
   if (!editor) return;
   editor.browseBusy = false;
+  editor.listSettled = true;
   if (note) {
     editor.shareNote = note;
     editor.shareNoteTone = tone;
@@ -1942,6 +1971,7 @@ async function browseShares(): Promise<void> {
   if (!editor || editor.busy || editor.browseBusy) return;
   const host = parseShareHost(editor.draft.target);
   if (!host) {
+    editor.listSettled = true;
     editor.shareNote = "Enter the device address first, like smb://studio.local/photos.";
     editor.shareNoteTone = "warn";
     renderEditor();
@@ -1959,7 +1989,7 @@ async function browseShares(): Promise<void> {
   // instead of staying disabled with no way out.
   cancelBrowseWait();
   browseLease = window.setTimeout(() => {
-    endBrowse("The device didn't answer. Choose Find shares to try again.", "error");
+    endBrowse("The device didn't answer. Check the address, or press Find shares.", "error");
   }, 25000);
   try {
     await backend.invoke<null>("list_shares", {
@@ -1971,6 +2001,7 @@ async function browseShares(): Promise<void> {
     cancelBrowseWait();
     if (!editor) return;
     editor.browseBusy = false;
+    editor.listSettled = true;
     editor.shareNote = error instanceof Error ? error.message : String(error);
   editor.shareNoteTone = "error";
     renderEditor();
@@ -1983,17 +2014,19 @@ function applyShares(payload: { host: string; shares: string[]; needsCredentials
   if (editor.browseHost && payload.host.trim().toLowerCase() !== editor.browseHost.trim().toLowerCase()) return;
   cancelBrowseWait();
   editor.browseBusy = false;
+  editor.listSettled = true;
   if (payload.needsCredentials) {
-    editor.shareNote = "That device needs a user name and password. Enter them below to list its shares, or type the share address instead.";
+    editor.shareNote = "That device needs a user name and password. Enter them below, or type the address instead.";
     editor.shareNoteTone = "warn";
     editor.error = null;
+    editor.signInOpen = true;
     renderEditor();
     editorEl.querySelector<HTMLElement>('[name="username"]')?.focus();
     return;
   }
   if (payload.error) {
-    // Plainly why there is no list; typing stays the way through.
-    editor.shareNote = `${payload.error} You can type the share address instead, or choose Find shares to try again.`;
+    // Plainly why there is no list, and what to do next; typing stays the way through.
+    editor.shareNote = `${payload.error.replace(/[.]$/, "")}. Check the address, or press Find shares.`;
     editor.shareNoteTone = "error";
     renderEditor();
     return;
@@ -2067,6 +2100,11 @@ async function saveEditor(): Promise<void> {
   if (!editor || editor.busy) return;
   const d = editor.draft;
   editor.touched = true;
+  // One canonical stored address, whether it was picked or typed.
+  if (d.kind === "smb") {
+    const address = normaliseShareAddress(d.target);
+    if (address) d.target = address.target;
+  }
   const validationError = validateStorageDraft(d) ?? duplicateStorageReason(d, snapshot?.storages ?? []);
   if (validationError) {
     renderEditor();
@@ -2840,6 +2878,18 @@ function wireEvents(): void {
     const target = event.target;
     if (target instanceof HTMLInputElement || target instanceof HTMLSelectElement) syncEditorField(target);
   });
+
+  // The sheet re-renders on every change; a disclosure the person opened stays open.
+  editorEl.addEventListener(
+    "toggle",
+    (event) => {
+      const section = event.target;
+      if (!editor || !(section instanceof HTMLDetailsElement)) return;
+      if (section.classList.contains("signin-group")) editor.signInOpen = section.open;
+      if (section.classList.contains("advanced-group")) editor.advancedOpen = section.open;
+    },
+    true,
+  );
 
   editorEl.addEventListener("click", (event) => {
     const button = (event.target as HTMLElement).closest<HTMLElement>("[data-editor-action]");

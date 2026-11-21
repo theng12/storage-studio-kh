@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 import {
+  normaliseShareAddress,
   parseShareHost,
   retrySentence,
   shareNameFromTarget,
@@ -46,13 +47,36 @@ test("status tones never read a failure as fine", () => {
   assert.equal(statusTone("something-else"), "off");
 });
 
-test("SMB validation names the required shape", () => {
-  assert.equal(validateStorageDraft({ name: "Studio NAS", kind: "smb", target: "smb://nas.local/studio", volumeUUID: null }), null);
-  assert.equal(validateStorageDraft({ name: "Studio NAS", kind: "smb", target: "nas.local/studio", volumeUUID: null }), "Use an smb:// address, like smb://nas.local/studio.");
+test("SMB validation accepts what people paste and names only a real problem", () => {
+  const ok = (target) => assert.equal(validateStorageDraft({ name: "Studio NAS", kind: "smb", target, volumeUUID: null }), null, target);
+  ok("smb://nas.local/studio");
+  ok("nas.local/studio");
+  ok("//nas.local/studio");
+  ok("192.168.0.217/studio");
+  ok("smb://100.69.137.42/Public Space-Media - 4TB - Music");
+  ok("smb://100.69.137.42/Public%20Space-Media%20-%204TB%20-%20Music");
+  assert.equal(validateStorageDraft({ name: "Studio NAS", kind: "smb", target: "smb://nas.local", volumeUUID: null }), "Choose a share below, or add one to the address.");
   assert.equal(validateStorageDraft({ name: "Studio NAS", kind: "smb", target: "http://nas/x", volumeUUID: null }), "Use an smb:// address, like smb://nas.local/studio.");
-  assert.equal(validateStorageDraft({ name: "Studio NAS", kind: "smb", target: "SMB://nas.local/studio", volumeUUID: null }), "Use an smb:// address, like smb://nas.local/studio.");
-  assert.equal(validateStorageDraft({ name: "Studio NAS", kind: "smb", target: "smb://nas.local", volumeUUID: null }), "Use a share address like smb://nas.local/studio.");
+  assert.equal(validateStorageDraft({ name: "Studio NAS", kind: "smb", target: "nas local/studio", volumeUUID: null }), "Use an smb:// address, like smb://nas.local/studio.");
   assert.equal(validateStorageDraft({ name: "  ", kind: "smb", target: "smb://nas.local/studio", volumeUUID: null }), "Give the storage a name.");
+});
+
+test("every accepted address normalises to one stored target", () => {
+  const want = "smb://100.69.137.42/Public%20Space-Media%20-%204TB%20-%20Music";
+  for (const input of [
+    "100.69.137.42/Public Space-Media - 4TB - Music",
+    "//100.69.137.42/Public Space-Media - 4TB - Music",
+    "smb://100.69.137.42/Public Space-Media - 4TB - Music",
+    "smb://100.69.137.42/Public%20Space-Media%20-%204TB%20-%20Music",
+  ]) {
+    assert.equal(normaliseShareAddress(input)?.target, want, input);
+  }
+  assert.deepEqual(normaliseShareAddress("  smb://100.69.137.42/  "), { host: "100.69.137.42", share: null, target: "smb://100.69.137.42" });
+  assert.equal(parseShareHost("100.69.137.42"), "100.69.137.42");
+  assert.equal(parseShareHost("smb://nas/share"), "nas");
+  assert.equal(normaliseShareAddress("smb://nas.name/My%20Share")?.target, "smb://nas.name/My%20Share");
+  assert.equal(shareNameFromTarget(want), "Public Space-Media - 4TB - Music");
+  assert.equal(normaliseShareAddress("http://nas/x"), null);
 });
 
 test("attached disk validation requires a chosen volume", () => {
@@ -63,14 +87,14 @@ test("attached disk validation requires a chosen volume", () => {
 
 test("update wording stays honest in every state", () => {
   assert.equal(updateWording({ state: "checking", version: null, reason: null }), "Checking for updates…");
-  assert.equal(updateWording({ state: "up-to-date", version: null, reason: null }), "Up to date");
+  assert.equal(updateWording({ state: "up-to-date", version: null, reason: null }), "You're up to date");
   assert.equal(updateWording({ state: "available", version: "0.1.1", reason: null }), "Version 0.1.1 is available");
   assert.equal(updateWording({ state: "available", version: null, reason: null }), "An update is available");
   assert.equal(updateWording({ state: "failed", version: null, reason: "Could not reach the Update Studio: offline" }), "Could not reach the Update Studio: offline");
   assert.equal(updateWording({ state: "failed", version: null, reason: null }), "Couldn't check for updates.");
-  assert.equal(updateWording({ state: "not-checked", version: null, reason: null }), "Not checked yet");
-  assert.equal(updateWording({ state: "idle", version: null, reason: null }), "Not checked yet");
-  assert.equal(updateWording({ state: "mystery", version: null, reason: null }), "Not checked yet");
+  assert.equal(updateWording({ state: "not-checked", version: null, reason: null }), "Updates not checked yet");
+  assert.equal(updateWording({ state: "idle", version: null, reason: null }), "Updates not checked yet");
+  assert.equal(updateWording({ state: "mystery", version: null, reason: null }), "Updates not checked yet");
   assert.notEqual(updateWording({ state: "mystery", version: null, reason: null }), undefined);
   assert.equal(updateIsAvailable({ state: "available", version: "0.1.1", reason: null }), true);
   assert.equal(updateIsAvailable({ state: "up-to-date", version: null, reason: null }), false);
@@ -152,19 +176,19 @@ test("a share or disk can only be added once", () => {
   ];
   assert.equal(
     duplicateStorageReason({ name: "Again", kind: "smb", target: "SMB://NAS.local/studio", volumeUUID: null }, existing),
-    "This share is already added as Studio NAS.",
+    "studio is already added as Studio NAS.",
   );
   assert.equal(
     duplicateStorageReason({ name: "Again", kind: "smb", target: "smb://someone@nas.local/studio", volumeUUID: null }, existing),
-    "This share is already added as Studio NAS.",
+    "studio is already added as Studio NAS.",
   );
   assert.equal(
     duplicateStorageReason({ name: "Again", kind: "smb", target: "smb://nas.local/studio/", volumeUUID: null }, existing),
-    "This share is already added as Studio NAS.",
+    "studio is already added as Studio NAS.",
   );
   assert.equal(
     duplicateStorageReason({ name: "Again", kind: "smb", target: "smb://nas.local/st%75dio", volumeUUID: null }, existing),
-    "This share is already added as Studio NAS.",
+    "studio is already added as Studio NAS.",
   );
   assert.equal(
     duplicateStorageReason({ name: "Disk again", kind: "volume", target: "disk4s1", volumeUUID: "5C2A-9F1E" }, existing),
@@ -252,8 +276,8 @@ test("the share address is picked from the device's list, and typing is the stat
   assert.match(mainSource, /data-editor-action="dismiss-shares">Type the address instead/);
   // Every way the list can fail says why, and none of them reads as "this device has no shares".
   assert.match(mainSource, /This device didn't list any shares\. That doesn't mean it has none\./);
-  assert.match(mainSource, /You can type the share address instead, or choose Find shares to try again\./);
-  assert.match(mainSource, /Enter them below to list its shares, or type the share address instead\./);
+  assert.match(mainSource, /Check the address, or press Find shares\./);
+  assert.match(mainSource, /Enter them below, or type the address instead\./);
   // A host typed into the field is listed once typing pauses, and a new user name re-lists.
   assert.match(mainSource, /case "target":[\s\S]{0,220}scheduleShareList\(\)/);
   assert.match(mainSource, /case "username":[\s\S]{0,320}scheduleShareList\(\)/);
@@ -279,7 +303,7 @@ test("the share list sends the host and credentials, and the chosen share is nor
   assert.match(mainSource, /id="save-reason"/);
   // A listing always ends: its own wait past the helper's 15 s, and an answer for another device
   // is not read as this one's.
-  assert.match(mainSource, /browseLease = window\.setTimeout\(\(\) => \{[\s\S]{0,160}Choose Find shares to try again/);
+  assert.match(mainSource, /browseLease = window\.setTimeout\(\(\) => \{[\s\S]{0,160}Check the address, or press Find shares/);
   assert.match(mainSource, /payload\.host\.trim\(\)\.toLowerCase\(\) !== editor\.browseHost/);
 });
 
