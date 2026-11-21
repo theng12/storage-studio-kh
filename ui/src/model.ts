@@ -77,6 +77,11 @@ export function parseShareHost(address: string): string | null {
   return rest;
 }
 
+/** One place turns a chosen share into an address: host, then the share percent-encoded. */
+export function shareTarget(host: string, share: string): string {
+  return `smb://${host.trim()}/${encodeURIComponent(share.trim())}`;
+}
+
 export function shareNameFromTarget(target: string): string | null {
   const match = /^smb:\/\/[^/]+\/(.+)$/i.exec(target.trim());
   if (!match) return null;

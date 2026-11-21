@@ -6,6 +6,7 @@ import {
   parseShareHost,
   retrySentence,
   shareNameFromTarget,
+  shareTarget,
   saveBlockReason,
   compareVersions,
   esc,
@@ -231,24 +232,54 @@ test("share addresses parse hosts and decode readable names", () => {
   assert.equal(shareNameFromTarget("smb://nas/Public%20Space-Media%20-%204TB"), "Public Space-Media - 4TB");
 });
 
+test("a chosen share becomes the same normalised address a typed one would", () => {
+  const target = shareTarget("nas.local", "Public Space-Media - 6TB - TV Show");
+  assert.equal(target, "smb://nas.local/Public%20Space-Media%20-%206TB%20-%20TV%20Show");
+  assert.equal(parseShareHost(target), "nas.local");
+  assert.equal(shareNameFromTarget(target), "Public Space-Media - 6TB - TV Show");
+  // Tolerates the spaces a picker's own value may carry, and never doubles the slashes.
+  assert.equal(shareTarget(" nas.local ", " Studio Projects "), "smb://nas.local/Studio%20Projects");
+  assert.equal(
+    validateStorageDraft({ name: "NAS", kind: "smb", target, volumeUUID: null, mountPoint: "" }),
+    null,
+  );
+});
+
+test("the share address is picked from the device's list, and typing is the stated fallback", () => {
+  // The list is the primary path: read-only field while it shows, and a refresh beside it.
+  assert.match(mainSource, /shareListShown\(\) \? ' readonly aria-describedby="share-list-hint"'/);
+  assert.match(mainSource, /shareListShown\(\) \? "Refresh list" : "Find shares"/);
+  assert.match(mainSource, /data-editor-action="dismiss-shares">Type the address instead/);
+  // Every way the list can fail says why, and none of them reads as "this device has no shares".
+  assert.match(mainSource, /This device didn't list any shares\. That doesn't mean it has none\./);
+  assert.match(mainSource, /You can type the share address instead, or choose Find shares to try again\./);
+  assert.match(mainSource, /Enter them below to list its shares, or type the share address instead\./);
+  // A host typed into the field is listed once typing pauses, and a new user name re-lists.
+  assert.match(mainSource, /case "target":[\s\S]{0,220}scheduleShareList\(\)/);
+  assert.match(mainSource, /case "username":[\s\S]{0,320}scheduleShareList\(\)/);
+  assert.match(mainSource, /scheduleShareList\(0\)/);
+});
+
 test("Save has a visible blocked reason for host-only and missing disk", () => {
   assert.equal(saveBlockReason({ name: "NAS", kind: "smb", target: "smb://192.168.0.217", volumeUUID: null, mountPoint: "" }), "Add the share name to the address, like smb://nas.local/studio.");
   assert.equal(saveBlockReason({ name: "Disk", kind: "volume", target: "", volumeUUID: null, mountPoint: "" }), "Choose a disk to reconnect.");
   assert.equal(saveBlockReason({ name: "NAS", kind: "smb", target: "smb://nas/Share", volumeUUID: null, mountPoint: "" }), null);
 });
 
-test("Browse sends the host and credentials and shows a chooser", () => {
+test("the share list sends the host and credentials, and the chosen share is normalised once", () => {
   assert.match(mainSource, /backend\.invoke<null>\("list_shares", \{[\s\S]{0,180}address:[\s\S]{0,120}username:[\s\S]{0,80}password:/);
-  assert.match(mainSource, /encodeURIComponent\(share\)/);
+  // The address is built in one place (model.ts), not inline in the dialog.
+  assert.match(mainSource, /editor\.draft\.target = shareTarget\(host, share\)/);
+  const modelSource = readFileSync(new URL("../ui/src/model.ts", import.meta.url), "utf8");
+  assert.match(modelSource, /function shareTarget[\s\S]{0,120}encodeURIComponent\(share\.trim\(\)\)/);
   assert.match(mainSource, /data-editor-action="browse"/);
   assert.match(mainSource, /editor\.shareChoices = payload\.shares/);
-  const modelSource = readFileSync(new URL("../ui/src/model.ts", import.meta.url), "utf8");
   assert.match(modelSource, /function parseShareHost/);
   assert.match(mainSource, /listen\("shares", applyShares\)/);
   assert.match(mainSource, /id="save-reason"/);
-  // A Browse always ends: its own wait past the helper's 15 s, and an answer for another device
-  // is not read as this Browse's.
-  assert.match(mainSource, /browseLease = window\.setTimeout\(\(\) => \{[\s\S]{0,160}Choose Browse to try again/);
+  // A listing always ends: its own wait past the helper's 15 s, and an answer for another device
+  // is not read as this one's.
+  assert.match(mainSource, /browseLease = window\.setTimeout\(\(\) => \{[\s\S]{0,160}Choose Find shares to try again/);
   assert.match(mainSource, /payload\.host\.trim\(\)\.toLowerCase\(\) !== editor\.browseHost/);
 });
 

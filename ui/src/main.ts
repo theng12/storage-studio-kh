@@ -5,6 +5,7 @@ import { icons } from "./icons";
 import {
   parseShareHost,
   shareNameFromTarget,
+  shareTarget,
   saveBlockReason,
   duplicateStorageReason,
   esc,
@@ -58,11 +59,16 @@ interface Draft {
 }
 
 interface EditorState {
+  /** The shares the device actually offered; null means "not looked at yet". */
   shareChoices: string[] | null;
   shareNote: string | null;
   shareNoteTone: "hint" | "warn" | "error";
   browseBusy: boolean;
   browseHost: string | null;
+  /** The person chose to type the address for this device instead of picking from its list. */
+  shareListSkipped: boolean;
+  /** Debounce for listing automatically once a host is typed. */
+  shareListTimer: number;
   mountPickBusy: boolean;
   draft: Draft;
   originalName: string | null;
@@ -1408,16 +1414,21 @@ function openEditor(storage?: StorageView, openerFk?: string): void {
     shareNoteTone: "hint",
     browseBusy: false,
     browseHost: null,
+    shareListSkipped: false,
+    shareListTimer: 0,
     mountPickBusy: false,
   };
   renderEditor();
   if (!editorEl.open) editorEl.showModal();
   const first = editorEl.querySelector<HTMLElement>('[name="name"]');
   first?.focus();
+  // A host the person can't type but the device can answer: list its shares straight away.
+  scheduleShareList(0);
 }
 
 function closeEditor(): void {
   cancelBrowseWait();
+  if (editor) window.clearTimeout(editor.shareListTimer);
   editor = null;
   if (editorEl.open) editorEl.close();
   const opener = editorOpener ?? "add-storage";
@@ -1430,7 +1441,13 @@ function closeEditor(): void {
 function editorBlockReason(): string | null {
   if (!editor) return null;
   const base = saveBlockReason(editor.draft, (snapshot?.volumes ?? []).length > 0);
-  if (base) return base;
+  if (base) {
+    // With the device's own list on screen, "use a share address like …" would invite typing.
+    if (shareListShown() && parseShareHost(editor.draft.target) && !shareNameFromTarget(editor.draft.target)) {
+      return "Choose a share from the list.";
+    }
+    return base;
+  }
   return duplicateStorageReason(editor.draft, snapshot?.storages ?? []);
 }
 
@@ -1448,10 +1465,7 @@ function requestCloseEditor(): void {
 function handleEditorEscape(): void {
   if (!editor || editor.busy) return;
   if (editor.shareChoices) {
-    editor.shareChoices = null;
-    editor.shareNote = null;
-    editor.focusField = "target";
-    renderEditor();
+    typeAddressInstead();
     return;
   }
   if (editor.confirmRemove) {
@@ -1475,25 +1489,69 @@ function shareLine(d: Draft): string {
   return name ? `<span class="quiet-line" id="share-name">Share: ${esc(name)}</span>` : "";
 }
 
+/** The share address is chosen from what the device offers; the field is read-only while a list
+ *  is showing, so the address is never typed in that case. Typing is the escape hatch for a
+ *  device that offers nothing or cannot be listed, and the note says which of the two it was. */
 function browsePanel(): string {
   if (!editor) return "";
-  if (editor.shareChoices) {
-    return `<div class="share-picker" role="status" aria-live="polite" aria-label="Shares on ${esc(editor.browseHost ?? "this device")}">
-      <p class="share-picker-head">Shares on ${esc(editor.browseHost ?? "this device")}</p>
+  const host = editor.browseHost ?? parseShareHost(editor.draft.target);
+  if (editor.browseBusy) {
+    return `<p class="field-note field-note-hint" role="status">Looking for shares on ${esc(
+      host ?? "this device",
+    )}…</p>`;
+  }
+  if (editor.shareChoices?.length) {
+    return `<div class="share-picker" role="group" aria-label="Shares on ${esc(host ?? "this device")}">
+      <p class="share-picker-head">Shares on ${esc(host ?? "this device")}</p>
       ${editor.shareChoices
         .map(
           (share) =>
-            `<button type="button" class="share-choice" data-editor-action="pick-share" data-share="${esc(
+            `<button type="button" class="share-choice${shareNameFromTarget(editor?.draft.target ?? "") === share ? " is-chosen" : ""}" data-editor-action="pick-share" data-share="${esc(
               share,
-            )}" data-fk="share-${esc(share)}">${esc(share)}</button>`,
+            )}" data-fk="share-${esc(share)}" aria-pressed="${
+              shareNameFromTarget(editor?.draft.target ?? "") === share
+            }">${esc(share)}</button>`,
         )
         .join("")}
-      <button type="button" class="share-choice share-choice-dismiss" data-editor-action="dismiss-shares">Dismiss</button>
+      <button type="button" class="share-choice share-choice-dismiss" data-editor-action="dismiss-shares">Type the address instead</button>
     </div>`;
   }
   return editor.shareNote
     ? `<p class="field-note field-note-${editor.shareNoteTone}" role="status">${esc(editor.shareNote)}</p>`
     : "";
+}
+
+function shareListShown(): boolean {
+  return Boolean(editor?.shareChoices?.length) && !editor?.shareListSkipped;
+}
+
+/** Lists the host's shares after a short pause, so typing a host does not fire a request
+ *  on every keystroke. A host already listed is not listed again. */
+function scheduleShareList(delay = 500): void {
+  if (!editor) return;
+  window.clearTimeout(editor.shareListTimer);
+  editor.shareListTimer = window.setTimeout(() => autoListShares(), delay);
+}
+
+function autoListShares(): void {
+  if (!editor || editor.busy || editor.browseBusy) return;
+  if (editor.draft.kind !== "smb") return;
+  const host = parseShareHost(editor.draft.target);
+  if (!host) return;
+  if (editor.shareListSkipped && editor.browseHost === host) return;
+  if (editor.browseHost === host && editor.shareChoices) return;
+  void browseShares();
+}
+
+/** The escape hatch: type the address for this device instead of picking from its list. */
+function typeAddressInstead(): void {
+  if (!editor) return;
+  editor.shareListSkipped = true;
+  editor.shareChoices = null;
+  editor.shareNote = null;
+  editor.focusField = "target";
+  renderEditor();
+  editorEl.querySelector<HTMLElement>('[name="target"]')?.focus();
 }
 
 function renderEditor(): void {
@@ -1592,11 +1650,16 @@ function renderEditor(): void {
           <div class="browse-row">
             <input id="share-target" type="text" name="target" value="${esc(d.target)}" placeholder="e.g. smb://nas/studio" spellcheck="false" autocomplete="off"${
               editor.busy ? " disabled" : ""
-            } />
+            }${shareListShown() ? ' readonly aria-describedby="share-list-hint"' : ""} />
             <button type="button" class="btn" data-editor-action="browse" data-fk="editor-browse"${
               editor.busy || editor.browseBusy ? " disabled" : ""
-            }>${editor.browseBusy ? "Looking…" : "Browse…"}</button>
+            }>${editor.browseBusy ? "Looking…" : shareListShown() ? "Refresh list" : "Find shares"}</button>
           </div>
+          ${
+            shareListShown()
+              ? `<p class="field-note field-note-hint" id="share-list-hint">Choose a share below. The address is filled in for you.</p>`
+              : ""
+          }
         </div>
         ${shareLine(d)}
         ${browsePanel()}
@@ -1762,9 +1825,17 @@ function syncEditorField(target: HTMLInputElement | HTMLSelectElement): void {
       break;
     case "target":
       draft.target = target.value;
+      // The device may have just become known: list its shares once typing pauses.
+      scheduleShareList();
       break;
     case "username":
       draft.username = target.value;
+      // Another identity on the same device can offer a different list.
+      if (editor.shareChoices) {
+        editor.shareChoices = null;
+        editor.browseHost = null;
+      }
+      scheduleShareList();
       break;
     case "password":
       draft.password = target.value;
@@ -1881,13 +1952,14 @@ async function browseShares(): Promise<void> {
   editor.shareChoices = null;
   editor.shareNote = null;
   editor.browseHost = host;
+  editor.shareListSkipped = false;
   editor.error = null;
   renderEditor();
   // Looking… is an answer owed: if the helper or the device never answers, the row says so
   // instead of staying disabled with no way out.
   cancelBrowseWait();
   browseLease = window.setTimeout(() => {
-    endBrowse("The device didn't answer. Choose Browse to try again.", "error");
+    endBrowse("The device didn't answer. Choose Find shares to try again.", "error");
   }, 25000);
   try {
     await backend.invoke<null>("list_shares", {
@@ -1912,7 +1984,7 @@ function applyShares(payload: { host: string; shares: string[]; needsCredentials
   cancelBrowseWait();
   editor.browseBusy = false;
   if (payload.needsCredentials) {
-    editor.shareNote = "That device needs a user name and password. Enter them below, then choose Browse again.";
+    editor.shareNote = "That device needs a user name and password. Enter them below to list its shares, or type the share address instead.";
     editor.shareNoteTone = "warn";
     editor.error = null;
     renderEditor();
@@ -1920,15 +1992,17 @@ function applyShares(payload: { host: string; shares: string[]; needsCredentials
     return;
   }
   if (payload.error) {
-    editor.shareNote = `${payload.error} Choose Browse to try again.`;
+    // Plainly why there is no list; typing stays the way through.
+    editor.shareNote = `${payload.error} You can type the share address instead, or choose Find shares to try again.`;
     editor.shareNoteTone = "error";
     renderEditor();
     return;
   }
   afterSharesRendered = true;
   if (!payload.shares.length) {
-    editor.shareNote = "That device didn't offer any shares. You can type the share address instead.";
-  editor.shareNoteTone = "warn";
+    // An empty answer is not "this device has no shares": it may hide them or be misconfigured.
+    editor.shareNote = "This device didn't list any shares. That doesn't mean it has none. You can type the share address instead.";
+    editor.shareNoteTone = "warn";
     renderEditor();
     return;
   }
@@ -1941,15 +2015,16 @@ function pickShare(share: string): void {
   if (!editor || !share) return;
   const host = editor.browseHost ?? parseShareHost(editor.draft.target);
   if (!host) return;
-  editor.draft.target = `smb://${host}/${encodeURIComponent(share)}`;
+  // Normalised exactly as the typed path is: host, then the share percent-encoded.
+  editor.draft.target = shareTarget(host, share);
   if (!editor.draft.name.trim()) editor.draft.name = share;
-  editor.shareChoices = null;
   editor.shareNote = null;
   editor.error = null;
+  editor.shareListSkipped = false;
   editor.touched = true;
   editor.dirty = true;
   renderEditor();
-  editorEl.querySelector<HTMLElement>('[name="target"]')?.focus();
+  editorEl.querySelector<HTMLElement>(`[data-share="${share.replace(/["\\]/g, "")}"]`)?.focus();
 }
 
 /** The mount point comes from macOS's folder panel; the field is read-only so no path is typed. */
@@ -2820,12 +2895,7 @@ function wireEvents(): void {
         clearMountPoint();
         break;
       case "dismiss-shares":
-        if (editor) {
-          editor.shareChoices = null;
-          editor.shareNote = null;
-          editor.focusField = "target";
-          renderEditor();
-        }
+        typeAddressInstead();
         break;
       case "add-connected": {
         const candidate = (snapshot?.mountedShares ?? []).find(

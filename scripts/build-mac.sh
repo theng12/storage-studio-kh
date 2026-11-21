@@ -118,6 +118,17 @@ step "Building and testing the web UI"
 if [ -f package-lock.json ]; then npm ci --no-audit --no-fund; else npm install --no-audit --no-fund; fi
 npm run build:web
 if [ -f tests/web.test.mjs ]; then node --test tests/web.test.mjs; fi
+if [ -f tests/share-picker.cjs ]; then
+  # Headless Chromium against the dev fixture: no window, no share is contacted.
+  picker_rc=0
+  node tests/share-picker.cjs || picker_rc=$?
+  if [ "$picker_rc" -eq 2 ]; then
+    printf 'NOT RUN  share-picker checks: Playwright is not installed on this Mac.\n'
+    not_run="${not_run:+$not_run; }share-picker checks (no Playwright)"
+  elif [ "$picker_rc" -ne 0 ]; then
+    fail "the share-picker checks failed"
+  fi
+fi
 
 step "Rust tests"
 (cd src-tauri && cargo test --quiet)

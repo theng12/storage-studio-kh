@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.19 — 2026-11-21
+
+- **The share address is chosen, not typed.** Type the device's address once and the dialog lists the shares that device actually offers; choosing one fills the address in for you, and Refresh list asks it again. The field is read-only while the list is showing.
+- **Typing remains the way through when there is no list** — a device that can't be listed says why, and a device that returns an empty answer is described as "didn't list any shares", never as "no shares". Both keep the field editable.
+- A new user name on the same device asks it for its list again, so a different account's shares are never shown from the previous one.
+
 ## 0.1.18 — 2026-11-21
 
 - **Channel archives.** One channel's folder can now be copied to a folder you choose — on a share you pick once, or a disk — so it can be carried to a new Mac without the old one. A channel that keeps its heavy media in another folder can include that folder too.

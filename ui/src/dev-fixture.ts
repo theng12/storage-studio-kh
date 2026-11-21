@@ -388,7 +388,19 @@ export function createDevBackend(hash: string): {
         const address = String((args as Record<string, unknown>).address ?? "");
         const host = address.replace(/^smb:\/\//i, "").split("/")[0] || "192.168.0.217";
         const shares = ["Public Space-Media - 4TB - Music", "Public Space-System pool", "Studio Projects"];
-        setTimeout(() => emit("shares", { host, shares, needsCredentials: false, error: null }), 250);
+        // Fixtures for the headless share-picker checks: a device that cannot be listed, one
+        // that wants a sign-in, and one that answers with an empty list.
+        setTimeout(() => {
+          if (host.includes("unreachable")) {
+            emit("shares", { host, shares: [], needsCredentials: false, error: "That device didn't answer." });
+          } else if (host.includes("needs-login")) {
+            emit("shares", { host, shares: [], needsCredentials: true, error: null });
+          } else if (host.includes("empty-list")) {
+            emit("shares", { host, shares: [], needsCredentials: false, error: null });
+          } else {
+            emit("shares", { host, shares, needsCredentials: false, error: null });
+          }
+        }, 250);
         return null;
       }
       case "pick_mount_point": {
