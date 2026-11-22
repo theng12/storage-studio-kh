@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.25 — 2026-11-22
+
+- **A new storage with no address now says what is missing.** Adding a storage with a name but no address left Save switched off with nothing beside it; the "Enter the device address" line now shows as soon as you type.
+- **Escape answers the question in front of you.** With a Remove or Discard confirmation open, Escape now returns to the form — before, it could be spent closing the device's share list behind it.
+
 ## 0.1.24 — 2026-11-22
 
 - **A share mounts in the folder you choose.** The chosen mount folder was handed to the system's network mounter in the wrong list, so the device answered EINVAL and nothing mounted. It is now passed where the system expects it.
