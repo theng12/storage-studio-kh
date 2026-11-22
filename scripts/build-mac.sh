@@ -118,6 +118,9 @@ step "Building and testing the web UI"
 if [ -f package-lock.json ]; then npm ci --no-audit --no-fund; else npm install --no-audit --no-fund; fi
 npm run build:web
 if [ -f tests/web.test.mjs ]; then node --test tests/web.test.mjs; fi
+# The publish readback's own check: a fixture row that lost type, holdSince or the description
+# must fail it (2026-11-22: those fields passed a readback that only checked what it sent).
+if [ -f tests/feed-check.sh ]; then bash tests/feed-check.sh || fail "the feed-check fixtures failed"; fi
 if [ -f tests/share-picker.cjs ]; then
   # Headless Chromium against the dev fixture: no window, no share is contacted.
   picker_rc=0
