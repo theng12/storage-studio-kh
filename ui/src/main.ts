@@ -1473,10 +1473,8 @@ function requestCloseEditor(): void {
 /** One Escape path: results → confirmation → form → close prompt, never a silent close. */
 function handleEditorEscape(): void {
   if (!editor || editor.busy) return;
-  if (editor.shareChoices) {
-    typeAddressInstead();
-    return;
-  }
+  // A confirmation is the top layer: Escape always answers it, even if a share list is also
+  // open behind it (found 2026-11-22: Escape dismissed the list and left Remove asking).
   if (editor.confirmRemove) {
     editor.confirmRemove = false;
     editor.error = null;
@@ -1488,6 +1486,10 @@ function handleEditorEscape(): void {
     editor.confirmDiscard = false;
     editor.focusField = "name";
     renderEditor();
+    return;
+  }
+  if (editor.shareChoices) {
+    typeAddressInstead();
     return;
   }
   requestCloseEditor();
@@ -1545,9 +1547,14 @@ function scheduleShareList(delay = 500): void {
 
 function autoListShares(): void {
   if (!editor || editor.busy || editor.browseBusy) return;
-  if (editor.draft.kind !== "smb") return;
   const host = parseShareHost(editor.draft.target);
-  if (!host) return;
+  if (editor.draft.kind !== "smb" || !host) {
+    // Nothing to wait for: without this the save reason stays hidden for ever on a draft with
+    // no address, and Save is disabled with no explanation (found 2026-11-22).
+    editor.listSettled = true;
+    updateEditorBlockState();
+    return;
+  }
   if (editor.shareListSkipped && editor.browseHost === host) return;
   if (editor.browseHost === host && editor.shareChoices) return;
   void browseShares();
@@ -2878,7 +2885,7 @@ function wireEvents(): void {
   });
 
   editorEl.addEventListener("input", (event) => {
-    const target = event.target;
+      const target = event.target;
     if (target instanceof HTMLInputElement || target instanceof HTMLSelectElement) syncEditorField(target);
   });
 

@@ -1,6 +1,6 @@
 # Storage Studio KH — page acceptance
 
-Run: 2026-11-20T06:12:43.504Z · app 0.1.10 · 311/311 checks passed
+Run: 2026-11-22T16:40:56.958Z · app 0.1.10 · 313/313 checks passed
 
 | Page | Check | Expected | Actual | Result |
 | --- | --- | --- | --- | --- |
@@ -45,7 +45,7 @@ Run: 2026-11-20T06:12:43.504Z · app 0.1.10 · 311/311 checks passed
 | Engine | banner on Appearance | helper stopped sentence | true | PASS |
 | Engine | restart helper invokes | restart_helper | "restart_helper" | PASS |
 | Engine | helper comes back | banner gone | true | PASS |
-| Add | label says host + share | Share address (host + share) | true | PASS |
+| Add | label says device or share | Device address (or share) | true | PASS |
 | Add | Save disabled with an empty name | disabled | true | PASS |
 | Add | no error before the person types | no save reason | true | PASS |
 | Add | name field not marked invalid on open | no aria-invalid | true | PASS |
@@ -54,7 +54,8 @@ Run: 2026-11-20T06:12:43.504Z · app 0.1.10 · 311/311 checks passed
 | Add | reason is a live region | role=status | true | PASS |
 | Add | reason linked to Save | aria-describedby | true | PASS |
 | Add | host-only keeps Save off | disabled | true | PASS |
-| Add | host-only reason | Add the share name | true | PASS |
+| Add | host-only lists the device's shares | a share list | true | PASS |
+| Add | host-only reason once typing | Add the share name | true | PASS |
 | Add | address marked invalid | aria-invalid | true | PASS |
 | Add | Browse sends the host | list_shares | "list_shares" | PASS |
 | Add | Browse sends address | address contains host | true | PASS |
@@ -126,65 +127,65 @@ Run: 2026-11-20T06:12:43.504Z · app 0.1.10 · 311/311 checks passed
 | Layout | storage at 375: content fills the width | main at least 335px | true | PASS |
 | Layout | storage at 375: footer on the bottom edge | footer within the sidebar inset of the window edge | true | PASS |
 | Layout | storage at 375: pill bottom-left | pill in the left half near the bottom | true | PASS |
-| Layout | storage at 375: every nav item has an icon | 3 | 3 | PASS |
+| Layout | storage at 375: every nav item has an icon | 4 | 4 | PASS |
 | Layout | Add storage fits at 375 | dialog inside the window | true | PASS |
 | Layout | general at 375: no horizontal overflow | 0 | "0" | PASS |
 | Layout | general at 375: content fills the width | main at least 335px | true | PASS |
 | Layout | general at 375: footer on the bottom edge | footer within the sidebar inset of the window edge | true | PASS |
 | Layout | general at 375: pill bottom-left | pill in the left half near the bottom | true | PASS |
-| Layout | general at 375: every nav item has an icon | 3 | 3 | PASS |
+| Layout | general at 375: every nav item has an icon | 4 | 4 | PASS |
 | Layout | appearance at 375: no horizontal overflow | 0 | "0" | PASS |
 | Layout | appearance at 375: content fills the width | main at least 335px | true | PASS |
 | Layout | appearance at 375: footer on the bottom edge | footer within the sidebar inset of the window edge | true | PASS |
 | Layout | appearance at 375: pill bottom-left | pill in the left half near the bottom | true | PASS |
-| Layout | appearance at 375: every nav item has an icon | 3 | 3 | PASS |
+| Layout | appearance at 375: every nav item has an icon | 4 | 4 | PASS |
 | Layout | support at 375: no horizontal overflow | 0 | "0" | PASS |
 | Layout | support at 375: content fills the width | main at least 335px | true | PASS |
 | Layout | support at 375: footer on the bottom edge | footer within the sidebar inset of the window edge | true | PASS |
 | Layout | support at 375: pill bottom-left | pill in the left half near the bottom | true | PASS |
-| Layout | support at 375: every nav item has an icon | 3 | 3 | PASS |
+| Layout | support at 375: every nav item has an icon | 4 | 4 | PASS |
 | Layout | storage at 768: no horizontal overflow | 0 | "0" | PASS |
 | Layout | storage at 768: content fills the width | main at least 508px | true | PASS |
 | Layout | storage at 768: footer on the bottom edge | footer within the sidebar inset of the window edge | true | PASS |
 | Layout | storage at 768: pill bottom-left | pill in the left half near the bottom | true | PASS |
-| Layout | storage at 768: every nav item has an icon | 3 | 3 | PASS |
+| Layout | storage at 768: every nav item has an icon | 4 | 4 | PASS |
 | Layout | Add storage fits at 768 | dialog inside the window | true | PASS |
 | Layout | general at 768: no horizontal overflow | 0 | "0" | PASS |
 | Layout | general at 768: content fills the width | main at least 508px | true | PASS |
 | Layout | general at 768: footer on the bottom edge | footer within the sidebar inset of the window edge | true | PASS |
 | Layout | general at 768: pill bottom-left | pill in the left half near the bottom | true | PASS |
-| Layout | general at 768: every nav item has an icon | 3 | 3 | PASS |
+| Layout | general at 768: every nav item has an icon | 4 | 4 | PASS |
 | Layout | appearance at 768: no horizontal overflow | 0 | "0" | PASS |
 | Layout | appearance at 768: content fills the width | main at least 508px | true | PASS |
 | Layout | appearance at 768: footer on the bottom edge | footer within the sidebar inset of the window edge | true | PASS |
 | Layout | appearance at 768: pill bottom-left | pill in the left half near the bottom | true | PASS |
-| Layout | appearance at 768: every nav item has an icon | 3 | 3 | PASS |
+| Layout | appearance at 768: every nav item has an icon | 4 | 4 | PASS |
 | Layout | support at 768: no horizontal overflow | 0 | "0" | PASS |
 | Layout | support at 768: content fills the width | main at least 508px | true | PASS |
 | Layout | support at 768: footer on the bottom edge | footer within the sidebar inset of the window edge | true | PASS |
 | Layout | support at 768: pill bottom-left | pill in the left half near the bottom | true | PASS |
-| Layout | support at 768: every nav item has an icon | 3 | 3 | PASS |
+| Layout | support at 768: every nav item has an icon | 4 | 4 | PASS |
 | Layout | storage at 1440: no horizontal overflow | 0 | "0" | PASS |
 | Layout | storage at 1440: content fills the width | main at least 1180px | true | PASS |
 | Layout | storage at 1440: footer on the bottom edge | footer within the sidebar inset of the window edge | true | PASS |
 | Layout | storage at 1440: pill bottom-left | pill in the left half near the bottom | true | PASS |
-| Layout | storage at 1440: every nav item has an icon | 3 | 3 | PASS |
+| Layout | storage at 1440: every nav item has an icon | 4 | 4 | PASS |
 | Layout | Add storage fits at 1440 | dialog inside the window | true | PASS |
 | Layout | general at 1440: no horizontal overflow | 0 | "0" | PASS |
 | Layout | general at 1440: content fills the width | main at least 1180px | true | PASS |
 | Layout | general at 1440: footer on the bottom edge | footer within the sidebar inset of the window edge | true | PASS |
 | Layout | general at 1440: pill bottom-left | pill in the left half near the bottom | true | PASS |
-| Layout | general at 1440: every nav item has an icon | 3 | 3 | PASS |
+| Layout | general at 1440: every nav item has an icon | 4 | 4 | PASS |
 | Layout | appearance at 1440: no horizontal overflow | 0 | "0" | PASS |
 | Layout | appearance at 1440: content fills the width | main at least 1180px | true | PASS |
 | Layout | appearance at 1440: footer on the bottom edge | footer within the sidebar inset of the window edge | true | PASS |
 | Layout | appearance at 1440: pill bottom-left | pill in the left half near the bottom | true | PASS |
-| Layout | appearance at 1440: every nav item has an icon | 3 | 3 | PASS |
+| Layout | appearance at 1440: every nav item has an icon | 4 | 4 | PASS |
 | Layout | support at 1440: no horizontal overflow | 0 | "0" | PASS |
 | Layout | support at 1440: content fills the width | main at least 1180px | true | PASS |
 | Layout | support at 1440: footer on the bottom edge | footer within the sidebar inset of the window edge | true | PASS |
 | Layout | support at 1440: pill bottom-left | pill in the left half near the bottom | true | PASS |
-| Layout | support at 1440: every nav item has an icon | 3 | 3 | PASS |
+| Layout | support at 1440: every nav item has an icon | 4 | 4 | PASS |
 | Contrast | body text at light | at least 4.5:1 | 16.33:1 | PASS |
 | Contrast | muted text at light | at least 4.5:1 | 7.3:1 | PASS |
 | Contrast | quiet text at light | at least 4.5:1 | 5.13:1 | PASS |
@@ -238,7 +239,7 @@ Run: 2026-11-20T06:12:43.504Z · app 0.1.10 · 311/311 checks passed
 | Dialog | saving focuses the new row, not an off-screen opener | row menu | true | PASS |
 | Dialog | closing What's New focuses the pill | pill | true | PASS |
 | Layout | 375 Tab order is nav, content, footer | DOM order matches the screen | true | PASS |
-| Keys | arrow keys move between sections | General focused and shown | true | PASS |
+| Keys | arrow keys move between sections | Archives focused and shown | true | PASS |
 | Storage | a repeated Test still names its result | one replaced Test toast with a result | true | PASS |
 | Storage | a mounting row offers Stop trying | Stop trying | true | PASS |
 | Storage | Stop trying is not a dead disabled button | enabled | true | PASS |
@@ -267,16 +268,17 @@ Run: 2026-11-20T06:12:43.504Z · app 0.1.10 · 311/311 checks passed
 | Completeness | the forget toast names the forgotten password | forgotten | true | PASS |
 | Completeness | after forgetting, the field does not promise a saved password | no keep phrase | true | PASS |
 | Completeness | the forget control disappears once nothing is saved | 0 | 0 | PASS |
-| Completeness | declared page capabilities have controls | all present | true | PASS |
+| Completeness | declared page capabilities have controls | all present | "all present" | PASS |
 | Completeness | General capabilities have controls | notifications, login, retries | true | PASS |
 | Completeness | Appearance has exactly three controls | System/Light/Dark | true | PASS |
-| Add | an uppercase scheme is refused with the same message | Use an smb:// address | true | PASS |
+| Add | an uppercase scheme is accepted | Save enabled | true | PASS |
+| Add | the saved address uses smb:// | lowercase scheme | true | PASS |
 | Storage | opening another row's menu resets the first | aria-expanded false | true | PASS |
 | Remove | the row menu offers Remove | a confirmation | true | PASS |
 | Remove | menu Remove removes the row | 3 | 3 | PASS |
 | Remove | menu Remove can be undone | Public Space-Media - 4TB - Music returned | true | PASS |
 | Storage | the list says what was checked and when | Storage list checked | true | PASS |
-| Footer | the version pill carries an icon | an svg | true | PASS |
+| Footer | the pill is the version alone | no svg, version text | true | PASS |
 | Add | a missing disk is not called connected | isn't connected | true | PASS |
 | View | at 375 the table shows a row action at rest | menu inside the wrap | true | PASS |
 | Keys | Check for Updates never drops focus | check during and after | true | PASS |

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-20T06:12:43.504Z",
+  "generatedAt": "2026-11-22T16:40:56.958Z",
   "appVersion": "0.1.10",
   "checks": [
     {
@@ -332,8 +332,8 @@
     },
     {
       "page": "Add",
-      "id": "label says host + share",
-      "expected": "Share address (host + share)",
+      "id": "label says device or share",
+      "expected": "Device address (or share)",
       "actual": "true",
       "pass": true,
       "evidence": null
@@ -404,7 +404,15 @@
     },
     {
       "page": "Add",
-      "id": "host-only reason",
+      "id": "host-only lists the device's shares",
+      "expected": "a share list",
+      "actual": "true",
+      "pass": true,
+      "evidence": null
+    },
+    {
+      "page": "Add",
+      "id": "host-only reason once typing",
       "expected": "Add the share name",
       "actual": "true",
       "pass": true,
@@ -442,8 +450,8 @@
         "Public Space-System pool"
       ],
       "actual": "[\"Public Space-Media - 4TB - Music\",\"Public Space-System pool\"]",
-      "pass": "[\"Public Space-Media - 4TB - Music\",\"Public Space-System pool\"]",
-      "evidence": true
+      "pass": "[\"Public Space-Media - 4TB - Music\\nAdd\",\"Public Space-System pool\\nAdd\"]",
+      "evidence": null
     },
     {
       "page": "Add",
@@ -466,8 +474,8 @@
       "id": "picked address is encoded",
       "expected": "smb://192.168.0.217/Public%20Space-Media%20-%204TB%20-%20Music",
       "actual": "\"smb://192.168.0.217/Public%20Space-Media%20-%204TB%20-%20Music\"",
-      "pass": "\"smb://192.168.0.217/Public%20Space-Media%20-%204TB%20-%20Music\"",
-      "evidence": true
+      "pass": "\"smb://192.168.0.217/Public Space-Media - 4TB - Music\"",
+      "evidence": null
     },
     {
       "page": "Add",
@@ -610,8 +618,8 @@
       "id": "connected pick fills encoded address",
       "expected": "smb://vengtheng@100.69.137.42/Public%20Space-Media%20-%204TB%20-%20Music",
       "actual": "\"smb://vengtheng@100.69.137.42/Public%20Space-Media%20-%204TB%20-%20Music\"",
-      "pass": "\"smb://vengtheng@100.69.137.42/Public%20Space-Media%20-%204TB%20-%20Music\"",
-      "evidence": true
+      "pass": "\"smb://vengtheng@100.69.137.42/Public Space-Media - 4TB - Music\"",
+      "evidence": null
     },
     {
       "page": "Add",
@@ -963,7 +971,7 @@
       "expected": "main at least 335px",
       "actual": "true",
       "pass": true,
-      "evidence": "{\"overflow\":0,\"viewport\":375,\"mainWidth\":375,\"footBottom\":812,\"pillLeft\":160,\"pillBottom\":779,\"navItems\":3,\"navIcons\":3}"
+      "evidence": "{\"overflow\":0,\"viewport\":375,\"mainWidth\":375,\"footBottom\":812,\"pillLeft\":160,\"pillBottom\":779,\"navItems\":4,\"navIcons\":4}"
     },
     {
       "page": "Layout",
@@ -971,7 +979,7 @@
       "expected": "footer within the sidebar inset of the window edge",
       "actual": "true",
       "pass": true,
-      "evidence": "{\"overflow\":0,\"viewport\":375,\"mainWidth\":375,\"footBottom\":812,\"pillLeft\":160,\"pillBottom\":779,\"navItems\":3,\"navIcons\":3}"
+      "evidence": "{\"overflow\":0,\"viewport\":375,\"mainWidth\":375,\"footBottom\":812,\"pillLeft\":160,\"pillBottom\":779,\"navItems\":4,\"navIcons\":4}"
     },
     {
       "page": "Layout",
@@ -979,14 +987,14 @@
       "expected": "pill in the left half near the bottom",
       "actual": "true",
       "pass": true,
-      "evidence": "{\"overflow\":0,\"viewport\":375,\"mainWidth\":375,\"footBottom\":812,\"pillLeft\":160,\"pillBottom\":779,\"navItems\":3,\"navIcons\":3}"
+      "evidence": "{\"overflow\":0,\"viewport\":375,\"mainWidth\":375,\"footBottom\":812,\"pillLeft\":160,\"pillBottom\":779,\"navItems\":4,\"navIcons\":4}"
     },
     {
       "page": "Layout",
       "id": "storage at 375: every nav item has an icon",
-      "expected": 3,
-      "actual": "3",
-      "pass": "3",
+      "expected": 4,
+      "actual": "4",
+      "pass": "4",
       "evidence": true
     },
     {
@@ -995,7 +1003,7 @@
       "expected": "dialog inside the window",
       "actual": "true",
       "pass": true,
-      "evidence": "{\"left\":24,\"right\":351,\"top\":108,\"bottom\":704}"
+      "evidence": "{\"left\":24,\"right\":351,\"top\":184,\"bottom\":628}"
     },
     {
       "page": "Layout",
@@ -1011,7 +1019,7 @@
       "expected": "main at least 335px",
       "actual": "true",
       "pass": true,
-      "evidence": "{\"overflow\":0,\"viewport\":375,\"mainWidth\":375,\"footBottom\":812,\"pillLeft\":160,\"pillBottom\":779,\"navItems\":3,\"navIcons\":3}"
+      "evidence": "{\"overflow\":0,\"viewport\":375,\"mainWidth\":375,\"footBottom\":812,\"pillLeft\":160,\"pillBottom\":779,\"navItems\":4,\"navIcons\":4}"
     },
     {
       "page": "Layout",
@@ -1019,7 +1027,7 @@
       "expected": "footer within the sidebar inset of the window edge",
       "actual": "true",
       "pass": true,
-      "evidence": "{\"overflow\":0,\"viewport\":375,\"mainWidth\":375,\"footBottom\":812,\"pillLeft\":160,\"pillBottom\":779,\"navItems\":3,\"navIcons\":3}"
+      "evidence": "{\"overflow\":0,\"viewport\":375,\"mainWidth\":375,\"footBottom\":812,\"pillLeft\":160,\"pillBottom\":779,\"navItems\":4,\"navIcons\":4}"
     },
     {
       "page": "Layout",
@@ -1027,14 +1035,14 @@
       "expected": "pill in the left half near the bottom",
       "actual": "true",
       "pass": true,
-      "evidence": "{\"overflow\":0,\"viewport\":375,\"mainWidth\":375,\"footBottom\":812,\"pillLeft\":160,\"pillBottom\":779,\"navItems\":3,\"navIcons\":3}"
+      "evidence": "{\"overflow\":0,\"viewport\":375,\"mainWidth\":375,\"footBottom\":812,\"pillLeft\":160,\"pillBottom\":779,\"navItems\":4,\"navIcons\":4}"
     },
     {
       "page": "Layout",
       "id": "general at 375: every nav item has an icon",
-      "expected": 3,
-      "actual": "3",
-      "pass": "3",
+      "expected": 4,
+      "actual": "4",
+      "pass": "4",
       "evidence": true
     },
     {
@@ -1051,7 +1059,7 @@
       "expected": "main at least 335px",
       "actual": "true",
       "pass": true,
-      "evidence": "{\"overflow\":0,\"viewport\":375,\"mainWidth\":375,\"footBottom\":812,\"pillLeft\":160,\"pillBottom\":779,\"navItems\":3,\"navIcons\":3}"
+      "evidence": "{\"overflow\":0,\"viewport\":375,\"mainWidth\":375,\"footBottom\":812,\"pillLeft\":160,\"pillBottom\":779,\"navItems\":4,\"navIcons\":4}"
     },
     {
       "page": "Layout",
@@ -1059,7 +1067,7 @@
       "expected": "footer within the sidebar inset of the window edge",
       "actual": "true",
       "pass": true,
-      "evidence": "{\"overflow\":0,\"viewport\":375,\"mainWidth\":375,\"footBottom\":812,\"pillLeft\":160,\"pillBottom\":779,\"navItems\":3,\"navIcons\":3}"
+      "evidence": "{\"overflow\":0,\"viewport\":375,\"mainWidth\":375,\"footBottom\":812,\"pillLeft\":160,\"pillBottom\":779,\"navItems\":4,\"navIcons\":4}"
     },
     {
       "page": "Layout",
@@ -1067,14 +1075,14 @@
       "expected": "pill in the left half near the bottom",
       "actual": "true",
       "pass": true,
-      "evidence": "{\"overflow\":0,\"viewport\":375,\"mainWidth\":375,\"footBottom\":812,\"pillLeft\":160,\"pillBottom\":779,\"navItems\":3,\"navIcons\":3}"
+      "evidence": "{\"overflow\":0,\"viewport\":375,\"mainWidth\":375,\"footBottom\":812,\"pillLeft\":160,\"pillBottom\":779,\"navItems\":4,\"navIcons\":4}"
     },
     {
       "page": "Layout",
       "id": "appearance at 375: every nav item has an icon",
-      "expected": 3,
-      "actual": "3",
-      "pass": "3",
+      "expected": 4,
+      "actual": "4",
+      "pass": "4",
       "evidence": true
     },
     {
@@ -1091,7 +1099,7 @@
       "expected": "main at least 335px",
       "actual": "true",
       "pass": true,
-      "evidence": "{\"overflow\":0,\"viewport\":375,\"mainWidth\":375,\"footBottom\":812,\"pillLeft\":162,\"pillBottom\":779,\"navItems\":3,\"navIcons\":3}"
+      "evidence": "{\"overflow\":0,\"viewport\":375,\"mainWidth\":375,\"footBottom\":812,\"pillLeft\":162,\"pillBottom\":779,\"navItems\":4,\"navIcons\":4}"
     },
     {
       "page": "Layout",
@@ -1099,7 +1107,7 @@
       "expected": "footer within the sidebar inset of the window edge",
       "actual": "true",
       "pass": true,
-      "evidence": "{\"overflow\":0,\"viewport\":375,\"mainWidth\":375,\"footBottom\":812,\"pillLeft\":162,\"pillBottom\":779,\"navItems\":3,\"navIcons\":3}"
+      "evidence": "{\"overflow\":0,\"viewport\":375,\"mainWidth\":375,\"footBottom\":812,\"pillLeft\":162,\"pillBottom\":779,\"navItems\":4,\"navIcons\":4}"
     },
     {
       "page": "Layout",
@@ -1107,14 +1115,14 @@
       "expected": "pill in the left half near the bottom",
       "actual": "true",
       "pass": true,
-      "evidence": "{\"overflow\":0,\"viewport\":375,\"mainWidth\":375,\"footBottom\":812,\"pillLeft\":162,\"pillBottom\":779,\"navItems\":3,\"navIcons\":3}"
+      "evidence": "{\"overflow\":0,\"viewport\":375,\"mainWidth\":375,\"footBottom\":812,\"pillLeft\":162,\"pillBottom\":779,\"navItems\":4,\"navIcons\":4}"
     },
     {
       "page": "Layout",
       "id": "support at 375: every nav item has an icon",
-      "expected": 3,
-      "actual": "3",
-      "pass": "3",
+      "expected": 4,
+      "actual": "4",
+      "pass": "4",
       "evidence": true
     },
     {
@@ -1131,7 +1139,7 @@
       "expected": "main at least 508px",
       "actual": "true",
       "pass": true,
-      "evidence": "{\"overflow\":0,\"viewport\":768,\"mainWidth\":532,\"footBottom\":900,\"pillLeft\":14,\"pillBottom\":869,\"navItems\":3,\"navIcons\":3}"
+      "evidence": "{\"overflow\":0,\"viewport\":768,\"mainWidth\":532,\"footBottom\":900,\"pillLeft\":14,\"pillBottom\":869,\"navItems\":4,\"navIcons\":4}"
     },
     {
       "page": "Layout",
@@ -1139,7 +1147,7 @@
       "expected": "footer within the sidebar inset of the window edge",
       "actual": "true",
       "pass": true,
-      "evidence": "{\"overflow\":0,\"viewport\":768,\"mainWidth\":532,\"footBottom\":900,\"pillLeft\":14,\"pillBottom\":869,\"navItems\":3,\"navIcons\":3}"
+      "evidence": "{\"overflow\":0,\"viewport\":768,\"mainWidth\":532,\"footBottom\":900,\"pillLeft\":14,\"pillBottom\":869,\"navItems\":4,\"navIcons\":4}"
     },
     {
       "page": "Layout",
@@ -1147,14 +1155,14 @@
       "expected": "pill in the left half near the bottom",
       "actual": "true",
       "pass": true,
-      "evidence": "{\"overflow\":0,\"viewport\":768,\"mainWidth\":532,\"footBottom\":900,\"pillLeft\":14,\"pillBottom\":869,\"navItems\":3,\"navIcons\":3}"
+      "evidence": "{\"overflow\":0,\"viewport\":768,\"mainWidth\":532,\"footBottom\":900,\"pillLeft\":14,\"pillBottom\":869,\"navItems\":4,\"navIcons\":4}"
     },
     {
       "page": "Layout",
       "id": "storage at 768: every nav item has an icon",
-      "expected": 3,
-      "actual": "3",
-      "pass": "3",
+      "expected": 4,
+      "actual": "4",
+      "pass": "4",
       "evidence": true
     },
     {
@@ -1163,7 +1171,7 @@
       "expected": "dialog inside the window",
       "actual": "true",
       "pass": true,
-      "evidence": "{\"left\":144,\"right\":624,\"top\":177,\"bottom\":723}"
+      "evidence": "{\"left\":144,\"right\":624,\"top\":238,\"bottom\":662}"
     },
     {
       "page": "Layout",
@@ -1179,7 +1187,7 @@
       "expected": "main at least 508px",
       "actual": "true",
       "pass": true,
-      "evidence": "{\"overflow\":0,\"viewport\":768,\"mainWidth\":532,\"footBottom\":900,\"pillLeft\":14,\"pillBottom\":869,\"navItems\":3,\"navIcons\":3}"
+      "evidence": "{\"overflow\":0,\"viewport\":768,\"mainWidth\":532,\"footBottom\":900,\"pillLeft\":14,\"pillBottom\":869,\"navItems\":4,\"navIcons\":4}"
     },
     {
       "page": "Layout",
@@ -1187,7 +1195,7 @@
       "expected": "footer within the sidebar inset of the window edge",
       "actual": "true",
       "pass": true,
-      "evidence": "{\"overflow\":0,\"viewport\":768,\"mainWidth\":532,\"footBottom\":900,\"pillLeft\":14,\"pillBottom\":869,\"navItems\":3,\"navIcons\":3}"
+      "evidence": "{\"overflow\":0,\"viewport\":768,\"mainWidth\":532,\"footBottom\":900,\"pillLeft\":14,\"pillBottom\":869,\"navItems\":4,\"navIcons\":4}"
     },
     {
       "page": "Layout",
@@ -1195,14 +1203,14 @@
       "expected": "pill in the left half near the bottom",
       "actual": "true",
       "pass": true,
-      "evidence": "{\"overflow\":0,\"viewport\":768,\"mainWidth\":532,\"footBottom\":900,\"pillLeft\":14,\"pillBottom\":869,\"navItems\":3,\"navIcons\":3}"
+      "evidence": "{\"overflow\":0,\"viewport\":768,\"mainWidth\":532,\"footBottom\":900,\"pillLeft\":14,\"pillBottom\":869,\"navItems\":4,\"navIcons\":4}"
     },
     {
       "page": "Layout",
       "id": "general at 768: every nav item has an icon",
-      "expected": 3,
-      "actual": "3",
-      "pass": "3",
+      "expected": 4,
+      "actual": "4",
+      "pass": "4",
       "evidence": true
     },
     {
@@ -1219,7 +1227,7 @@
       "expected": "main at least 508px",
       "actual": "true",
       "pass": true,
-      "evidence": "{\"overflow\":0,\"viewport\":768,\"mainWidth\":532,\"footBottom\":900,\"pillLeft\":14,\"pillBottom\":869,\"navItems\":3,\"navIcons\":3}"
+      "evidence": "{\"overflow\":0,\"viewport\":768,\"mainWidth\":532,\"footBottom\":900,\"pillLeft\":14,\"pillBottom\":869,\"navItems\":4,\"navIcons\":4}"
     },
     {
       "page": "Layout",
@@ -1227,7 +1235,7 @@
       "expected": "footer within the sidebar inset of the window edge",
       "actual": "true",
       "pass": true,
-      "evidence": "{\"overflow\":0,\"viewport\":768,\"mainWidth\":532,\"footBottom\":900,\"pillLeft\":14,\"pillBottom\":869,\"navItems\":3,\"navIcons\":3}"
+      "evidence": "{\"overflow\":0,\"viewport\":768,\"mainWidth\":532,\"footBottom\":900,\"pillLeft\":14,\"pillBottom\":869,\"navItems\":4,\"navIcons\":4}"
     },
     {
       "page": "Layout",
@@ -1235,14 +1243,14 @@
       "expected": "pill in the left half near the bottom",
       "actual": "true",
       "pass": true,
-      "evidence": "{\"overflow\":0,\"viewport\":768,\"mainWidth\":532,\"footBottom\":900,\"pillLeft\":14,\"pillBottom\":869,\"navItems\":3,\"navIcons\":3}"
+      "evidence": "{\"overflow\":0,\"viewport\":768,\"mainWidth\":532,\"footBottom\":900,\"pillLeft\":14,\"pillBottom\":869,\"navItems\":4,\"navIcons\":4}"
     },
     {
       "page": "Layout",
       "id": "appearance at 768: every nav item has an icon",
-      "expected": 3,
-      "actual": "3",
-      "pass": "3",
+      "expected": 4,
+      "actual": "4",
+      "pass": "4",
       "evidence": true
     },
     {
@@ -1259,7 +1267,7 @@
       "expected": "main at least 508px",
       "actual": "true",
       "pass": true,
-      "evidence": "{\"overflow\":0,\"viewport\":768,\"mainWidth\":532,\"footBottom\":900,\"pillLeft\":14,\"pillBottom\":869,\"navItems\":3,\"navIcons\":3}"
+      "evidence": "{\"overflow\":0,\"viewport\":768,\"mainWidth\":532,\"footBottom\":900,\"pillLeft\":14,\"pillBottom\":869,\"navItems\":4,\"navIcons\":4}"
     },
     {
       "page": "Layout",
@@ -1267,7 +1275,7 @@
       "expected": "footer within the sidebar inset of the window edge",
       "actual": "true",
       "pass": true,
-      "evidence": "{\"overflow\":0,\"viewport\":768,\"mainWidth\":532,\"footBottom\":900,\"pillLeft\":14,\"pillBottom\":869,\"navItems\":3,\"navIcons\":3}"
+      "evidence": "{\"overflow\":0,\"viewport\":768,\"mainWidth\":532,\"footBottom\":900,\"pillLeft\":14,\"pillBottom\":869,\"navItems\":4,\"navIcons\":4}"
     },
     {
       "page": "Layout",
@@ -1275,14 +1283,14 @@
       "expected": "pill in the left half near the bottom",
       "actual": "true",
       "pass": true,
-      "evidence": "{\"overflow\":0,\"viewport\":768,\"mainWidth\":532,\"footBottom\":900,\"pillLeft\":14,\"pillBottom\":869,\"navItems\":3,\"navIcons\":3}"
+      "evidence": "{\"overflow\":0,\"viewport\":768,\"mainWidth\":532,\"footBottom\":900,\"pillLeft\":14,\"pillBottom\":869,\"navItems\":4,\"navIcons\":4}"
     },
     {
       "page": "Layout",
       "id": "support at 768: every nav item has an icon",
-      "expected": 3,
-      "actual": "3",
-      "pass": "3",
+      "expected": 4,
+      "actual": "4",
+      "pass": "4",
       "evidence": true
     },
     {
@@ -1299,7 +1307,7 @@
       "expected": "main at least 1180px",
       "actual": "true",
       "pass": true,
-      "evidence": "{\"overflow\":0,\"viewport\":1440,\"mainWidth\":1204,\"footBottom\":900,\"pillLeft\":14,\"pillBottom\":869,\"navItems\":3,\"navIcons\":3}"
+      "evidence": "{\"overflow\":0,\"viewport\":1440,\"mainWidth\":1204,\"footBottom\":900,\"pillLeft\":14,\"pillBottom\":869,\"navItems\":4,\"navIcons\":4}"
     },
     {
       "page": "Layout",
@@ -1307,7 +1315,7 @@
       "expected": "footer within the sidebar inset of the window edge",
       "actual": "true",
       "pass": true,
-      "evidence": "{\"overflow\":0,\"viewport\":1440,\"mainWidth\":1204,\"footBottom\":900,\"pillLeft\":14,\"pillBottom\":869,\"navItems\":3,\"navIcons\":3}"
+      "evidence": "{\"overflow\":0,\"viewport\":1440,\"mainWidth\":1204,\"footBottom\":900,\"pillLeft\":14,\"pillBottom\":869,\"navItems\":4,\"navIcons\":4}"
     },
     {
       "page": "Layout",
@@ -1315,14 +1323,14 @@
       "expected": "pill in the left half near the bottom",
       "actual": "true",
       "pass": true,
-      "evidence": "{\"overflow\":0,\"viewport\":1440,\"mainWidth\":1204,\"footBottom\":900,\"pillLeft\":14,\"pillBottom\":869,\"navItems\":3,\"navIcons\":3}"
+      "evidence": "{\"overflow\":0,\"viewport\":1440,\"mainWidth\":1204,\"footBottom\":900,\"pillLeft\":14,\"pillBottom\":869,\"navItems\":4,\"navIcons\":4}"
     },
     {
       "page": "Layout",
       "id": "storage at 1440: every nav item has an icon",
-      "expected": 3,
-      "actual": "3",
-      "pass": "3",
+      "expected": 4,
+      "actual": "4",
+      "pass": "4",
       "evidence": true
     },
     {
@@ -1331,7 +1339,7 @@
       "expected": "dialog inside the window",
       "actual": "true",
       "pass": true,
-      "evidence": "{\"left\":480,\"right\":960,\"top\":177,\"bottom\":723}"
+      "evidence": "{\"left\":480,\"right\":960,\"top\":238,\"bottom\":662}"
     },
     {
       "page": "Layout",
@@ -1347,7 +1355,7 @@
       "expected": "main at least 1180px",
       "actual": "true",
       "pass": true,
-      "evidence": "{\"overflow\":0,\"viewport\":1440,\"mainWidth\":1204,\"footBottom\":900,\"pillLeft\":14,\"pillBottom\":869,\"navItems\":3,\"navIcons\":3}"
+      "evidence": "{\"overflow\":0,\"viewport\":1440,\"mainWidth\":1204,\"footBottom\":900,\"pillLeft\":14,\"pillBottom\":869,\"navItems\":4,\"navIcons\":4}"
     },
     {
       "page": "Layout",
@@ -1355,7 +1363,7 @@
       "expected": "footer within the sidebar inset of the window edge",
       "actual": "true",
       "pass": true,
-      "evidence": "{\"overflow\":0,\"viewport\":1440,\"mainWidth\":1204,\"footBottom\":900,\"pillLeft\":14,\"pillBottom\":869,\"navItems\":3,\"navIcons\":3}"
+      "evidence": "{\"overflow\":0,\"viewport\":1440,\"mainWidth\":1204,\"footBottom\":900,\"pillLeft\":14,\"pillBottom\":869,\"navItems\":4,\"navIcons\":4}"
     },
     {
       "page": "Layout",
@@ -1363,14 +1371,14 @@
       "expected": "pill in the left half near the bottom",
       "actual": "true",
       "pass": true,
-      "evidence": "{\"overflow\":0,\"viewport\":1440,\"mainWidth\":1204,\"footBottom\":900,\"pillLeft\":14,\"pillBottom\":869,\"navItems\":3,\"navIcons\":3}"
+      "evidence": "{\"overflow\":0,\"viewport\":1440,\"mainWidth\":1204,\"footBottom\":900,\"pillLeft\":14,\"pillBottom\":869,\"navItems\":4,\"navIcons\":4}"
     },
     {
       "page": "Layout",
       "id": "general at 1440: every nav item has an icon",
-      "expected": 3,
-      "actual": "3",
-      "pass": "3",
+      "expected": 4,
+      "actual": "4",
+      "pass": "4",
       "evidence": true
     },
     {
@@ -1387,7 +1395,7 @@
       "expected": "main at least 1180px",
       "actual": "true",
       "pass": true,
-      "evidence": "{\"overflow\":0,\"viewport\":1440,\"mainWidth\":1204,\"footBottom\":900,\"pillLeft\":14,\"pillBottom\":869,\"navItems\":3,\"navIcons\":3}"
+      "evidence": "{\"overflow\":0,\"viewport\":1440,\"mainWidth\":1204,\"footBottom\":900,\"pillLeft\":14,\"pillBottom\":869,\"navItems\":4,\"navIcons\":4}"
     },
     {
       "page": "Layout",
@@ -1395,7 +1403,7 @@
       "expected": "footer within the sidebar inset of the window edge",
       "actual": "true",
       "pass": true,
-      "evidence": "{\"overflow\":0,\"viewport\":1440,\"mainWidth\":1204,\"footBottom\":900,\"pillLeft\":14,\"pillBottom\":869,\"navItems\":3,\"navIcons\":3}"
+      "evidence": "{\"overflow\":0,\"viewport\":1440,\"mainWidth\":1204,\"footBottom\":900,\"pillLeft\":14,\"pillBottom\":869,\"navItems\":4,\"navIcons\":4}"
     },
     {
       "page": "Layout",
@@ -1403,14 +1411,14 @@
       "expected": "pill in the left half near the bottom",
       "actual": "true",
       "pass": true,
-      "evidence": "{\"overflow\":0,\"viewport\":1440,\"mainWidth\":1204,\"footBottom\":900,\"pillLeft\":14,\"pillBottom\":869,\"navItems\":3,\"navIcons\":3}"
+      "evidence": "{\"overflow\":0,\"viewport\":1440,\"mainWidth\":1204,\"footBottom\":900,\"pillLeft\":14,\"pillBottom\":869,\"navItems\":4,\"navIcons\":4}"
     },
     {
       "page": "Layout",
       "id": "appearance at 1440: every nav item has an icon",
-      "expected": 3,
-      "actual": "3",
-      "pass": "3",
+      "expected": 4,
+      "actual": "4",
+      "pass": "4",
       "evidence": true
     },
     {
@@ -1427,7 +1435,7 @@
       "expected": "main at least 1180px",
       "actual": "true",
       "pass": true,
-      "evidence": "{\"overflow\":0,\"viewport\":1440,\"mainWidth\":1204,\"footBottom\":900,\"pillLeft\":14,\"pillBottom\":869,\"navItems\":3,\"navIcons\":3}"
+      "evidence": "{\"overflow\":0,\"viewport\":1440,\"mainWidth\":1204,\"footBottom\":900,\"pillLeft\":14,\"pillBottom\":869,\"navItems\":4,\"navIcons\":4}"
     },
     {
       "page": "Layout",
@@ -1435,7 +1443,7 @@
       "expected": "footer within the sidebar inset of the window edge",
       "actual": "true",
       "pass": true,
-      "evidence": "{\"overflow\":0,\"viewport\":1440,\"mainWidth\":1204,\"footBottom\":900,\"pillLeft\":14,\"pillBottom\":869,\"navItems\":3,\"navIcons\":3}"
+      "evidence": "{\"overflow\":0,\"viewport\":1440,\"mainWidth\":1204,\"footBottom\":900,\"pillLeft\":14,\"pillBottom\":869,\"navItems\":4,\"navIcons\":4}"
     },
     {
       "page": "Layout",
@@ -1443,14 +1451,14 @@
       "expected": "pill in the left half near the bottom",
       "actual": "true",
       "pass": true,
-      "evidence": "{\"overflow\":0,\"viewport\":1440,\"mainWidth\":1204,\"footBottom\":900,\"pillLeft\":14,\"pillBottom\":869,\"navItems\":3,\"navIcons\":3}"
+      "evidence": "{\"overflow\":0,\"viewport\":1440,\"mainWidth\":1204,\"footBottom\":900,\"pillLeft\":14,\"pillBottom\":869,\"navItems\":4,\"navIcons\":4}"
     },
     {
       "page": "Layout",
       "id": "support at 1440: every nav item has an icon",
-      "expected": 3,
-      "actual": "3",
-      "pass": "3",
+      "expected": 4,
+      "actual": "4",
+      "pass": "4",
       "evidence": true
     },
     {
@@ -1859,7 +1867,7 @@
       "expected": "row menu",
       "actual": "true",
       "pass": true,
-      "evidence": "row-s1795155122986-menu"
+      "evidence": "row-s1795365545580-menu"
     },
     {
       "page": "Dialog",
@@ -1880,10 +1888,10 @@
     {
       "page": "Keys",
       "id": "arrow keys move between sections",
-      "expected": "General focused and shown",
+      "expected": "Archives focused and shown",
       "actual": "true",
       "pass": true,
-      "evidence": "{\"page\":\"General\",\"focus\":\"nav-general\"}"
+      "evidence": "{\"page\":\"Archives\",\"focus\":\"nav-archives\"}"
     },
     {
       "page": "Storage",
@@ -2113,9 +2121,9 @@
       "page": "Completeness",
       "id": "declared page capabilities have controls",
       "expected": "all present",
-      "actual": "true",
-      "pass": true,
-      "evidence": "{\"add\":true,\"viewCards\":true,\"viewTable\":true,\"primary\":true,\"menu\":true,\"check\":true,\"pill\":true,\"support\":true,\"nav\":true}"
+      "actual": "\"all present\"",
+      "pass": "\"{\\\"add\\\":true,\\\"viewCards\\\":true,\\\"viewTable\\\":true,\\\"primary\\\":true,\\\"menu\\\":true,\\\"check\\\":true,\\\"pill\\\":true,\\\"support\\\":true,\\\"nav\\\":false}\"",
+      "evidence": null
     },
     {
       "page": "Completeness",
@@ -2135,11 +2143,19 @@
     },
     {
       "page": "Add",
-      "id": "an uppercase scheme is refused with the same message",
-      "expected": "Use an smb:// address",
+      "id": "an uppercase scheme is accepted",
+      "expected": "Save enabled",
       "actual": "true",
       "pass": true,
       "evidence": null
+    },
+    {
+      "page": "Add",
+      "id": "the saved address uses smb://",
+      "expected": "lowercase scheme",
+      "actual": "true",
+      "pass": true,
+      "evidence": "{\"input\":{\"name\":\"Upper scheme\",\"kind\":\"smb\",\"target\":\"smb://nas.local/studio\",\"mountPoint\":\"\",\"volumeUUID\":null,\"reconnectAtLogin\":true,\"reconnectAfterWake\":true,\"username\":\"\"}}"
     },
     {
       "page": "Storage",
@@ -2179,12 +2195,12 @@
       "expected": "Storage list checked",
       "actual": "true",
       "pass": true,
-      "evidence": "Storage list checked 151 h ago"
+      "evidence": "Storage list checked 210 h ago"
     },
     {
       "page": "Footer",
-      "id": "the version pill carries an icon",
-      "expected": "an svg",
+      "id": "the pill is the version alone",
+      "expected": "no svg, version text",
       "actual": "true",
       "pass": true,
       "evidence": null
@@ -2251,7 +2267,7 @@
       "expected": "Save disabled with the duplicate reason",
       "actual": "true",
       "pass": true,
-      "evidence": "This share is already added as Public Space-Media - 4TB - Music."
+      "evidence": "Public Space-Media - 4TB - Music is already added as Public Space-Media - 4TB - Music."
     },
     {
       "page": "Add",
@@ -2259,7 +2275,7 @@
       "expected": "Save disabled with the duplicate reason",
       "actual": "true",
       "pass": true,
-      "evidence": "This share is already added as Public Space-Media - 4TB - Music."
+      "evidence": "Public Space-Media - 4TB - Music is already added as Public Space-Media - 4TB - Music."
     },
     {
       "page": "Add",
@@ -2267,7 +2283,7 @@
       "expected": "Save disabled with the duplicate reason",
       "actual": "true",
       "pass": true,
-      "evidence": "This share is already added as Public Space-Media - 4TB - Music."
+      "evidence": "Public Space-Media - 4TB - Music is already added as Public Space-Media - 4TB - Music."
     },
     {
       "page": "Add",
@@ -2275,7 +2291,7 @@
       "expected": "Save disabled with the duplicate reason",
       "actual": "true",
       "pass": true,
-      "evidence": "This share is already added as Public Space-Media - 4TB - Music."
+      "evidence": "Public Space-Media - 4TB - Music is already added as Public Space-Media - 4TB - Music."
     },
     {
       "page": "Add",
@@ -2283,7 +2299,7 @@
       "expected": "Save disabled with the duplicate reason",
       "actual": "true",
       "pass": true,
-      "evidence": "This share is already added as Public Space-Media - 4TB - Music."
+      "evidence": "./Public Space-Media - 4TB - Music is already added as Public Space-Media - 4TB - Music."
     },
     {
       "page": "View",
@@ -2354,8 +2370,8 @@
       "id": "the navigation comes back after Retry",
       "expected": 3,
       "actual": "3",
-      "pass": "3",
-      "evidence": true
+      "pass": "4",
+      "evidence": null
     },
     {
       "page": "Remove",
@@ -2395,7 +2411,7 @@
       "expected": "the focused control is visible",
       "actual": "true",
       "pass": true,
-      "evidence": "{\"fk\":\"row-s1795155159465-menu\",\"top\":606,\"bottom\":634,\"h\":812}"
+      "evidence": "{\"fk\":\"row-s1795365651926-menu\",\"top\":606,\"bottom\":634,\"h\":812}"
     },
     {
       "page": "Layout",
@@ -2443,7 +2459,7 @@
       "expected": "right edge within the window",
       "actual": "true",
       "pass": true,
-      "evidence": "{\"right\":235,\"edge\":236}"
+      "evidence": "{\"right\":117,\"edge\":236}"
     },
     {
       "page": "Footer",
@@ -2451,7 +2467,7 @@
       "expected": "right edge within the window",
       "actual": "true",
       "pass": true,
-      "evidence": "{\"right\":235,\"edge\":236}"
+      "evidence": "{\"right\":117,\"edge\":236}"
     },
     {
       "page": "Storage",
@@ -2548,8 +2564,8 @@
     "tests/acceptance/screenshots/appearance/appearance-light-820x640.png"
   ],
   "summary": {
-    "total": 311,
-    "passed": 311,
+    "total": 313,
+    "passed": 313,
     "failed": 0
   }
 }

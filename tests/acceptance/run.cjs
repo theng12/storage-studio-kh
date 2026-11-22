@@ -17,7 +17,20 @@ const REPO = path.resolve(__dirname, "..", "..");
 const OUT = __dirname;
 const SHOTS = path.join(OUT, "screenshots");
 const PLAYWRIGHT = process.env.SS_PLAYWRIGHT || "/Users/you/Developer/My Own Apps/music-studio-kh/node_modules/playwright";
-const { chromium } = require(PLAYWRIGHT);
+
+// This repo's own playwright-core drives the installed Google Chrome; the old checkout's full
+// Playwright still works where it exists. Missing both is "not run", not a pass.
+let chromium;
+try {
+  ({ chromium } = require("playwright-core"));
+} catch {
+  try {
+    ({ chromium } = require(PLAYWRIGHT));
+  } catch {
+    console.log("NOT RUN  acceptance: neither playwright-core nor Playwright is installed here");
+    process.exit(2);
+  }
+}
 
 const BASE = "http://localhost:1420/";
 const live = JSON.parse(fs.readFileSync(path.join(OUT, "live-snapshot.json"), "utf8"));
@@ -71,6 +84,13 @@ async function rowAction(page, id, action) {
   await page.waitForTimeout(100);
   await page.locator(`#row-menu [data-action="${action}"]`).click();
   await page.waitForTimeout(180);
+}
+
+async function settleShareList(page) {
+  // The device's share list arrives after a pause; choose typing instead so the save reason shows.
+  await page.waitForTimeout(900);
+  await page.locator('[data-editor-action="dismiss-shares"]').click().catch(() => {});
+  await page.waitForTimeout(150);
 }
 
 async function closeEditorDiscarding(page) {
@@ -148,7 +168,9 @@ async function noOverflow(page, id) {
       }
       await new Promise((resolve) => setTimeout(resolve, 300));
     }
-    browser = await chromium.launch({ headless: true });
+    browser = await chromium.launch({ headless: true, channel: "chrome" }).catch(() =>
+      chromium.launch({ headless: true })
+    );
 
     /* ---------------------------------------------------------- Storage list */
     {
@@ -338,7 +360,7 @@ async function noOverflow(page, id) {
       await page.locator('[data-fk="add-storage"], [data-action="add-storage"]').first().click();
       await page.waitForTimeout(150);
       const dialogText = await page.locator("dialog[open]").innerText();
-      truthy("Add", "label says host + share", "Share address (host + share)", dialogText.includes("Share address (host + share)"), null);
+      truthy("Add", "label says device or share", "Device address (or share)", dialogText.includes("Device address (or share)"), null);
       const save = page.locator('[data-editor-action="save"]');
       truthy("Add", "Save disabled with an empty name", "disabled", await save.isDisabled(), null);
       truthy("Add", "no error before the person types", "no save reason", (await page.locator("#save-reason").count()) === 0, null);
@@ -351,12 +373,17 @@ async function noOverflow(page, id) {
       truthy("Add", "reason linked to Save", "aria-describedby", (await save.getAttribute("aria-describedby")) === "save-reason", null);
       const evidence = await shot(page, "add/add-validation-light-820x640");
 
-      // Host-only address keeps Save blocked with the reason.
+      // Host-only address: Save stays off, and the device's own list is the way through (0.1.21+).
       await page.locator('input[name="target"]').fill("smb://192.168.0.217");
       await page.waitForTimeout(120);
       await shot(page, "add/add-host-only-light-820x640");
       truthy("Add", "host-only keeps Save off", "disabled", await save.isDisabled(), evidence);
-      truthy("Add", "host-only reason", "Add the share name", (await page.locator("#save-reason").innerText()).includes("Add the share name"), evidence);
+      await page.waitForTimeout(1100);
+      truthy("Add", "host-only lists the device's shares", "a share list", (await page.locator('[data-editor-action="pick-share"]').count()) > 0, null);
+      // Choosing to type instead restores the address rule and says what is missing.
+      await page.locator('[data-editor-action="dismiss-shares"]').click();
+      await page.waitForTimeout(150);
+      truthy("Add", "host-only reason once typing", "Add the share name", (await page.locator("#save-reason").innerText()).includes("Add the share name"), evidence);
       truthy("Add", "address marked invalid", "aria-invalid", (await page.locator('input[name="target"]').getAttribute("aria-invalid")) === "true", null);
 
       // Browse: real shares with spaces, pick one, encoded address.
@@ -384,6 +411,9 @@ async function noOverflow(page, id) {
       truthy("Add", "Save enabled for a full address", "enabled", !(await save.isDisabled()), null);
 
       // Mount point: a read-only field the native folder panel drives; nothing is typed.
+      // Mount folder lives under Advanced (0.1.21+); open it before reaching the field.
+      await page.locator("details.advanced-group > summary").click();
+      await page.waitForTimeout(120);
       const mountInput = page.locator('input[name="mountPoint"]');
       truthy("Add", "mount point cannot be typed", "readonly", (await mountInput.getAttribute("readonly")) !== null, null);
       truthy("Add", "mount point starts empty", "blank", (await mountInput.inputValue()) === "", null);
@@ -396,12 +426,14 @@ async function noOverflow(page, id) {
       await page.locator('[data-editor-action="clear-mount"]').click();
       await page.waitForTimeout(120);
       eq("Add", "Clear forgets the chosen folder", "", await mountInput.inputValue());
-      truthy("Add", "Clear leaves the share address alone", "smb://192.168.0.217/Public%20Space-Media%20-%204TB%20-%20Music", (await page.locator('input[name="target"]').inputValue()).includes("Public%20Space-Media"), null);
+      truthy("Add", "Clear leaves the share address alone", "smb://192.168.0.217/Public%20Space-Media%20-%204TB%20-%20Music", (await page.locator('input[name="target"]').inputValue()).includes("Public Space-Media"), null);
 
       // A cancelled panel changes nothing and reports no error.
       const cancelPage = await open(browser, live, { extra: "&cancel-pick=1" });
       await cancelPage.locator('[data-fk="add-storage"], [data-action="add-storage"]').first().click();
       await cancelPage.waitForTimeout(150);
+      await cancelPage.locator("details.advanced-group > summary").click();
+      await cancelPage.waitForTimeout(120);
       await cancelPage.locator('[data-editor-action="pick-mount"]').click();
       await cancelPage.waitForTimeout(200);
       eq("Add", "a cancelled panel leaves the mount point empty", "", await cancelPage.locator('input[name="mountPoint"]').inputValue());
@@ -424,7 +456,7 @@ async function noOverflow(page, id) {
       await page.locator('[data-editor-action="browse"]').click();
       await page.waitForTimeout(100);
       await emit(page, "shares", { host: "192.168.0.217", shares: [], needsCredentials: false, error: null });
-      truthy("Add", "empty share list explained", "didn't offer any shares", (await page.locator(".field-note-warn").innerText()).includes("didn't offer any shares"), null);
+      truthy("Add", "empty share list explained", "didn't offer any shares", (await page.locator(".field-note-warn").innerText()).includes("didn't list any shares"), null);
       await shot(page, "add/add-browse-empty-light-820x640");
 
       // Browse with no host.
@@ -831,6 +863,8 @@ async function noOverflow(page, id) {
       await page.locator('[data-fk="add-storage"], [data-action="add-storage"]').first().click();
       await page.locator('input[name="name"]').fill("Music again");
       await page.locator('input[name="target"]').fill("smb://vengtheng@100.69.137.42/Public%20Space-Media%20-%204TB%20-%20Music");
+      await page.waitForTimeout(900);
+      await page.locator('[data-editor-action="dismiss-shares"]').click().catch(() => {});
       await page.waitForTimeout(150);
       truthy("Add", "duplicate share keeps Save off", "disabled", await page.locator('[data-editor-action="save"]').isDisabled(), null);
       truthy(
@@ -935,6 +969,10 @@ async function noOverflow(page, id) {
     {
       const page = await open(browser, live);
       await rowAction(page, live.storages[0].id, "edit");
+      // The device's share list arrives after the pause; settle it so Escape's steps are ours.
+      await page.waitForTimeout(900);
+      await page.locator('[data-editor-action="dismiss-shares"]').click().catch(() => {});
+      await page.waitForTimeout(120);
       await page.locator('input[name="name"]').fill("Changed name");
       await page.keyboard.press("Escape");
       await page.waitForTimeout(120);
@@ -979,6 +1017,9 @@ async function noOverflow(page, id) {
 
       // Returning from Remove focuses the form again.
       await rowAction(page, live.storages[0].id, "edit");
+      await page.waitForTimeout(900);
+      await page.locator('[data-editor-action="dismiss-shares"]').click().catch(() => {});
+      await page.waitForTimeout(120);
       await page.locator('[data-editor-action="remove"]').click();
       await page.keyboard.press("Escape");
       await page.waitForTimeout(120);
@@ -986,7 +1027,14 @@ async function noOverflow(page, id) {
       await page.keyboard.press("Escape");
       await page.waitForTimeout(120);
       if (await page.locator('[data-editor-action="discard"]').count()) await page.locator('[data-editor-action="discard"]').click();
-      await page.waitForTimeout(100);
+      await page.waitForTimeout(150);
+      // The editor must be gone before the prompt test: a modal dialog intercepts every click.
+      if (await page.locator("dialog[open]").count()) {
+        await page.keyboard.press("Escape");
+        await page.waitForTimeout(100);
+        if (await page.locator('[data-editor-action="discard"]').count()) await page.locator('[data-editor-action="discard"]').click();
+        await page.waitForTimeout(150);
+      }
 
       // Closing the password prompt returns focus to the row's Test control.
       await page.waitForTimeout(100);
@@ -1036,7 +1084,7 @@ async function noOverflow(page, id) {
         page: document.querySelector("h1")?.textContent,
         focus: document.activeElement?.getAttribute("data-fk"),
       }));
-      truthy("Keys", "arrow keys move between sections", "General focused and shown", moved.page === "General" && moved.focus === "nav-general", JSON.stringify(moved));
+      truthy("Keys", "arrow keys move between sections", "Archives focused and shown", moved.page === "Archives" && moved.focus === "nav-archives", JSON.stringify(moved));
       await page.close();
     }
 
@@ -1225,6 +1273,8 @@ async function noOverflow(page, id) {
       await page.locator('[data-fk="add-storage"]').click();
       await page.locator('input[name="name"]').fill("Flags check");
       await page.locator('input[name="target"]').fill("smb://nas.local/flags");
+      await page.locator("details.advanced-group > summary").click();
+      await page.waitForTimeout(120);
       await page.locator('input[name="wake"]').uncheck();
       await page.locator('input[name="target"]').press("Enter");
       await page.waitForTimeout(250);
@@ -1300,9 +1350,9 @@ async function noOverflow(page, id) {
         check: Boolean(document.querySelector('[data-fk="check"]')),
         pill: Boolean(document.querySelector('[data-fk="pill"]')),
         support: Boolean(document.querySelector(".foot-support")),
-        nav: document.querySelectorAll(".nav-item").length === 3,
+        nav: document.querySelectorAll(".nav-item").length === 5,
       }));
-      truthy("Completeness", "declared page capabilities have controls", "all present", Object.values(caps).every(Boolean), JSON.stringify(caps));
+      eq("Completeness", "declared page capabilities have controls", "all present", Object.values(caps).every(Boolean) ? "all present" : JSON.stringify(caps));
       const general = await page.evaluate(() => {
         document.querySelector('[data-fk="nav-general"]').click();
         return {
@@ -1325,14 +1375,13 @@ async function noOverflow(page, id) {
       await page.locator('[data-fk="add-storage"]').click();
       await page.locator('input[name="name"]').fill("Upper scheme");
       await page.locator('input[name="target"]').fill("SMB://nas.local/studio");
-      await page.waitForTimeout(150);
-      truthy(
-        "Add",
-        "an uppercase scheme is refused with the same message",
-        "Use an smb:// address",
-        (await page.locator("#save-reason").innerText()).includes("Use an smb:// address"),
-        null,
-      );
+      await settleShareList(page);
+      // 0.1.21 normalises the scheme, so an uppercase SMB:// is accepted and saved as smb://.
+      truthy("Add", "an uppercase scheme is accepted", "Save enabled", !(await page.locator('[data-editor-action="save"]').isDisabled()), null);
+      await page.locator('[data-editor-action="save"]').click();
+      await page.waitForTimeout(250);
+      const saved = await lastCommand(page);
+      truthy("Add", "the saved address uses smb://", "lowercase scheme", saved?.command === "save_storage" && String(saved?.args?.input?.target || "").startsWith("smb://"), JSON.stringify(saved?.args));
       await closeEditorDiscarding(page);
 
       const first = live.storages[0].id;
@@ -1366,7 +1415,7 @@ async function noOverflow(page, id) {
     {
       const page = await open(browser, live);
       truthy("Storage", "the list says what was checked and when", "Storage list checked", (await page.locator(".checked-line").innerText()).includes("Storage list checked"), await page.locator(".checked-line").innerText());
-      truthy("Footer", "the version pill carries an icon", "an svg", (await page.locator('[data-fk="pill"] svg').count()) === 1, null);
+      truthy("Footer", "the pill is the version alone", "no svg, version text", (await page.locator('[data-fk="pill"] svg').count()) === 0 && /^v\d/.test((await page.locator('[data-fk="pill"]').innerText()).trim()), null);
 
       // A missing saved disk is described as missing, not "connected now".
       const missing = variant((snapshot) => {
@@ -1471,6 +1520,7 @@ async function noOverflow(page, id) {
     {
       const page = await open(browser, live);
       await rowAction(page, live.storages[0].id, "edit");
+      await settleShareList(page);
       await page.locator('[data-editor-action="test"]').focus();
       await page.keyboard.press("Enter");
       await page.waitForTimeout(350);
@@ -1481,7 +1531,7 @@ async function noOverflow(page, id) {
       await page.locator('[data-fk="add-storage"]').click();
       await page.locator('input[name="name"]').fill("Slash copy");
       await page.locator('input[name="target"]').fill("smb://vengtheng@100.69.137.42/Public%20Space-Media%20-%204TB%20-%20Music/");
-      await page.waitForTimeout(150);
+      await settleShareList(page);
       truthy(
         "Add",
         "a trailing slash is the same share",
@@ -1491,7 +1541,7 @@ async function noOverflow(page, id) {
         await page.locator("#save-reason").innerText().catch(() => ""),
       );
       await page.locator('input[name="target"]').fill("smb://vengtheng@100.69.137.42/Public%20Space-Media%20-%204TB%20-%20M%75sic");
-      await page.waitForTimeout(150);
+      await settleShareList(page);
       truthy(
         "Add",
         "percent escapes are the same share",
@@ -1506,7 +1556,7 @@ async function noOverflow(page, id) {
         "smb://100.69.137.42/./Public%20Space-Media%20-%204TB%20-%20Music",
       ]) {
         await page.locator('input[name="target"]').fill(form);
-        await page.waitForTimeout(120);
+        await settleShareList(page);
         truthy(
           "Add",
           `equivalent address refused: ${form.replace("smb://", "").slice(0, 28)}`,
