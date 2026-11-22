@@ -101,15 +101,15 @@ codesign --force --sign "KH Studio Local Signing" "$helper_app"
 codesign --verify --strict "$helper_app"
 
 step "What's New from CHANGELOG.md"
-# The shared script lives in Shared Tools on a Mac that has it; the Updater's checkout carries
-# the same file where that folder has not been restored (measured on the new Mac, 2026-11-21).
+# The shared script lives in Shared Tools on a Mac that has it; the Updater's checkout
+# carries the same file (moved to _orchestra/developer-system, measured 2026-11-22).
 whats_new=""
 for candidate in \
   "$HOME/Developer/Shared Tools/kh-shared-ui/whats-new.py" \
-  "$HOME/Developer/My Own Apps/update-studio-kh/packaging/shared-ui/whats-new.py"; do
+  "$HOME/Developer/_orchestra/developer-system/update-studio-kh/app/packaging/shared-ui/whats-new.py"; do
   [ -f "$candidate" ] && { whats_new="$candidate"; break; }
 done
-[ -n "$whats_new" ] || fail "whats-new.py is missing: looked in Shared Tools/kh-shared-ui and the Updater's packaging/shared-ui"
+[ -n "$whats_new" ] || fail "whats-new.py is missing: looked in Shared Tools/kh-shared-ui and _orchestra/developer-system/update-studio-kh/app/packaging/shared-ui"
 python3 -I "$whats_new" CHANGELOG.md src-tauri/whats-new.json
 [ "$(python3 -c "import json;print(json.load(open('src-tauri/whats-new.json'))[0]['version'])")" = "$version" ] \
   || fail "whats-new.json's newest entry is not $version"

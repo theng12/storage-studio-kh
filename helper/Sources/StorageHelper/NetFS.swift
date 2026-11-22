@@ -62,15 +62,17 @@ enum NetFS {
         }
 
         var pairs: [(CFString, CFBoolean)] = [(noUserPrompt, kCFBooleanTrue)]
-        if mountPath != nil { pairs.append((mountAtMountDir, kCFBooleanTrue)) }
         // Only loopback shares need this, and it is harmless for the rest.
         pairs.append((allowLoopback, kCFBooleanTrue))
         if credentials == nil { pairs.append((useGuest, kCFBooleanTrue)) }
         let openOptions = options(pairs)
+        // MountAtMountDir belongs to the mount-options dictionary (NetFS.h); in the open
+        // options NetFS answers a chosen folder with EINVAL (22).
+        let mountOptions = mountPath != nil ? options([(mountAtMountDir, kCFBooleanTrue)]) : nil
 
         let user = credentials?.username as CFString?
         let password = credentials?.password as CFString?
-        let code = mountSync(cleanURL as CFURL, mountPath, user, password, openOptions, nil, nil)
+        let code = mountSync(cleanURL as CFURL, mountPath, user, password, openOptions, mountOptions, nil)
         if code == 0 { return nil }
 
         let needsCredentials = code == 1 || code == 13 || code == 80 || code == -6003

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.24 — 2026-11-22
+
+- **A share mounts in the folder you choose.** The chosen mount folder was handed to the system's network mounter in the wrong list, so the device answered EINVAL and nothing mounted. It is now passed where the system expects it.
+- **The release build finds its What's New step again.** The build looked for a helper script in a folder that moved; it now looks in the shared code's new home and still stops loudly if neither copy exists.
+
 ## 0.1.23 — 2026-11-22
 
 - **Your saved storages can no longer be wiped by a bad reply from the app's own helper.** The app read the helper's share list in the wrong spelling, called the answer a fault every time, and then saved that empty list over your storages. Both halves are fixed: the helper's answer now reads correctly, and a save that would replace a saved list with none is refused and logged.
