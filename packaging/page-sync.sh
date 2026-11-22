@@ -373,7 +373,7 @@ PY
 # The names table carries the name GitHub actually stored, so it is written from the readback above.
 pub 'K="$HOME/Library/KHUpdater"; mkdir -p "$K/page-sync" && cat > "$K/page-sync/names.tsv"' < "$WORK/names.tsv" \
   || refuse "cannot write the names table on $PUB_HOST"
-MIRROR_OUT=$(pub "K=\"\$HOME/Library/KHUpdater\"; H=\"\$K/base/current\"; [ -x \"\$H\" ] || H=\"\$K/bin/khu\"
+MIRROR_OUT=$(pub "K=\"\$HOME/Library/KHUpdater\"; H=\"\$K/base/current\"; [ -x \"\$H\" ] || { echo \"refused: no current khu at \$H\" >&2; exit 3; }
 \"\$H\" mirror --feed \"\$K/feed\" --key \"\$K/keys/private.key\" --out \"\$K/page-sync/release.json\" \
   --base '$MIRROR_BASE' --names \"\$K/page-sync/names.tsv\" --apps '$MIRROR_APPS' --current-only" 2>&1) \
   || refuse "the mirror build on $PUB_HOST failed: $(printf '%s' "$MIRROR_OUT" | tail -1)"
