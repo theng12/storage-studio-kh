@@ -30,7 +30,7 @@ because the gate evidence carried none, and it was run on the exact published DM
 | commit | `d39d28f` (bump) over `b20ec83`, `b3663d5`, `74d587b` |
 | signature | in-DMG check: helper `codesign --verify --strict` OK, app `codesign --verify --deep --strict` OK |
 | scan | `scan: sha256=2cebeb77dd42e3fc6885ab51b0b407409b25486c5f738e27364bad51ac4686df clean` — `scan-dmg/2026-11-20`, exit 0, 11 files, `excused: []`, run `2026-11-23T12:04:14Z` on this exact DMG with `KH_EXPECTED_BYTES=4672493` |
-| appcast | `docs/appcast.xml`, Pages `main /docs`, served 200; `appcast-verify.sh` **exit 0** against this DMG — key taken from `~/.kh-sparkle/app.storagestudiokh.desktop/`, not from the bundle |
+| appcast | `docs/appcast.xml`, Pages `main /docs`, served 200; `appcast-verify.sh` **exit 0** against this DMG — key taken from the release keypair, not from the bundle |
 
 > **signed and verified against the release key; the shipped app carries no key, so the item is not usable by
 > the app itself.** The 0.1.26 bundle carries no `SUPublicEDKey`, no `SUFeedURL` and no Sparkle framework —
@@ -62,9 +62,10 @@ because the gate evidence carried none, and it was run on the exact published DM
 `https://theng12.github.io/storage-studio-kh/appcast.xml` returns **200** with the 0.1.26 item
 (length 4,672,493, asset `2cebeb77dd42-Storage.Studio.KH-0.1.26.dmg`); the anonymously downloaded
 asset is 4,672,493 bytes, sha `2cebeb77…`, and its **signature verifies against this app's own
-Ed25519 key** (`~/.kh-sparkle/app.storagestudiokh.desktop/`, 0600, generated today — the restorable
-copy on the KH drives is still owed). The app itself does not carry `SUFeedURL`/`SUPublicEDKey` yet;
-the appcast is ready and unused until the Sparkle shim ships in it.
+Ed25519 key** — public half `yqCO3p5mr9x6sSMo2JquWlvMUwUFJyvjQ9zOuCf1RU8=`, generated 2026-11-23. The private key's
+location and its backup are deliberately absent here because this repo is public. The app itself
+does not carry `SUFeedURL`/`SUPublicEDKey` yet; the appcast is ready and unused until the Sparkle
+shim ships in it.
 
 ## Card text (metadata only, 2026-11-23)
 
