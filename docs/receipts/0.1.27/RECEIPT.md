@@ -104,6 +104,12 @@ Before 0.1.27 this repo tracked no build input for Sparkle at all (`git ls-tree 
 ## Not measured yet
 
 - A live click-through of a Sparkle update on an installed copy: **UNMEASURED** (needs an installed 0.1.27 and a newer appcast item).
-- Feed row and appcast item: PENDING (System writes the row; the appcast item is signed after the
-  public release exists).
-- Live self-update on an installed copy: not attempted in this release.
+- **The GitHub release is not created, and that is a bar, not a forgotten step.** Publication to a
+  public repository is refused to a session acting on a peer's request; only the owner's own words
+  clear it. The bar was met at 0.1.26 and again here. Staged and waiting: `gh release create 0.1.27
+  --verify-tag --title "Storage Studio KH 0.1.27" --notes-file lead/0.1.27/CARD-TEXT.md
+  "dist/Storage Studio KH-0.1.27.dmg"`, with the appcast item pre-signed over these exact bytes at
+  `lead/0.1.27/appcast-item.xml` (`ASSET_URL` and `PUBDATE` blank until the asset name is read back).
+  The item is committed only when the published asset matches **5,575,640 B / `387ea5b5…`** — a signed
+  item over the wrong bytes is worse than a late one.
+- Feed row: System's to write after the release exists.
