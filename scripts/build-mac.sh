@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # Build and sign Storage Studio KH for this Mac; retention follows verified publication.
-# This Mac builds; publishing happens on 1301 with packaging/release-push.sh.
+# This Mac builds; the artifact goes to this app's own GitHub release (App Publisher uploads it)
+# and System writes the feed row. The canonical release wrapper lives in update-studio-kh's
+# packaging/; this repo carries no release script of its own (1301 is retired).
 #
 #   bash scripts/build-mac.sh            # full build + Swift tests
 #   bash scripts/build-mac.sh --check    # versions, tools and identity only

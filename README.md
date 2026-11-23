@@ -33,10 +33,11 @@ is built from `helper/` and lives only inside the app.
 
 ## Release
 
-Build here, then `packaging/release-push.sh storage-studio 0.1.10 "dist/Storage Studio KH-0.1.10.dmg" CHANGELOG.md "Reconnects your network shares after login"`.
-The last argument is the Launcher card's one sentence (62 characters or fewer, taken from
-`ABOUT.md`). It stages the DMG and changelog on 1301, publishes with the host's own key (the only
-feed writer), and reads the served feed back to prove the version and tagline it offers.
+Build here, then run the canonical release wrapper — `_orchestra/developer-system/update-studio-kh/app/packaging/release-push.sh`
+— and hand the artifact, its sha256 and bytes to App Publisher, who creates this app's GitHub
+release. The last argument is the Launcher card's one sentence (62 characters or fewer, taken from
+`ABOUT.md`). 1301 is retired: this repo carries no release script of its own, and nothing here
+writes the feed.
 
 The public page is no longer part of a release: since 2026-11-23 `theng12/kh-releases` is feed-only
 (`release.json` plus icons), and the row carries the absolute `url` of the artifact in this repo
