@@ -3339,6 +3339,10 @@ fn main() {
             // The update hold answers on loopback so Studio Launcher can hold this app's work
             // before it installs; the address is in the signed feed entry.
             start_hold_server(handle.clone());
+            // The shim reads KHHoldTokenFile itself, before any hold request reaches this app, so the
+            // one-time move of the legacy token has to happen at startup rather than on first use:
+            // otherwise a fresh install refuses its first update because the file is not there yet.
+            let _ = hold_token_path();
 
             // Sparkle, once, after the tray exists (INTEGRATION.md §3A). Not in test or capture runs:
             // those are hidden instances and must never reach for a feed.
