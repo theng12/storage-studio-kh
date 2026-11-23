@@ -6,6 +6,19 @@
     <description>Storage Studio KH updates</description>
     <language>en</language>
     <item>
+      <title>Version 0.1.27</title>
+      <pubDate>Mon, 23 Nov 2026 17:45:47 +0000</pubDate>
+      <sparkle:version>0.1.27</sparkle:version>
+      <sparkle:shortVersionString>0.1.27</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
+      <description><![CDATA[<ul>
+<li><b>Updates can now arrive on their own.</b> The app checks for a new version when it starts and installs it in the background, then reopens by itself. It asks the app to pause first, and refuses to update at all when it cannot confirm pausing is safe, so a job is never cut off.</li>
+<li><b>The window says an update is happening.</b> While a new version installs, a line at the top of the window says so instead of the app looking idle.</li>
+</ul>]]></description>
+      <enclosure url="https://github.com/theng12/storage-studio-kh/releases/download/0.1.27/Storage.Studio.KH-0.1.27.dmg"
+                 length="5575640" type="application/octet-stream" sparkle:edSignature="s4k9vJR2CJcQPHbYHCcHM+9uBQKpflGyA9BZp09OXUwAhkvEOCIWoUanYfapCi1hGXycLn5rdO8/LitOvNZNCg=="/>
+    </item>
+    <item>
       <title>Version 0.1.26</title>
       <pubDate>Mon, 23 Nov 2026 11:41:56 +0000</pubDate>
       <sparkle:version>0.1.26</sparkle:version>
