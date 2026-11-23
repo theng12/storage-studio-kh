@@ -15,7 +15,8 @@ const { spawn } = require("node:child_process");
 const path = require("node:path");
 
 const REPO = path.resolve(__dirname, "..");
-const PLAYWRIGHT = process.env.SS_PLAYWRIGHT || "/Users/you/Developer/My Own Apps/music-studio-kh/node_modules/playwright";
+const PLAYWRIGHT = process.env.SS_PLAYWRIGHT
+  || require("node:path").join(require("node:os").homedir(), "Developer/My Own Apps/music-studio-kh/node_modules/playwright");
 const BASE = "http://localhost:1420/";
 
 // This repo's own playwright-core (no browser download) drives the installed Google Chrome;

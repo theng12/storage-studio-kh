@@ -16,7 +16,8 @@ const path = require("node:path");
 const REPO = path.resolve(__dirname, "..", "..");
 const OUT = __dirname;
 const SHOTS = path.join(OUT, "screenshots");
-const PLAYWRIGHT = process.env.SS_PLAYWRIGHT || "/Users/you/Developer/My Own Apps/music-studio-kh/node_modules/playwright";
+const PLAYWRIGHT = process.env.SS_PLAYWRIGHT
+  || require("node:path").join(require("node:os").homedir(), "Developer/My Own Apps/music-studio-kh/node_modules/playwright");
 
 // This repo's own playwright-core drives the installed Google Chrome; the old checkout's full
 // Playwright still works where it exists. Missing both is "not run", not a pass.
