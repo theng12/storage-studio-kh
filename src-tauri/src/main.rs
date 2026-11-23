@@ -1365,23 +1365,65 @@ fn hold_token_path() -> PathBuf {
             return PathBuf::from(trimmed);
         }
     }
+    // The estate rule (RELEASE-POLICY §2d) places the token in the app's own support folder;
+    // the updater's shared state file stays the fallback for a Launcher that has not moved yet.
+    let in_app = data_dir().join("hold-token");
+    if std::fs::symlink_metadata(&in_app).is_ok() {
+        return in_app;
+    }
     let home = std::env::var("HOME").unwrap_or_default();
     PathBuf::from(home).join("Library").join("KHUpdater").join("state").join("hold-token")
 }
 
+/// Why the token file cannot be trusted, in words the updater and the log can print; `None` when
+/// it is usable. The 0600 rule is enforced here, not just documented (§2d): a token another user
+/// can read is refused, and so is anything that is not 64 hex characters.
+fn hold_token_fault(path: &Path) -> Option<String> {
+    let meta = match std::fs::symlink_metadata(path) {
+        Ok(meta) => meta,
+        Err(_) => return Some("the token file is missing".into()),
+    };
+    if meta.file_type().is_symlink() {
+        return Some("the token file is a symlink".into());
+    }
+    if !meta.is_file() {
+        return Some("the token is not a regular file".into());
+    }
+    if meta.len() > 512 {
+        return Some("the token file is oversized".into());
+    }
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let mode = meta.permissions().mode() & 0o777;
+        if mode & 0o077 != 0 {
+            return Some(format!(
+                "the token file is readable or writable by other users (mode {mode:03o}); it must be 600"
+            ));
+        }
+    }
+    let raw = match std::fs::read_to_string(path) {
+        Ok(raw) => raw,
+        Err(_) => return Some("the token file cannot be read".into()),
+    };
+    let token = raw.trim();
+    if token.is_empty() {
+        return Some("the token file is empty".into());
+    }
+    if token.len() != 64 || !token.chars().all(|c| c.is_ascii_hexdigit()) {
+        return Some("the token is not 64 hex characters".into());
+    }
+    None
+}
+
 /// Reads the Launcher's hold credential fresh on every request so an atomic rotation takes effect
-/// without restarting the app. Symlinks and oversized/empty files fail closed.
+/// without restarting the app. Anything `hold_token_fault` names fails closed.
 fn read_hold_token_at(path: &Path) -> Option<String> {
-    let meta = std::fs::symlink_metadata(path).ok()?;
-    if meta.file_type().is_symlink() || !meta.is_file() || meta.len() > 512 {
+    if hold_token_fault(path).is_some() {
         return None;
     }
     let raw = std::fs::read_to_string(path).ok()?;
-    let token = raw.trim();
-    if token.is_empty() || token.len() > 256 || token.chars().any(char::is_whitespace) {
-        return None;
-    }
-    Some(token.to_string())
+    Some(raw.trim().to_string())
 }
 
 fn constant_time_eq(a: &[u8], b: &[u8]) -> bool {
@@ -1395,13 +1437,13 @@ fn constant_time_eq(a: &[u8], b: &[u8]) -> bool {
     diff == 0
 }
 
-fn authorize_hold_headers(headers: &[(String, String)], token_path: &Path) -> bool {
+fn authorize_hold_headers(headers: &[(String, String)], token_path: &Path) -> Result<(), String> {
     // Reject browser-origin requests even on loopback.
     if headers.iter().any(|(name, _)| name.eq_ignore_ascii_case("origin")) {
-        return false;
+        return Err("a browser origin is not allowed".into());
     }
     let Some(expected) = read_hold_token_at(token_path) else {
-        return false;
+        return Err(hold_token_fault(token_path).unwrap_or_else(|| "the hold token is unavailable".into()));
     };
     let mut bearer: Option<&str> = None;
     let mut hub_token: Option<&str> = None;
@@ -1423,18 +1465,22 @@ fn authorize_hold_headers(headers: &[(String, String)], token_path: &Path) -> bo
         }
     }
     if bearer.is_none() && hub_token.is_none() {
-        return false;
+        return Err("no hold token was sent".into());
     }
     let expected_bytes = expected.as_bytes();
     let bearer_ok = bearer.map_or(true, |token| constant_time_eq(token.as_bytes(), expected_bytes));
     let hub_ok = hub_token.map_or(true, |token| constant_time_eq(token.as_bytes(), expected_bytes));
-    bearer_ok && hub_ok
+    if bearer_ok && hub_ok {
+        Ok(())
+    } else {
+        Err("the hold token does not match".into())
+    }
 }
 
 enum HoldDispatch {
     Hold,
     Resume,
-    Error(&'static str, &'static str),
+    Error(&'static str, String),
 }
 
 fn route_hold_request(
@@ -1444,15 +1490,18 @@ fn route_hold_request(
     token_path: &Path,
 ) -> HoldDispatch {
     if path != HOLD_PATH {
-        return HoldDispatch::Error("404 Not Found", r#"{"error":"no such route"}"#);
+        return HoldDispatch::Error("404 Not Found", r#"{"error":"no such route"}"#.to_string());
     }
-    if !authorize_hold_headers(headers, token_path) {
-        return HoldDispatch::Error("401 Unauthorized", r#"{"error":"unauthorized"}"#);
+    if let Err(reason) = authorize_hold_headers(headers, token_path) {
+        // The refusal says why on the route itself, not only in the app's log.
+        log(&format!("update hold refused: {reason}"));
+        let body = serde_json::json!({ "error": "unauthorized", "reason": reason }).to_string();
+        return HoldDispatch::Error("401 Unauthorized", body);
     }
     match method {
         "POST" => HoldDispatch::Hold,
         "DELETE" => HoldDispatch::Resume,
-        _ => HoldDispatch::Error("405 Method Not Allowed", r#"{"error":"use POST or DELETE"}"#),
+        _ => HoldDispatch::Error("405 Method Not Allowed", r#"{"error":"use POST or DELETE"}"#.to_string()),
     }
 }
 
@@ -2395,6 +2444,37 @@ mod tests {
     }
 
     #[test]
+    fn a_hold_token_another_user_can_read_is_refused() {
+        use std::os::unix::fs::PermissionsExt;
+        let dir = std::env::temp_dir().join(format!("ss-hold-token-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("hold-token");
+        let token = "a".repeat(64);
+        std::fs::write(&path, &token).unwrap();
+        std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o600)).unwrap();
+        assert_eq!(super::hold_token_fault(&path), None);
+        assert_eq!(super::read_hold_token_at(&path), Some(token.clone()));
+
+        // Group read is the defect this check exists for: 0644 must fail, naming 600.
+        std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o644)).unwrap();
+        let fault = super::hold_token_fault(&path).unwrap();
+        assert!(fault.contains("600"), "{fault}");
+        assert_eq!(super::read_hold_token_at(&path), None);
+        let headers = vec![("X-Hub-Token".to_string(), token.clone())];
+        assert!(super::authorize_hold_headers(&headers, &path).is_err());
+
+        // A short or non-hex token fails even at 0600.
+        std::fs::write(&path, "not-a-token").unwrap();
+        std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o600)).unwrap();
+        assert!(super::hold_token_fault(&path).unwrap().contains("64 hex"));
+
+        // And the good file authenticates.
+        std::fs::write(&path, &token).unwrap();
+        assert!(super::authorize_hold_headers(&headers, &path).is_ok());
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    #[test]
     fn only_the_installed_copy_may_register_a_login_item() {
         let installed = |path: &str| super::is_installed_copy(std::path::Path::new(path));
         assert!(installed("/Applications/Storage Studio KH.app/Contents/MacOS/Storage Studio KH"));
@@ -2635,10 +2715,27 @@ mod tests {
         dir
     }
 
-    fn write_token(dir: &std::path::Path, text: &str) -> std::path::PathBuf {
-        let path = dir.join("hold-token");
+    /// Any readable label becomes a 64-hex token, so tests can name their tokens and still
+    /// satisfy the §2d shape rule.
+    fn token(text: &str) -> String {
+        let mut hex: String = text.bytes().map(|b| format!("{b:02x}")).collect();
+        hex.truncate(64);
+        while hex.len() < 64 {
+            hex.push('0');
+        }
+        hex
+    }
+
+    fn write_raw(dir: &std::path::Path, name: &str, text: &str) -> std::path::PathBuf {
+        use std::os::unix::fs::PermissionsExt;
+        let path = dir.join(name);
         std::fs::write(&path, text).unwrap();
+        std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o600)).unwrap();
         path
+    }
+
+    fn write_token(dir: &std::path::Path, text: &str) -> std::path::PathBuf {
+        write_raw(dir, "hold-token", &token(text))
     }
 
     fn header(name: &str, value: &str) -> Vec<(String, String)> {
@@ -2664,14 +2761,14 @@ mod tests {
     fn a_wrong_token_is_refused_and_the_right_one_answered() {
         let dir = token_dir("wrong");
         let path = write_token(&dir, "the-launcher-token");
-        assert!(is_unauthorized(route_hold_request("POST", HOLD_PATH, &header("X-Hub-Token", "not-the-token"), &path)));
-        assert!(is_unauthorized(route_hold_request("POST", HOLD_PATH, &header("Authorization", "Bearer nope"), &path)));
+        assert!(is_unauthorized(route_hold_request("POST", HOLD_PATH, &header("X-Hub-Token", &token("not-the-token")), &path)));
+        assert!(is_unauthorized(route_hold_request("POST", HOLD_PATH, &header("Authorization", &format!("Bearer {}", token("nope"))), &path)));
         assert!(matches!(
-            route_hold_request("POST", HOLD_PATH, &header("X-Hub-Token", "the-launcher-token"), &path),
+            route_hold_request("POST", HOLD_PATH, &header("X-Hub-Token", &token("the-launcher-token")), &path),
             HoldDispatch::Hold
         ));
         assert!(matches!(
-            route_hold_request("DELETE", HOLD_PATH, &header("Authorization", "Bearer the-launcher-token"), &path),
+            route_hold_request("DELETE", HOLD_PATH, &header("Authorization", &format!("Bearer {}", token("the-launcher-token"))), &path),
             HoldDispatch::Resume
         ));
         std::fs::remove_dir_all(&dir).ok();
@@ -2682,13 +2779,13 @@ mod tests {
         let dir = token_dir("both");
         let path = write_token(&dir, "the-launcher-token");
         let agree = vec![
-            ("Authorization".to_string(), "Bearer the-launcher-token".to_string()),
-            ("x-hub-token".to_string(), "the-launcher-token".to_string()),
+            ("Authorization".to_string(), format!("Bearer {}", token("the-launcher-token"))),
+            ("x-hub-token".to_string(), token("the-launcher-token")),
         ];
         assert!(matches!(route_hold_request("POST", HOLD_PATH, &agree, &path), HoldDispatch::Hold));
         let disagree = vec![
-            ("Authorization".to_string(), "Bearer the-launcher-token".to_string()),
-            ("X-Hub-Token".to_string(), "some-other-token".to_string()),
+            ("Authorization".to_string(), format!("Bearer {}", token("the-launcher-token"))),
+            ("X-Hub-Token".to_string(), token("some-other-token")),
         ];
         assert!(is_unauthorized(route_hold_request("POST", HOLD_PATH, &disagree, &path)));
         std::fs::remove_dir_all(&dir).ok();
@@ -2699,7 +2796,7 @@ mod tests {
         let dir = token_dir("origin");
         let path = write_token(&dir, "the-launcher-token");
         let headers = vec![
-            ("X-Hub-Token".to_string(), "the-launcher-token".to_string()),
+            ("X-Hub-Token".to_string(), token("the-launcher-token")),
             ("Origin".to_string(), "https://example.com".to_string()),
         ];
         assert!(is_unauthorized(route_hold_request("POST", HOLD_PATH, &headers, &path)));
@@ -2712,13 +2809,13 @@ mod tests {
         let path = write_token(&dir, "the-launcher-token");
         // Another path is not found, credential or not.
         assert!(matches!(
-            route_hold_request("POST", "/api/other", &header("X-Hub-Token", "the-launcher-token"), &path),
+            route_hold_request("POST", "/api/other", &header("X-Hub-Token", &token("the-launcher-token")), &path),
             HoldDispatch::Error("404 Not Found", _)
         ));
         assert!(matches!(route_hold_request("POST", "/api/other", &[], &path), HoldDispatch::Error("404 Not Found", _)));
         // The right token on the wrong method is a method error, not a refusal of the credential.
         assert!(matches!(
-            route_hold_request("GET", HOLD_PATH, &header("X-Hub-Token", "the-launcher-token"), &path),
+            route_hold_request("GET", HOLD_PATH, &header("X-Hub-Token", &token("the-launcher-token")), &path),
             HoldDispatch::Error("405 Method Not Allowed", _)
         ));
         std::fs::remove_dir_all(&dir).ok();
@@ -2728,15 +2825,15 @@ mod tests {
     fn a_missing_empty_or_symlinked_token_file_fails_closed() {
         let dir = token_dir("fail-closed");
         let missing = dir.join("absent-token");
-        assert!(is_unauthorized(route_hold_request("POST", HOLD_PATH, &header("X-Hub-Token", "anything"), &missing)));
-        let empty = write_token(&dir, "   \n");
+        assert!(is_unauthorized(route_hold_request("POST", HOLD_PATH, &header("X-Hub-Token", &token("anything")), &missing)));
+        let empty = write_raw(&dir, "empty-token", "   \n");
         assert!(is_unauthorized(route_hold_request("POST", HOLD_PATH, &header("X-Hub-Token", ""), &empty)));
         let real = write_token(&dir, "the-launcher-token");
         let link = dir.join("link-token");
         #[cfg(unix)]
         std::os::unix::fs::symlink(&real, &link).unwrap();
         #[cfg(unix)]
-        assert!(is_unauthorized(route_hold_request("POST", HOLD_PATH, &header("X-Hub-Token", "the-launcher-token"), &link)));
+        assert!(is_unauthorized(route_hold_request("POST", HOLD_PATH, &header("X-Hub-Token", &token("the-launcher-token")), &link)));
         std::fs::remove_dir_all(&dir).ok();
     }
 
@@ -2745,13 +2842,13 @@ mod tests {
         let dir = token_dir("rotate");
         let path = write_token(&dir, "first-token-value");
         assert!(matches!(
-            route_hold_request("POST", HOLD_PATH, &header("X-Hub-Token", "first-token-value"), &path),
+            route_hold_request("POST", HOLD_PATH, &header("X-Hub-Token", &token("first-token-value")), &path),
             HoldDispatch::Hold
         ));
-        std::fs::write(&path, "second-token-value").unwrap();
-        assert!(is_unauthorized(route_hold_request("POST", HOLD_PATH, &header("X-Hub-Token", "first-token-value"), &path)));
+        write_token(&dir, "second-token-value");
+        assert!(is_unauthorized(route_hold_request("POST", HOLD_PATH, &header("X-Hub-Token", &token("first-token-value")), &path)));
         assert!(matches!(
-            route_hold_request("POST", HOLD_PATH, &header("X-Hub-Token", "second-token-value"), &path),
+            route_hold_request("POST", HOLD_PATH, &header("X-Hub-Token", &token("second-token-value")), &path),
             HoldDispatch::Hold
         ));
         std::fs::remove_dir_all(&dir).ok();

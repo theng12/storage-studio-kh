@@ -125,12 +125,15 @@ POST   /api/maintenance/hold?timeout_s=20&pause_s=120
 DELETE /api/maintenance/hold
 ```
 
-Both requests carry the Launcher's own credential — the 0600 file at
-`~/Library/KHUpdater/state/hold-token` (`KHU_HOLD_TOKEN_FILE` overrides it for a test instance) —
+Both requests carry the Launcher's own credential — a 0600 file of 64 hex characters, read from
+the app's own support folder (`<app support>/hold-token`) and then the updater's shared
+`~/Library/KHUpdater/state/hold-token` (`KHU_HOLD_TOKEN_FILE` overrides both for a test instance) —
 as `X-Hub-Token: <token>` or `Authorization: Bearer <token>`. The file is read fresh on every
 request, so a rotation takes effect without a restart. No credential, a wrong one, a browser
-`Origin`, a missing/empty/symlinked/oversized token file all answer `401`; the route answers `401`
-before it considers the method. The credential is accepted on this route only; any other path is
+`Origin`, and any file that is missing, empty, symlinked, oversized, shorter or longer than 64 hex,
+or readable/writable by group or other (RELEASE-POLICY §2d) answer `401`; the body names the reason
+(e.g. `"the token file is readable or writable by other users (mode 644); it must be 600"`) and the
+same line is logged. The route answers `401` before it considers the method. The credential is accepted on this route only; any other path is
 `404`.
 
 POST pauses new work at once, waits up to `timeout_s` (default 20, max 30) for a mount attempt
