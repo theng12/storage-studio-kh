@@ -30,6 +30,25 @@ command -v node >/dev/null || fail "Node.js is missing."
 command -v cargo >/dev/null || fail "Rust (cargo) is missing."
 command -v python3 >/dev/null || fail "Python 3 is missing."
 command -v hdiutil >/dev/null || fail "hdiutil is missing."
+[ -f src-tauri/vendor/khsparkle/libkhsparkle.a ] || fail "the vendored libkhsparkle.a is missing"
+[ -d src-tauri/vendor/khsparkle/Sparkle.framework ] || fail "the vendored Sparkle.framework is missing"
+[ -f src-tauri/entitlements.plist ] || fail "src-tauri/entitlements.plist is missing"
+
+not_run=""
+step "Sparkle shim pin"
+# A separate step with its own line: the scanner does not check the shim, and an unpinned library is
+# exactly what made every app refuse its own hold (2026-11-23). No pin file means UNMEASURED.
+pin_file="${KH_REQUIRED_SHIM:-$HOME/Developer/_orchestra/tools/pinned/REQUIRED-SHIM.txt}"
+if [ ! -f "$pin_file" ]; then
+  printf 'UNMEASURED  shim pin: no REQUIRED-SHIM.txt at %s\n' "$pin_file"
+  not_run="${not_run:+$not_run; }shim pin (REQUIRED-SHIM.txt missing)"
+else
+  want="$(awk 'NF>=2 && $2=="libkhsparkle.a" {print $1; exit}' "$pin_file")"
+  got="$(shasum -a 256 src-tauri/vendor/khsparkle/libkhsparkle.a | awk '{print $1}')"
+  [ -n "$want" ] || fail "REQUIRED-SHIM.txt names no libkhsparkle.a line"
+  [ "$want" = "$got" ] || fail "the vendored libkhsparkle.a is $got; the pin is $want"
+  printf 'shim: libkhsparkle.a %s matches the pin\n' "$got"
+fi
 
 step "Checking the local signing identity"
 security find-identity -p codesigning 2>/dev/null | grep -F '"KH Studio Local Signing"' >/dev/null \
@@ -51,8 +70,6 @@ fi
 step "Free build space"
 free_gb="$(df -g /System/Volumes/Data | awk 'NR==2 {print $4}')"
 [ "${free_gb:-0}" -ge 10 ] || fail "Free build space is ${free_gb:-unknown} GiB (expected at least 10 GiB on /System/Volumes/Data); free space or choose a less busy build machine"
-
-not_run=""
 
 step "Helper tests"
 # XCTest ships with Xcode, not with the Command Line Tools. Where it is absent this says so
@@ -178,6 +195,16 @@ helper_inside="$app/Contents/Helpers/Storage Studio KH Helper.app"
 [ -f "$app/Contents/Resources/whats-new.json" ] || fail "whats-new.json is missing from Resources"
 codesign --verify --strict "$helper_inside" || fail "the bundled helper's signature is broken"
 codesign --verify --deep --strict "$app" || fail "the app's signature is broken"
+# Sparkle: the framework travels beside the binary, the rpath finds it, and the entitlement is in
+# the signature — the three things that decide whether the app survives its first second.
+[ -d "$app/Contents/Frameworks/Sparkle.framework" ] || fail "the app carries no Sparkle.framework"
+otool -l "$app/Contents/MacOS/storage-studio-kh" | grep -q '@executable_path/../Frameworks' \
+  || fail "the binary carries no @executable_path/../Frameworks rpath"
+codesign -d --entitlements :- "$app" 2>/dev/null | grep -q 'disable-library-validation' \
+  || fail "the app is signed without com.apple.security.cs.disable-library-validation"
+codesign --verify --strict "$app/Contents/Frameworks/Sparkle.framework" \
+  || fail "the embedded Sparkle.framework is not signed"
+printf 'Sparkle: framework embedded, rpath present, entitlement present, framework signature ok\n'
 # Nothing may be started from a loose copy outside the bundle.
 [ -z "$(find "$app/Contents" -maxdepth 1 -name '*.app' ! -name 'Storage Studio KH.app')" ] || fail "a second app bundle sits loose in Contents"
 
@@ -199,6 +226,10 @@ hdiutil attach -nobrowse -mountpoint "$verify_mount" "$dmg" >/dev/null
 trap 'hdiutil detach "$verify_mount" >/dev/null 2>&1 || true; rmdir "$verify_mount" 2>/dev/null || true' EXIT
 [ -d "$verify_mount/Storage Studio KH.app" ] || fail "the DMG does not contain Storage Studio KH.app"
 [ -x "$verify_mount/Storage Studio KH.app/Contents/Helpers/Storage Studio KH Helper.app/Contents/MacOS/Storage Studio KH Helper" ] || fail "the DMG's app has no helper"
+[ -d "$verify_mount/Storage Studio KH.app/Contents/Frameworks/Sparkle.framework" ] || fail "the DMG's app carries no Sparkle.framework"
+codesign -d --entitlements :- "$verify_mount/Storage Studio KH.app" 2>/dev/null | grep -q 'disable-library-validation' \
+  || fail "the DMG's app is signed without com.apple.security.cs.disable-library-validation"
+printf 'DMG: Sparkle.framework present and the entitlement survived signing inside the mounted copy\n'
 hdiutil detach "$verify_mount" >/dev/null
 rmdir "$verify_mount"
 trap - EXIT

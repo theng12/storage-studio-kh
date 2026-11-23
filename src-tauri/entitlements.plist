@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Hardened runtime enables library validation. A self-signed embedding app
+	     and a self-signed framework have no Team ID, so dyld treats them as
+	     different teams and refuses the load. This entitlement is what it exists
+	     for; it does not weaken anything else in the hardened runtime. -->
+	<key>com.apple.security.cs.disable-library-validation</key>
+	<true/>
+</dict>
+</plist>

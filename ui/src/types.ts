@@ -79,6 +79,8 @@ export interface Snapshot {
   secondInstance: boolean;
   /** An update is installing: nothing new starts until it finishes. */
   holding: boolean;
+  /** While the app is being replaced, the window says so instead of looking idle. */
+  updating?: boolean;
   /** Storages with a running attempt or a waiting retry: the rows that offer Stop trying. */
   queued?: string[];
   archives: Archive[];

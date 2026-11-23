@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.27 — 2026-11-23
+
+- **Updates can now arrive on their own.** Storage Studio KH checks for a new version when it starts and installs it in the background, then reopens by itself — no download, no dragging a new copy in. It asks the app to pause first, and refuses to update at all when it cannot confirm pausing is safe, so a job is never cut off.
+- **The window says an update is happening.** While a new version installs, a line at the top of the window says so instead of the app looking idle.
+
 ## 0.1.26 — 2026-11-23
 
 - **The update hold only trusts a properly protected key file.** The token must be readable by you alone (mode 600) and be exactly 64 hex characters; anything else is refused, and the refusal now says why — on the route and in the log, instead of only a bare "unauthorized".

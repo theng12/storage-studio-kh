@@ -4,6 +4,16 @@
 <dict>
   <key>LSUIElement</key>
   <true/>
+  <key>SUFeedURL</key>
+  <string>https://theng12.github.io/storage-studio-kh/appcast.xml</string>
+  <key>SUPublicEDKey</key>
+  <string>yqCO3p5mr9x6sSMo2JquWlvMUwUFJyvjQ9zOuCf1RU8=</string>
+  <key>KHHoldURL</key>
+  <string>http://127.0.0.1:8646/api/maintenance/hold</string>
+  <key>KHHoldTokenFile</key>
+  <string>~/Library/Application Support/Storage Studio KH/hold-token</string>
+  <key>SUEnableAutomaticChecks</key>
+  <true/>
   <key>NSLocalNetworkUsageDescription</key>
   <string>Storage Studio KH reconnects your chosen network storage and attached disks after login, wake and network changes.</string>
   <key>NSAppTransportSecurity</key>

@@ -20,6 +20,48 @@ use tauri::menu::{Menu, MenuItem, PredefinedMenuItem, Submenu};
 use tauri::tray::TrayIconBuilder;
 use tauri::{AppHandle, Emitter, Manager, RunEvent, State};
 
+/// Sparkle through the shared shim (INTEGRATION.md §3A). The shim checks once per launch, draws no
+/// UI, and refuses unless the hold endpoint answers `{"safe":true}`; a refusal is logged with its rc.
+mod sparkle {
+    use std::sync::atomic::{AtomicU8, Ordering};
+    use std::sync::OnceLock;
+
+    extern "C" {
+        fn kh_sparkle_start() -> i32;
+        fn kh_sparkle_last_error() -> *const std::ffi::c_char;
+        fn kh_sparkle_set_state_callback(cb: extern "C" fn(i32));
+    }
+
+    static STATE: AtomicU8 = AtomicU8::new(0);
+    static APP: OnceLock<tauri::AppHandle> = OnceLock::new();
+
+    /// 0 idle, 1 updating, 2 relaunching.
+    pub fn state() -> u8 {
+        STATE.load(Ordering::Relaxed)
+    }
+
+    extern "C" fn on_state(step: i32) {
+        STATE.store(step.clamp(0, 2) as u8, Ordering::Relaxed);
+        if let Some(app) = APP.get() {
+            crate::emit_snapshot(app);
+        }
+    }
+
+    /// Called once, after the tray exists. The window says an update is in progress instead of
+    /// looking idle while the app is about to be replaced.
+    pub fn start(app: &tauri::AppHandle) {
+        let _ = APP.set(app.clone());
+        unsafe {
+            kh_sparkle_set_state_callback(on_state);
+            let rc = kh_sparkle_start();
+            if rc != 0 {
+                let reason = std::ffi::CStr::from_ptr(kh_sparkle_last_error()).to_string_lossy();
+                crate::log(&format!("kh-sparkle: refused to start ({rc}): {reason}"));
+            }
+        }
+    }
+}
+
 const APP_NAME: &str = "Storage Studio KH";
 const APP_VERSION: &str = env!("CARGO_PKG_VERSION");
 const SUPPORT_URL: &str = "https://nowpayments.io/donation/studiokh";
@@ -386,6 +428,8 @@ struct Snapshot {
     second_instance: bool,
     /// True while an update holds new work; the window says so instead of looking stuck.
     holding: bool,
+    /// True while Sparkle is installing: the window says so instead of looking idle.
+    updating: bool,
     /// Storages with a running attempt or a waiting retry: the rows that offer Stop trying.
     queued: Vec<String>,
     archives: Vec<Archive>,
@@ -546,6 +590,7 @@ fn snapshot(app: &AppHandle) -> Snapshot {
     let engine_running = state.helper.lock().unwrap().is_some();
     let last_checked = *state.last_checked.lock().unwrap();
     let holding = state.hold.lock().unwrap().paused();
+    let updating = sparkle::state() >= 1;
     // In flight or waiting a retry: what a Stop trying can end.
     let queued: Vec<String> = {
         let work = state.work.lock().unwrap();
@@ -575,6 +620,7 @@ fn snapshot(app: &AppHandle) -> Snapshot {
         engine_error,
         second_instance,
         holding,
+        updating,
         queued,
         archives: settings.archives.clone(),
         job,
@@ -3293,6 +3339,12 @@ fn main() {
             // The update hold answers on loopback so Studio Launcher can hold this app's work
             // before it installs; the address is in the signed feed entry.
             start_hold_server(handle.clone());
+
+            // Sparkle, once, after the tray exists (INTEGRATION.md §3A). Not in test or capture runs:
+            // those are hidden instances and must never reach for a feed.
+            if !is_test_mode() && !dump_snapshot {
+                sparkle::start(&handle);
+            }
 
             if dump_snapshot {
                 // Acceptance capture: let the helper settle, print the real state, close.

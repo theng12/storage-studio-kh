@@ -421,6 +421,18 @@ function renderHoldBannerIfNeeded(): string {
     </div>`;
 }
 
+function renderUpdateBannerIfNeeded(): string {
+  if (!snapshot?.updating) return "";
+  return `
+    <div class="banner banner-hold" role="status">
+      ${icons.download}
+      <div>
+        <p class="banner-title">Updating ${esc(snapshot.appName)}</p>
+        <p class="banner-text">The update installs and the app reopens by itself. Nothing new starts until it is back; anything already running finishes or is picked up again.</p>
+      </div>
+    </div>`;
+}
+
 function storageStatusLine(groups: { storage: { status: string } }[]): string {
   if (!groups.length) return "Shares and disks reconnect after login, after wake, and when the network changes.";
   const summary = storageSummary(groups.map((group) => group.storage));
@@ -452,6 +464,7 @@ function renderStorage(): string {
           : ""
       }
     </header>
+    ${renderUpdateBannerIfNeeded()}
     ${renderHoldBannerIfNeeded()}
     ${renderEngineBannerIfNeeded()}
     ${
@@ -832,6 +845,7 @@ function renderArchives(): string {
           : ""
       }
     </header>
+    ${renderUpdateBannerIfNeeded()}
     ${renderHoldBannerIfNeeded()}
     ${renderEngineBannerIfNeeded()}
     ${banner}

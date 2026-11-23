@@ -1,0 +1,8 @@
+{
+  "name": "Storage Studio KH",
+  "bundle_id": "app.storagestudiokh.desktop",
+  "type": "utility",
+  "tagline": "Keeps your shares and disks connected after login and wake.",
+  "description": "Keeps your chosen network shares and attached disks connected after login, after wake and after a network change, with bounded retries and one honest status line, and copies one channel's folder to and from an archive when you ask it to.",
+  "localFile": "Storage Studio KH-0.1.27.dmg"
+}
