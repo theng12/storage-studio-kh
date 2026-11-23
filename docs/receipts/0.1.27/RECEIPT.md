@@ -118,6 +118,8 @@ than taken on report:
 - release body: the paragraph from `lead/0.1.27/CARD-TEXT.md`, 228 characters, no heading. The body
   briefly carried a promoted `## 0.1.27` heading while the preflight was being satisfied; that was a
   metadata-only edit and was put back to the paragraph, with the artifact, tag and asset untouched.
+  Shared row **`20261124-10`**: the preflight needs a heading in the file the card shows, so one file
+  cannot be both its input and the published body; the JSON-receipt refusal is the same family.
 - feed row: **read here, not proven.** `release.json` carries `feed` as plain base64 JSON; decoded, the
   `storage-studio` row still reads **0.1.26** (4,672,493 B, sha `2cebeb77…`, tagline "Keep your drives,
   NAS shares and archives mounted and tidy.") — System's pass for 0.1.27 was starting when this was
