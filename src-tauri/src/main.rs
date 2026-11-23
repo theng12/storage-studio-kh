@@ -218,6 +218,12 @@ fn log(message: &str) {
         .duration_since(std::time::UNIX_EPOCH)
         .map(|d| d.as_secs())
         .unwrap_or(0);
+    // A test run must never write the live app's log (issue 365): stderr only under test.
+    if cfg!(test) {
+        eprintln!("{message}");
+        return;
+    }
+    let _ = stamp;
     let dir = data_dir();
     let _ = std::fs::create_dir_all(&dir);
     if let Ok(mut file) = std::fs::OpenOptions::new().create(true).append(true).open(log_path()) {
@@ -1365,14 +1371,61 @@ fn hold_token_path() -> PathBuf {
             return PathBuf::from(trimmed);
         }
     }
-    // The estate rule (RELEASE-POLICY §2d) places the token in the app's own support folder;
-    // the updater's shared state file stays the fallback for a Launcher that has not moved yet.
-    let in_app = data_dir().join("hold-token");
-    if std::fs::symlink_metadata(&in_app).is_ok() {
-        return in_app;
+    let own = data_dir().join("hold-token");
+    let marker = data_dir().join(".hold-token-migrated");
+    if !own.exists() && !marker.exists() {
+        let home = std::env::var("HOME").unwrap_or_default();
+        let legacy = PathBuf::from(home).join("Library").join("KHUpdater").join("state").join("hold-token");
+        migrate_legacy_hold_token(&legacy, &own, &marker);
     }
-    let home = std::env::var("HOME").unwrap_or_default();
-    PathBuf::from(home).join("Library").join("KHUpdater").join("state").join("hold-token")
+    own
+}
+
+/// RELEASE-POLICY §2d: the app reads its own token; a legacy updater-side token is copied here
+/// exactly once, the move is logged, and the old path is never read again. A marker proves the
+/// copy was attempted, so deleting the app's token later cannot quietly re-create the tenancy.
+fn migrate_legacy_hold_token(legacy: &Path, own: &Path, marker: &Path) {
+    let Ok(meta) = std::fs::symlink_metadata(legacy) else { return };
+    if meta.file_type().is_symlink() || !meta.is_file() {
+        log(&format!(
+            "the updater's hold token at {} is not a regular file; it was not copied",
+            legacy.display()
+        ));
+        return;
+    }
+    let Ok(bytes) = std::fs::read(legacy) else {
+        log(&format!("the updater's hold token at {} could not be read; it was not copied", legacy.display()));
+        return;
+    };
+    if let Some(dir) = own.parent() {
+        let _ = std::fs::create_dir_all(dir);
+    }
+    let write = || -> std::io::Result<()> {
+        use std::io::Write;
+        use std::os::unix::fs::OpenOptionsExt;
+        let mut file = std::fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .mode(0o600)
+            .open(own)?;
+        file.write_all(&bytes)
+    };
+    match write() {
+        Ok(()) => {
+            let _ = std::fs::write(marker, "");
+            log(&format!(
+                "the hold token moved from {} to {}; the updater's shared file is no longer read",
+                legacy.display(),
+                own.display()
+            ));
+        }
+        Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => {}
+        Err(error) => log(&format!(
+            "the hold token could not be moved from {} to {}: {error}",
+            legacy.display(),
+            own.display()
+        )),
+    }
 }
 
 /// Why the token file cannot be trusted, in words the updater and the log can print; `None` when
@@ -2471,6 +2524,30 @@ mod tests {
         // And the good file authenticates.
         std::fs::write(&path, &token).unwrap();
         assert!(super::authorize_hold_headers(&headers, &path).is_ok());
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    #[test]
+    fn a_legacy_hold_token_is_moved_once_and_locked_to_600() {
+        use std::os::unix::fs::PermissionsExt;
+        let dir = std::env::temp_dir().join(format!("ss-hold-move-{}", super::unix_millis()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let legacy = dir.join("legacy-token");
+        std::fs::write(&legacy, "a".repeat(64)).unwrap();
+        std::fs::set_permissions(&legacy, std::fs::Permissions::from_mode(0o644)).unwrap();
+        let own = dir.join("app").join("hold-token");
+        let marker = dir.join("app").join(".hold-token-migrated");
+
+        super::migrate_legacy_hold_token(&legacy, &own, &marker);
+        assert_eq!(std::fs::read_to_string(&own).unwrap(), "a".repeat(64));
+        assert_eq!(std::fs::metadata(&own).unwrap().permissions().mode() & 0o777, 0o600);
+        assert!(marker.exists());
+        assert_eq!(super::hold_token_fault(&own), None);
+
+        // Once moved, a later legacy token cannot overwrite the app's own copy.
+        std::fs::write(&legacy, "b".repeat(64)).unwrap();
+        super::migrate_legacy_hold_token(&legacy, &own, &marker);
+        assert_eq!(std::fs::read_to_string(&own).unwrap(), "a".repeat(64));
         std::fs::remove_dir_all(&dir).ok();
     }
 

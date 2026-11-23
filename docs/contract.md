@@ -125,9 +125,12 @@ POST   /api/maintenance/hold?timeout_s=20&pause_s=120
 DELETE /api/maintenance/hold
 ```
 
-Both requests carry the Launcher's own credential — a 0600 file of 64 hex characters, read from
-the app's own support folder (`<app support>/hold-token`) and then the updater's shared
-`~/Library/KHUpdater/state/hold-token` (`KHU_HOLD_TOKEN_FILE` overrides both for a test instance) —
+Both requests carry the Launcher's own credential — a 0600 file of 64 hex characters in the app's
+own support folder (`<app support>/hold-token`). If that file is absent on first run and the
+updater's legacy `~/Library/KHUpdater/state/hold-token` exists, it is copied there once, the move is
+logged, and the legacy path is never read again; a marker (`<app support>/.hold-token-migrated`)
+stops a deleted token from being quietly re-created from it. With neither present the route refuses
+loudly. `KHU_HOLD_TOKEN_FILE` overrides all of this for a test instance —
 as `X-Hub-Token: <token>` or `Authorization: Bearer <token>`. The file is read fresh on every
 request, so a rotation takes effect without a restart. No credential, a wrong one, a browser
 `Origin`, and any file that is missing, empty, symlinked, oversized, shorter or longer than 64 hex,
