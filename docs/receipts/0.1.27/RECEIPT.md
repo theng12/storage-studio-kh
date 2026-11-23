@@ -35,8 +35,16 @@ Sparkle baseline. Written from commands this build actually ran; anything not ru
 that the pinned shim expands from the user record (`getpwuid`), never an absolute path, which would
 put a home directory inside a public artifact. Measured before this release: neither the app's own
 token nor a migration marker existed on this Mac, and the shim opens that file before any hold request
-reaches the app, so setup now performs the one-time move from the updater's shared file at startup
-instead of on first use. A missing or unreadable file is a refusal, never a skipped hold.
+reaches the app, so setup now performs the one-time step at startup instead of on first use. A missing
+or unreadable file is a refusal, never a skipped hold.
+
+**It is a copy, and the shared file is left in place.** Measured after the first run: both
+`~/Library/KHUpdater/state/hold-token` and the app's own copy are 0600, 64 B and byte-identical, and the
+shared file's mtime is unchanged. That matters across apps: another app on this Mac still names the
+shared file in its own `KHHoldTokenFile`, so a move would take the token out from under it and its next
+launch would refuse its hold — silently, with the shim's log redacted. The code creates the copy with
+`create_new` and 0600 and never renames or deletes the shared file. If that ever becomes a move, it must
+land in the same change that moves every remaining app off the shared path.
 
 ## Acceptance scripts
 
@@ -89,7 +97,8 @@ Before 0.1.27 this repo tracked no build input for Sparkle at all (`git ls-tree 
 | scan-dmg | clean, 96 files, `scan-dmg/2026-11-20`, `excused: []` (vendor and CA addresses only) |
 | install + launch | `install-launch-check-e1a4850e0c342d3e.sh` (16,523 B, sha `e1a4850e0c342d3e…`) — **PASS**, 0.1.27 alive after 10 s (pid seen; the copy ran from a temp dir, never `/Applications`) |
 | idle footprint | 105 MB after 5 s, **+0 MB while idle** (ceiling 500 MB) on a hidden instance with its own temp HOME; the run's own `idle-footprint` gate step was UNMEASURED because it needs a pid before the build |
-| tag | `0.1.27` = `46b37d5a862b…`; `git show 0.1.27:app-meta.json` carries `0.1.27` |
+| tag | `refs/tags/0.1.27^{}` → `46b37d5a862b` (annotated object `aeca746c`, peeled); `git show 0.1.27:app-meta.json` carries `Storage Studio KH-0.1.27.dmg` |
+| second measurement | U001's own run of pinned `install-launch-check e1a4850e0c34` on these same bytes: PASS, 0.1.27 alive after 10 s — two measurements, one artifact |
 | library | `libkhsparkle.a` 85,480 B, sha256 `818826a79d4e54885cbb5ad167f7425da8ba77436c6a5e277532f400aa1b4216`, matches `REQUIRED-SHIM.txt` (scanner `SHIM PASS`) |
 
 ## Not measured yet
