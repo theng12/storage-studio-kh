@@ -1,6 +1,6 @@
 # Storage Studio KH 0.1.27 — receipt
 
-Sparkle baseline. Written from commands this build actually ran; anything not run says NOT RUN.
+Sparkle baseline. Written from commands this build actually ran; anything not run says UNMEASURED.
 
 ## What shipped
 
@@ -63,8 +63,10 @@ exemption in `entitlements.plist`.
   failed `desktop-safety`: `tests/mini-reopen.sh` copied the app over `/Applications/…` and ran
   `open -a`, which activates a window on the owner's desktop. The harness is retired (`46b37d5`, moved
   to `~/Desktop/_trash/storage-studio-kh/2026-11-23 mini-reopen-harness/` with a manifest); nothing
-  called it, and reopen handling is unchanged and still asserted by the scanner's REOPEN check. A live
-  click-through of reopen was NOT RUN.
+  called it, and reopen handling is unchanged and still asserted by the scanner's REOPEN check.
+  Shared-directory row **`20261124-1`** cites exactly this evidence: the file, the `desktop-safety`
+  step above, `46b37d5`, the trash destination and its manifest. A live click-through of reopen is
+  **UNMEASURED**.
 - **Run 3** (`evidence/gate-20261123-233843-17754`) passed the build all the way through the Sparkle
   assertions ("framework embedded, rpath present, entitlement present, framework signature ok") and
   then stopped because run 2 had left `dist/Storage Studio KH-0.1.27.dmg` behind — the build refuses to
@@ -92,7 +94,7 @@ Before 0.1.27 this repo tracked no build input for Sparkle at all (`git ls-tree 
 
 ## Not measured yet
 
-- A live click-through of a Sparkle update on an installed copy: NOT RUN (needs an installed 0.1.27 and a newer appcast item).
+- A live click-through of a Sparkle update on an installed copy: **UNMEASURED** (needs an installed 0.1.27 and a newer appcast item).
 - Feed row and appcast item: PENDING (System writes the row; the appcast item is signed after the
   public release exists).
 - Live self-update on an installed copy: not attempted in this release.
