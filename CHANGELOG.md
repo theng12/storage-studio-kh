@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.26 — 2026-11-23
+
+- **The update hold only trusts a properly protected key file.** The token must be readable by you alone (mode 600) and be exactly 64 hex characters; anything else is refused, and the refusal now says why — on the route and in the log, instead of only a bare "unauthorized".
+- **The update key moves into the app's own folder.** If the key is still in the updater's shared folder, the app copies it into its own support folder once, keeps it readable by you alone, and says it did so; after that the shared copy is never read again.
+
 ## 0.1.25 — 2026-11-22
 
 - **A new storage with no address now says what is missing.** Adding a storage with a name but no address left Save switched off with nothing beside it; the "Enter the device address" line now shows as soon as you type.
