@@ -31,7 +31,7 @@ APP="$1"; VERSION="$2"; DMG="$3"; LOG="$4"; TAGLINE="${5:-}"; DESCRIPTION="${6:-
 # 1301"). There is no flag that re-enables it: the escape hatch this used to carry is how gateway
 # 0.2.305 reached that host at 12:45Z on 2026-11-23 (issue 20261123-103). An artifact goes to its
 # own app's repo and the feed is generated from there.
-echo "release-push: 1301 is retired as a release host — it runs apps, it does not publish them (owner, 2026-11-23). Put the artifact in its app's own repo instead: packaging/github-asset.sh <owner/repo> <tag> <dmg> <sha256> <bytes>." >&2
+echo "release-push: 1301 is retired as a release host — it runs apps, it does not publish them (owner, 2026-11-23). Hand the artifact and its sha256 to App Publisher; the upload to the app's own repo is theirs." >&2
 exit 2
 BASE=$(basename "$DMG")
 SSH=(ssh -i "$KEY" -o BatchMode=yes -o ConnectTimeout=10 "$HOST")

@@ -21,4 +21,13 @@ fail() { echo "FAIL: $*" >&2; echo "--- output ---" >&2; printf '%s\n' "$OUT" >&
 printf '%s\n' "$OUT" | grep -q "1301 is retired as a release host" || fail "the refusal sentence is missing"
 [ -e "$TMP/ssh-was-reached" ] && fail "ssh was reached before the guard"
 [ -e "$TMP/scp-was-reached" ] && fail "scp was reached before the guard"
-echo "PASS: the 1301 guard refuses with exit 2 and nothing was staged"
+# The hatch that let gateway 0.2.305 reach 1301 must not come back. Setting it changes nothing.
+rm -f "$TMP/ssh-was-reached" "$TMP/scp-was-reached"
+OUT2=$(PATH="$TMP/bin:$PATH" KHU_LEGACY_1301_PUBLISH=1 KHU_RELEASE_KEY=/dev/null KHU_RELEASE_HOST=127.0.0.1 \
+  ./packaging/release-push.sh test-app 9.9.9 "$TMP/app.dmg" "$TMP/CHANGELOG.md" 2>&1)
+RC2=$?
+fail2() { echo "FAIL: $*" >&2; echo "--- output ---" >&2; printf '%s\n' "$OUT2" >&2; exit 1; }
+[ "$RC2" -eq 2 ] || fail2 "with KHU_LEGACY_1301_PUBLISH=1 the script exited $RC2; a retired host must not be re-armable by a flag"
+[ -e "$TMP/ssh-was-reached" ] && fail2 "ssh was reached with KHU_LEGACY_1301_PUBLISH=1 set"
+[ -e "$TMP/scp-was-reached" ] && fail2 "scp was reached with KHU_LEGACY_1301_PUBLISH=1 set"
+echo "PASS: the 1301 guard refuses with exit 2 and nothing was staged; KHU_LEGACY_1301_PUBLISH=1 does not re-arm it"
