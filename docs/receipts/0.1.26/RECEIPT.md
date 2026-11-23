@@ -79,6 +79,13 @@ that file holds the paragraph and nothing else, so the file applied is the file 
 rule as row `20261123-118`). Metadata-only: the artifact, its sha256 (`2cebeb77…`) and bytes
 (4,672,493) do not change, and 0.1.25 and older keep their bodies.
 
+## Retrievable anonymously (2026-11-23)
+
+Fetched with no credentials: `https://theng12.github.io/storage-studio-kh/receipts/0.1.26/RECEIPT.md`
+→ **200**, 6,881 bytes, sha256 `7af086e2b64ba7be1292c00079150aea1081bf92e23c0635aa641f5526c9e914` — the
+copy as committed in `a9cb88b`, before this section was added. A receipt nobody can retrieve is the
+same as an untracked one.
+
 ## Not proven / not done
 
 - NAS mount proof: blocked (NAS answers TCP 445, refuses guest authentication, no password available).
