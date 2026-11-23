@@ -198,7 +198,9 @@ codesign --verify --deep --strict "$app" || fail "the app's signature is broken"
 # Sparkle: the framework travels beside the binary, the rpath finds it, and the entitlement is in
 # the signature — the three things that decide whether the app survives its first second.
 [ -d "$app/Contents/Frameworks/Sparkle.framework" ] || fail "the app carries no Sparkle.framework"
-otool -l "$app/Contents/MacOS/storage-studio-kh" | grep -q '@executable_path/../Frameworks' \
+exe_name="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$app/Contents/Info.plist")"
+[ -x "$app/Contents/MacOS/$exe_name" ] || fail "the bundle names an executable it does not carry: $exe_name"
+otool -l "$app/Contents/MacOS/$exe_name" | grep -q '@executable_path/../Frameworks' \
   || fail "the binary carries no @executable_path/../Frameworks rpath"
 codesign -d --entitlements :- "$app" 2>/dev/null | grep -q 'disable-library-validation' \
   || fail "the app is signed without com.apple.security.cs.disable-library-validation"
