@@ -1,9 +1,13 @@
+// From Storage Studio KH, `docs/verify-appcast.swift` at e9d31a1 — the appcast half of what this
+// harness proves for the library. One copy for every app; do not fork it.
 // Checks an appcast enclosure: Ed25519 over the exact file, against that app's public key.
-// usage: swift docs/verify-appcast.swift <downloaded.dmg> <public-key-base64> <edSignature-base64>
+// usage: swift scripts/verify-appcast.swift <downloaded.dmg> <public-key-base64> <edSignature-base64>
 //   key:    the app's SUPublicEDKey (once the shim ships) or ~/.kh-sparkle/<bundle-id>/public.key
 //   sig:    grep -o 'edSignature="[^"]*"' appcast.xml | cut -d'"' -f2
-// Prints "SIGNATURE OK" or "SIGNATURE INVALID"; exit 0 verified, 1 invalid, 2 usage/malformed.
-// (Changed 2026-11-23: an invalid signature used to print the line and still exit 0.)
+// Prints "SIGNATURE OK" or "SIGNATURE INVALID", and exits:
+//   0 verified   1 signature invalid   2 usage or malformed input
+// Distinct codes on purpose: a bad signature must not share a status with a good one, so a
+// shell `&&` or a CI step cannot read a false green.
 import CryptoKit
 import Foundation
 
@@ -16,6 +20,7 @@ guard args.count == 4,
 guard let key = try? Curve25519.Signing.PublicKey(rawRepresentation: pub) else { print("bad public key"); exit(2) }
 if key.isValidSignature(sig, for: data) {
     print("SIGNATURE OK")
+    exit(0)
 } else {
     print("SIGNATURE INVALID")
     exit(1)
