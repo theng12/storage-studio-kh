@@ -115,9 +115,18 @@ than taken on report:
   that was my measurement error, corrected before this line was written.
 - `dist/`: 0.1.27 + 0.1.26 kept; 0.1.25 retired to
   `~/Desktop/_trash/storage-studio-kh/2026-11-24 0.1.25 dmg retired at 0.1.27 publish/` with a manifest.
-- feed row: System's to write. `https://theng12.github.io/kh-releases/release.json` is a signed blob
-  this session cannot decode without the feed key, so the row is **NOT verified here** and is not
-  claimed.
+- release body: the paragraph from `lead/0.1.27/CARD-TEXT.md`, 228 characters, no heading. The body
+  briefly carried a promoted `## 0.1.27` heading while the preflight was being satisfied; that was a
+  metadata-only edit and was put back to the paragraph, with the artifact, tag and asset untouched.
+- feed row: **read here, not proven.** `release.json` carries `feed` as plain base64 JSON; decoded, the
+  `storage-studio` row still reads **0.1.26** (4,672,493 B, sha `2cebeb77…`, tagline "Keep your drives,
+  NAS shares and archives mounted and tidy.") — System's pass for 0.1.27 was starting when this was
+  written. What needs the feed key is verifying the envelope signature, not reading the row; the row is
+  therefore **UNVERIFIED for 0.1.27** here, and the envelope signature is not checked by this session.
+- `app-meta.json`'s tagline was aligned to the sentence the live row carries ("Keep your drives, NAS
+  shares and archives mounted and tidy."), so a later release does not silently change the card
+  sentence. It is metadata after the tag: `git show 0.1.27:app-meta.json` still carries the earlier
+  wording, and that is stated rather than smoothed over.
 
 ### Preflight notes (each cost a run)
 
