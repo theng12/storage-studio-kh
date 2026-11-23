@@ -2,7 +2,8 @@
 // usage: swift docs/verify-appcast.swift <downloaded.dmg> <public-key-base64> <edSignature-base64>
 //   key:    the app's SUPublicEDKey (once the shim ships) or ~/.kh-sparkle/<bundle-id>/public.key
 //   sig:    grep -o 'edSignature="[^"]*"' appcast.xml | cut -d'"' -f2
-// Prints "SIGNATURE OK" or "SIGNATURE INVALID"; exit 2 on bad input.
+// Prints "SIGNATURE OK" or "SIGNATURE INVALID"; exit 0 verified, 1 invalid, 2 usage/malformed.
+// (Changed 2026-11-23: an invalid signature used to print the line and still exit 0.)
 import CryptoKit
 import Foundation
 
@@ -13,4 +14,9 @@ guard args.count == 4,
     print("usage: verify-appcast <file> <public-key-base64> <signature-base64>"); exit(2)
 }
 guard let key = try? Curve25519.Signing.PublicKey(rawRepresentation: pub) else { print("bad public key"); exit(2) }
-print(key.isValidSignature(sig, for: data) ? "SIGNATURE OK" : "SIGNATURE INVALID")
+if key.isValidSignature(sig, for: data) {
+    print("SIGNATURE OK")
+} else {
+    print("SIGNATURE INVALID")
+    exit(1)
+}
