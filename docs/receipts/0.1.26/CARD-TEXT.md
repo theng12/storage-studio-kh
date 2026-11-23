@@ -1,0 +1,1 @@
+Same app as 0.1.25. The short pause that lets an update install safely now only trusts a key file that you alone can read, and it says why when it can't. If the key is still sitting in the Launcher's shared folder, it moves into the app's own folder once — updates keep working, nothing to do.
