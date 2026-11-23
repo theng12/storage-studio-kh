@@ -101,15 +101,33 @@ Before 0.1.27 this repo tracked no build input for Sparkle at all (`git ls-tree 
 | second measurement | U001's own run of pinned `install-launch-check e1a4850e0c34` on these same bytes: PASS, 0.1.27 alive after 10 s — two measurements, one artifact |
 | library | `libkhsparkle.a` 85,480 B, sha256 `818826a79d4e54885cbb5ad167f7425da8ba77436c6a5e277532f400aa1b4216`, matches `REQUIRED-SHIM.txt` (scanner `SHIM PASS`) |
 
+## Published (2026-11-24)
+
+Owner gave the word directly; App Publisher ran the release and the appcast. Re-measured here rather
+than taken on report:
+
+- release `theng12/storage-studio-kh` tag `0.1.27`, non-draft, created with `--verify-tag`; the only
+  asset is `Storage.Studio.KH-0.1.27.dmg`, 5,575,640 B, `digest: sha256:387ea5b5…a0cb`.
+- anonymous download of that asset: **200**, 5,575,640 bytes, sha256 `387ea5b5d6ee53b039c3135659e896d87994473942d57082fb486b009467a0cb`.
+- appcast item 0.1.27 live at 17:47:17Z; `docs/verify-appcast.swift` over the anonymously downloaded
+  asset with the bundle's `SUPublicEDKey` and the item's signature → **SIGNATURE OK (rc 0)**. A first
+  attempt of mine printed `SIGNATURE INVALID` because my extractor produced an empty signature string;
+  that was my measurement error, corrected before this line was written.
+- `dist/`: 0.1.27 + 0.1.26 kept; 0.1.25 retired to
+  `~/Desktop/_trash/storage-studio-kh/2026-11-24 0.1.25 dmg retired at 0.1.27 publish/` with a manifest.
+- feed row: System's to write. `https://theng12.github.io/kh-releases/release.json` is a signed blob
+  this session cannot decode without the feed key, so the row is **NOT verified here** and is not
+  claimed.
+
+### Preflight notes (each cost a run)
+
+1. the changelog heading must be **level two** (`## 0.1.27`); level one reports `<no heading>`, which
+   reads like a missing file.
+2. the scan receipt must be **text that names the sha** — the gate's `summary.txt` passed;
+   `scan-receipt.json`, which names it just as plainly, failed.
+3. `--type`, `--tagline` and `--description` are required when there is no existing row to inherit.
+
 ## Not measured yet
 
 - A live click-through of a Sparkle update on an installed copy: **UNMEASURED** (needs an installed 0.1.27 and a newer appcast item).
-- **The GitHub release is not created, and that is a bar, not a forgotten step.** Publication to a
-  public repository is refused to a session acting on a peer's request; only the owner's own words
-  clear it. The bar was met at 0.1.26 and again here. Staged and waiting: `gh release create 0.1.27
-  --verify-tag --title "Storage Studio KH 0.1.27" --notes-file lead/0.1.27/CARD-TEXT.md
-  "dist/Storage Studio KH-0.1.27.dmg"`, with the appcast item pre-signed over these exact bytes at
-  `lead/0.1.27/appcast-item.xml` (`ASSET_URL` and `PUBDATE` blank until the asset name is read back).
-  The item is committed only when the published asset matches **5,575,640 B / `387ea5b5…`** — a signed
-  item over the wrong bytes is worse than a late one.
-- Feed row: System's to write after the release exists.
+- The feed row, for the reason above.
