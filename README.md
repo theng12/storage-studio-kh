@@ -10,6 +10,17 @@ mirrors or syncs anything.
 - **Never mounts twice**: it reads the mount table first and reflects what is already mounted.
 - **Private file only**: share passwords live in the app's own data folder, one file readable only by you (0600).
 
+## Screenshots
+
+![The storages list, light](docs/screenshots/storage-light.png)
+![The storages list, dark](docs/screenshots/storage-dark.png)
+
+[Channel archives](docs/screenshots/archives-light.png) · [Settings](docs/screenshots/general-light.png)
+
+Taken by the 0.1.28 build itself (`WKWebView.takeSnapshot`), with the window positioned off the
+visible area — no window appears and no pointer moves. The two disks in the pictures are throwaway
+images made for the shot; no share, host or path from a real Mac is in them.
+
 ## Build
 
 ```sh

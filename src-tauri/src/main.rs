@@ -39,11 +39,15 @@ mod capture {
     use objc2_web_kit::{WKSnapshotConfiguration, WKWebView};
 
     unsafe fn find_webview(view: &NSView, depth: usize) -> Option<Retained<WKWebView>> {
-        if depth > 8 {
+        if depth > 24 {
             return None;
         }
         let any: &AnyObject = &*(view as *const NSView as *const AnyObject);
-        if any.class() == WKWebView::class() {
+        // isKindOfClass, not an equality test: Tauri's webview is a WKWebView subclass created by
+        // name at runtime, so `class() == WKWebView::class()` matched nothing in the real app (0.1.28
+        // every shot said "no WKWebView in the window" while a bare probe webview worked).
+        let is_webview: bool = msg_send![any, isKindOfClass: WKWebView::class()];
+        if is_webview {
             let ptr: *mut WKWebView = view as *const NSView as *mut WKWebView;
             return Some(Retained::retain(ptr)?);
         }
