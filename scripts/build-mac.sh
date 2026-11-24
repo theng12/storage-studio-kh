@@ -43,11 +43,12 @@ if [ ! -f "$pin_file" ]; then
   printf 'UNMEASURED  shim pin: no REQUIRED-SHIM.txt at %s\n' "$pin_file"
   not_run="${not_run:+$not_run; }shim pin (REQUIRED-SHIM.txt missing)"
 else
-  want="$(awk 'NF>=2 && $2=="libkhsparkle.a" {print $1; exit}' "$pin_file")"
+  # The pin is a LIST: the first entry is current, the ones below are accepted-previous, so a
+  # rebuilt shim does not condemn an app still on the last good library (Main, 2026-11-23).
   got="$(shasum -a 256 src-tauri/vendor/khsparkle/libkhsparkle.a | awk '{print $1}')"
-  [ -n "$want" ] || fail "REQUIRED-SHIM.txt names no libkhsparkle.a line"
-  [ "$want" = "$got" ] || fail "the vendored libkhsparkle.a is $got; the pin is $want"
-  printf 'shim: libkhsparkle.a %s matches the pin\n' "$got"
+  matched="$(awk -v got="$got" '!/^#/ && NF>=2 && $2=="libkhsparkle.a" && $1==got {print $(NF-1), $NF; exit}' "$pin_file")"
+  [ -n "$matched" ] || fail "the vendored libkhsparkle.a is $got; it matches no entry in the pin list ($pin_file)"
+  printf 'shim: libkhsparkle.a %s matches the pin (%s)\n' "$got" "$matched"
 fi
 
 step "Checking the local signing identity"
