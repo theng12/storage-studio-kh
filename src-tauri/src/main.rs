@@ -20,6 +20,116 @@ use tauri::menu::{Menu, MenuItem, PredefinedMenuItem, Submenu};
 use tauri::tray::TrayIconBuilder;
 use tauri::{AppHandle, Emitter, Manager, RunEvent, State};
 
+/// Photograph the app's own window for the release (RELEASE-POLICY §5d), from inside the process:
+/// WKWebView.takeSnapshot over the window Tauri already owns. The window is moved off the visible area
+/// and ordered without activating, so nothing appears on anyone's screen and no pointer is driven.
+#[cfg(target_os = "macos")]
+mod capture {
+    use std::path::Path;
+    use std::sync::mpsc;
+    use std::time::Duration;
+
+    use block2::RcBlock;
+    use objc2::rc::Retained;
+    use objc2::runtime::AnyObject;
+    use objc2::{class, msg_send, ClassType};
+    use tauri::Manager;
+    use objc2_app_kit::{NSBitmapImageRep, NSImage, NSView, NSWindow};
+    use objc2_foundation::NSData;
+    use objc2_web_kit::{WKSnapshotConfiguration, WKWebView};
+
+    unsafe fn find_webview(view: &NSView, depth: usize) -> Option<Retained<WKWebView>> {
+        if depth > 8 {
+            return None;
+        }
+        let any: &AnyObject = &*(view as *const NSView as *const AnyObject);
+        if any.class() == WKWebView::class() {
+            let ptr: *mut WKWebView = view as *const NSView as *mut WKWebView;
+            return Some(Retained::retain(ptr)?);
+        }
+        let subviews: Option<Retained<objc2_foundation::NSArray<NSView>>> = msg_send![view, subviews];
+        if let Some(subviews) = subviews {
+            for index in 0..subviews.count() {
+                let child = subviews.objectAtIndex(index);
+                if let Some(found) = find_webview(&child, depth + 1) {
+                    return Some(found);
+                }
+            }
+        }
+        None
+    }
+
+    /// One PNG of the webview's current contents. Called from a background thread; the snapshot
+    /// itself is taken on the main thread, as AppKit requires, and the answer comes back here.
+    pub fn snapshot(window: &tauri::WebviewWindow, path: &Path) -> Result<(), String> {
+        let raw = window.ns_window().map_err(|error| error.to_string())? as usize;
+        let (tx, rx) = mpsc::channel::<Result<Vec<u8>, String>>();
+        window
+            .app_handle()
+            .run_on_main_thread(move || unsafe {
+                let ns = raw as *mut NSWindow;
+                let content: Option<Retained<NSView>> = msg_send![ns, contentView];
+                let Some(content) = content else {
+                    let _ = tx.send(Err("the window has no content view".to_string()));
+                    return;
+                };
+                let Some(webview) = find_webview(&content, 0) else {
+                    let _ = tx.send(Err("no WKWebView in the window".to_string()));
+                    return;
+                };
+                let config: Retained<WKSnapshotConfiguration> =
+                    msg_send![class!(WKSnapshotConfiguration), new];
+                let block = RcBlock::new(move |image: *mut NSImage, error: *mut objc2_foundation::NSError| {
+                    if image.is_null() {
+                        let reason = if error.is_null() {
+                            "takeSnapshot returned no image".to_string()
+                        } else {
+                            format!("takeSnapshot failed: {:?}", (*error).localizedDescription())
+                        };
+                        let _ = tx.send(Err(reason));
+                        return;
+                    }
+                    let tiff: Option<Retained<NSData>> = msg_send![image, TIFFRepresentation];
+                    let Some(tiff) = tiff else {
+                        let _ = tx.send(Err("the image had no TIFF data".to_string()));
+                        return;
+                    };
+                    let rep: Option<Retained<NSBitmapImageRep>> =
+                        msg_send![class!(NSBitmapImageRep), imageRepWithData: &*tiff];
+                    let Some(rep) = rep else {
+                        let _ = tx.send(Err("the TIFF data did not decode".to_string()));
+                        return;
+                    };
+                    // NSBitmapImageFileTypePNG is 4.
+                    let png: Option<Retained<NSData>> = msg_send![
+                        &rep,
+                        representationUsingType: 4usize,
+                        properties: std::ptr::null::<AnyObject>()
+                    ];
+                    match png {
+                        Some(png) => {
+                            let bytes = png.to_vec();
+                            let _ = tx.send(Ok(bytes));
+                        }
+                        None => {
+                            let _ = tx.send(Err("the bitmap did not become a PNG".to_string()));
+                        }
+                    }
+                });
+                let _: () = msg_send![
+                    &webview,
+                    takeSnapshotWithConfiguration: &*config,
+                    completionHandler: &*block
+                ];
+            })
+            .map_err(|error| error.to_string())?;
+        let bytes = rx
+            .recv_timeout(Duration::from_secs(20))
+            .map_err(|_| "the snapshot did not answer within 20 s".to_string())??;
+        std::fs::write(path, bytes).map_err(|error| format!("{}: {error}", path.display()))
+    }
+}
+
 /// Sparkle through the shared shim (INTEGRATION.md §3A). The shim checks once per launch, draws no
 /// UI, and refuses unless the hold endpoint answers `{"safe":true}`; a refusal is logged with its rc.
 mod sparkle {
@@ -3376,6 +3486,39 @@ fn main() {
 
             // The update hold answers on loopback so Studio Launcher can hold this app's work
             // before it installs; the address is in the signed feed entry.
+            start_hold_server(handle.clone());
+
+            // Release screenshots (RELEASE-POLICY §5d): a hidden instance renders the app's own
+            // window off the visible area and captures it from inside, never by driving the pointer.
+            // Set STORAGE_STUDIO_SNAPSHOT_DIR together with the test data dir, then the app writes
+            // <view>-<theme>.png and exits.
+            if let Ok(dir) = std::env::var("STORAGE_STUDIO_SNAPSHOT_DIR") {
+                let trimmed = dir.trim();
+                if !trimmed.is_empty() && is_test_mode() {
+                    let dir = PathBuf::from(trimmed);
+                    let shot_handle = handle.clone();
+                    std::thread::spawn(move || {
+                        let Some(window) = shot_handle.get_webview_window("settings") else {
+                            log("no settings window to photograph");
+                            std::process::exit(3);
+                        };
+                        let _ = window.set_position(tauri::PhysicalPosition::new(-20000, -20000));
+                        let _ = window.show();
+                        std::thread::sleep(std::time::Duration::from_millis(900));
+                        let shots = [("storage", "light"), ("storage", "dark"), ("archives", "light"), ("general", "light")];
+                        for (view, theme) in shots {
+                            let _ = shot_handle.emit("snapshot-view", serde_json::json!({ "view": view, "theme": theme }));
+                            std::thread::sleep(std::time::Duration::from_millis(700));
+                            let file = dir.join(format!("{view}-{theme}.png"));
+                            match capture::snapshot(&window, &file) {
+                                Ok(()) => log(&format!("screenshot {} written", file.display())),
+                                Err(error) => log(&format!("screenshot {} failed: {error}", file.display())),
+                            }
+                        }
+                        std::process::exit(0);
+                    });
+                }
+            }
             start_hold_server(handle.clone());
             // The shim reads KHHoldTokenFile itself, before any hold request reaches this app, so the
             // one-time move of the legacy token has to happen at startup rather than on first use:

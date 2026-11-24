@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.28 — 2026-11-24
+
+- **Stop a copy that is taking too long.** While a channel is being archived the window has a Stop button; it ends at the next checked file, says where the part copy is kept, and "Archive again" carries on from there instead of starting over.
+- **Free up space once a copy is safely archived.** Each archived channel offers "Free up space", which moves that channel's folder to the Trash — only after the archive's own manifest says every file was checked. Nothing is deleted: emptying the Trash is yours to do, and the archive stays where it is.
+- **Archive again from a manifest.** A channel found by its archive can be archived again from what the archive recorded, even when the row that made it is gone.
+- **The startup log tells the truth about the update key.** It said the key had moved; it is copied, and the updater's shared file is left in place for the other apps that still read it.
+
 ## 0.1.27 — 2026-11-23
 
 - **Updates can now arrive on their own.** Storage Studio KH checks for a new version when it starts and installs it in the background, then reopens by itself — no download, no dragging a new copy in. It asks the app to pause first, and refuses to update at all when it cannot confirm pausing is safe, so a job is never cut off.

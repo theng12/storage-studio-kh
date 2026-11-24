@@ -3200,6 +3200,16 @@ async function attachListeners(): Promise<void> {
   const cleanups: (() => void)[] = [];
   try {
     cleanups.push(await backend.listen<Snapshot>("snapshot", applySnapshot));
+    // Release screenshots: the app asks for a view and a theme, renders it, and photographs itself.
+    // Nothing is persisted — this never changes what the person's app remembers.
+    cleanups.push(
+      await backend.listen<{ view: string; theme: string }>("snapshot-view", (payload) => {
+        view = (payload.view as View) ?? "storage";
+        if (snapshot) snapshot = { ...snapshot, appearance: payload.theme as Snapshot["appearance"] };
+        mainEl.scrollTop = 0;
+        render();
+      }),
+    );
     cleanups.push(await backend.listen("shares", applyShares));
     cleanups.push(
       await backend.listen<{ id: string; name: string }>("needs-credentials", (payload) => {
