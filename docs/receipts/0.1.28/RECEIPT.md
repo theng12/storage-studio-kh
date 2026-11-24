@@ -62,15 +62,55 @@ SHIM  PASS  libkhsparkle.a matches the previous accepted sha — accepted-previo
 
 ## Screenshots (RELEASE-POLICY §5d)
 
-PENDING
+Four PNGs in `docs/screenshots/`, taken by the gated build itself (off-screen, no pointer, demo
+content on throwaway disk images and a real archive the helper wrote):
+`storage-light.png`, `storage-dark.png`, `archives-light.png`, `general-light.png`. Checker line,
+quoted:
+
+```
+tool: check-app-screenshots.sh 7a035b7b380c at $HOME/Developer/_orchestra/tools/check-app-screenshots.sh
+PASS: 4 screenshots, each within size, named, referenced, and clean in text and metadata
+rc=0
+```
+
+The first capture attempt said `no WKWebView in the window` for every shot: the walk compared
+`class() == WKWebView::class()` and Tauri's webview is a runtime-created subclass, fixed with
+`isKindOfClass` in `c58923d` — which is why the gate ran twice on this version.
+
+## Install + launch (pinned 847e77db)
+
+`install-launch-check-847e77db5c99d5d6.sh` over the DMG: **PASS** — `Storage Studio KH.app 0.1.28
+launched hidden and is alive after 10s (pid 25314; app.storagestudiokh.desktop)`, the copy running
+from a temp scratch dir, never `/Applications`. Log: `lead/0.1.28/install-launch.log`.
 
 ## Archive checks — `tests/archive.sh` against the real helper binary
 
-PENDING
+**23 PASS, 0 FAIL, rc=0** (`lead/0.1.28/archive-tests.log`), including the four new 0.1.28
+behaviours end to end:
+
+- `Stop ends the archive at a file boundary and names the part copy` / `the part copy is kept` /
+  `Stop ended exactly at a file boundary` / `Archive again after Stop finishes the same copy`
+- `archive again reads the manifest and writes a new, verified archive`
+- `Free up space moves the archived channel to the Trash, and the archive stays`
+- plus the standing guarantees: byte-for-byte verification with `manifest says verified`, kill and
+  resume from the journal, restore to a new Mac without merging, a second restore taking a dated
+  name, and a folder with no manifest refused with its reason.
 
 ## Idle footprint — one full cycle, then ten minutes
 
-PENDING
+`lead/0.1.28/idle-final/` (configured with two mounted demo disks, hidden, own data dir):
+
+```
+start, after one cycle        pid=25489  fds=68  ports=1  threads=20  rss=93MB
+idle footprint: pid 25489 = 69 MB after 600s, -24 MB while idle (ceiling 512 MB)
+OK
+after 600s with nothing asked   pid=25489  fds=63  ports=1  threads=20  rss=69MB
+Footprint: 25 MB (physical)
+```
+
+Flat to falling on every measure — fds 68→63, ports 1→1, threads 20→20, rss 93→69 MB, physical
+footprint 25 MB. Growth would have failed; nothing grew. The gate's own `idle` step measured the
+same shape earlier (103→82 MB over 600 s).
 
 ## The window ends every archive state
 
