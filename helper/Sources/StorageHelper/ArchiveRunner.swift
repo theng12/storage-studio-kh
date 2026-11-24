@@ -769,9 +769,16 @@ public final class ArchiveRunner {
         var bytes: Int64 = 0
         do {
             while let data = try input.read(upToCount: 1 << 20), !data.isEmpty {
-                hasher.update(data: data)
-                try output.write(contentsOf: data)
-                bytes += Int64(data.count)
+                // One pool per chunk so a bridged Data cannot sit in the thread's pool for a whole
+                // long transfer. Measured 2026-11-24: this did NOT move the helper's RSS (8.8 MB idle,
+                // ~3.4 GB peak for a 3 GiB archive either way; 6 GiB copied peaked lower at 2.7 GB),
+                // so the resident pages are not per-iteration allocations. Kept because it is correct
+                // and costs one line; the open finding is recorded in lead/0.1.28.
+                try autoreleasepool {
+                    hasher.update(data: data)
+                    try output.write(contentsOf: data)
+                    bytes += Int64(data.count)
+                }
             }
             try output.synchronize()
         } catch {
@@ -807,7 +814,10 @@ public final class ArchiveRunner {
         var hasher = SHA256()
         do {
             while let data = try handle.read(upToCount: 1 << 20), !data.isEmpty {
-                hasher.update(data: data)
+                // Same shape as the copy loop, for the same reason; same measurement result.
+                autoreleasepool {
+                    hasher.update(data: data)
+                }
             }
         } catch {
             try? handle.close()
