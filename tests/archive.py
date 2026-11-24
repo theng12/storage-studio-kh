@@ -78,6 +78,8 @@ def start_helper(log_path):
     environment["STORAGE_STUDIO_TEST_DATA_DIR"] = DATA
     environment["STORAGE_STUDIO_NO_NOTIFICATIONS"] = "1"
     environment["STORAGE_STUDIO_NO_LOGIN_ITEM"] = "1"
+    # Free up space must never write the owner's Trash: the helper moves into this folder instead.
+    environment["STORAGE_STUDIO_TRASH_DIR"] = os.path.join(DATA, "Trash")
     log = open(log_path, "w", encoding="utf-8")
     process = subprocess.Popen(
         [HELPER], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=log,
@@ -354,6 +356,97 @@ def main():
                 ok("a folder with no manifest is refused, and it says why")
         if os.listdir(target):
             fail("a refused restore copied something: %r" % os.listdir(target))
+    finally:
+        process.kill()
+        process.wait()
+        log.close()
+
+    # 6. Stop a running archive: it ends at a file boundary, says where the part copy is, and a
+    #    second start carries on from the last checked file. This is the Retry path as well.
+    third = os.path.join(WORK, "cancel-channel")
+    chunk = bytes([7]) * (8 * 1024 * 1024)
+    for index in range(10):
+        write_bytes(os.path.join(third, "episodes/EP%02d/part.bin" % index), chunk)
+    make_channel(third, {})
+    cancel_destination = os.path.join(WORK, "Channel Archives 3")
+    os.makedirs(cancel_destination, exist_ok=True)
+
+    process, log = start_helper(os.path.join(WORK, "helper-6.log"))
+    try:
+        configure(process, cancel_destination, channel=third)
+        events = []
+        # Stop is asked for as soon as the job starts: the runner checks it at the next file
+        # boundary, so this does not depend on how fast this Mac copies eight megabytes.
+        send(process, {"type": "archive_start", "id": "a1"})
+        send(process, {"type": "archive_cancel"})
+        event = wait_for(process, is_job("cancelled"), 120, "a stopped job", events)
+        if not event:
+            return finish()
+        detail = event["job"].get("detail") or ""
+        stopped_dir = archive_dir(cancel_destination)
+        if stopped_dir not in detail:
+            fail("the stop does not name where the part copy is: %r" % detail)
+        else:
+            ok("Stop ends the archive at a file boundary and names the part copy")
+        if not os.path.isdir(stopped_dir):
+            fail("the part copy was removed by Stop")
+        else:
+            ok("the part copy is kept on the destination after Stop")
+        copied = 0
+        for base, _dirs, names in os.walk(os.path.join(stopped_dir, "roots")):
+            copied += len(names)
+        if copied != event["job"].get("filesDone"):
+            fail("Stop left %d files in the part copy but reported %r checked"
+                 % (copied, event["job"].get("filesDone")))
+        else:
+            ok("Stop ended exactly at a file boundary (%d files copied so far)" % copied)
+
+        send(process, {"type": "archive_start", "id": "a1"})
+        event = wait_for(process, is_job("archived"), 180, "the archive after Stop was retried", events)
+        if event:
+            ok("Archive again after Stop finishes the same copy")
+        check_bytes(cancel_destination, third)
+
+        # 7. Archive again from the manifest alone: a second archive is made from what the first
+        #    recorded, without the row that made it.
+        again_archive = event["job"].get("path") if event else None
+        if not again_archive:
+            fail("the archived job does not name its archive folder")
+        else:
+            send(process, {"type": "archive_again", "archivePath": again_archive})
+            again = wait_for(process, is_job("archived"), 180, "an archive made from a manifest", events)
+            if again:
+                second_dir = again["job"].get("path") or ""
+                if second_dir == again_archive:
+                    fail("archive again wrote into the same archive folder")
+                elif not os.path.isfile(os.path.join(second_dir, "manifest.json")):
+                    fail("archive again made a folder with no manifest at %r" % second_dir)
+                else:
+                    ok("archive again reads the manifest and writes a new, verified archive")
+
+        # 8. Free up space: the archived channel moves to the trash folder, and only when the
+        #    manifest says it was verified.
+        plain_dir = os.path.join(WORK, "no-manifest-archive")
+        os.makedirs(plain_dir, exist_ok=True)
+        send(process, {"type": "archive_trash", "archivePath": plain_dir})
+        refused = wait_for(process, is_job("failed"), 60, "a refused free-up-space", events)
+        if refused and "verified" not in (refused["job"].get("detail") or ""):
+            fail("the refusal does not say the archive was not verified: %r" % refused["job"].get("detail"))
+
+        send(process, {"type": "archive_trash", "archivePath": again_archive})
+        freed = wait_for(process, is_job("freed"), 60, "a freed job", events)
+        if freed:
+            trash_dir = os.path.join(DATA, "Trash")
+            moved = os.path.isdir(os.path.join(trash_dir, os.path.basename(third)))
+            if os.path.exists(third):
+                fail("the channel folder is still there after Free up space")
+            elif not moved:
+                fail("the channel folder did not arrive in the trash folder: %r"
+                     % (os.listdir(trash_dir) if os.path.isdir(trash_dir) else None))
+            else:
+                ok("Free up space moves the archived channel to the Trash, and the archive stays")
+            if not os.path.isfile(os.path.join(again_archive, "manifest.json")):
+                fail("Free up space removed the archive itself")
     finally:
         process.kill()
         process.wait()

@@ -149,6 +149,7 @@ public final class ArchiveRunner {
     private let jobsDirectory: URL
     private let lock = NSLock()
     private var pauseRequested = false
+    private var stopRequested = false
     private var lastEmit = Date.distantPast
 
     private enum Mode {
@@ -195,6 +196,20 @@ public final class ArchiveRunner {
         lock.lock()
         defer { lock.unlock() }
         return pauseRequested
+    }
+
+    /// The person pressed Stop. Like a pause it ends at a file boundary, never inside a file, and
+    /// the part-copied archive stays on the destination so the next start carries on from it.
+    public func requestStop() {
+        lock.lock()
+        stopRequested = true
+        lock.unlock()
+    }
+
+    private var shouldStop: Bool {
+        lock.lock()
+        defer { lock.unlock() }
+        return stopRequested
     }
 
     public func run() {
@@ -301,6 +316,14 @@ public final class ArchiveRunner {
         let journalURL = directory.appendingPathComponent("manifest.partial.jsonl")
         var changed: [String] = []
         for entry in entries.files {
+            if shouldStop {
+                record.state = "cancelled"
+                record.detail = "Stopped. The part-copied archive is kept at \(record.directory); Archive again carries on from the last checked file."
+                save(record)
+                emitNow(record)
+                finished(record.view)
+                return
+            }
             if shouldPause {
                 record.state = "paused"
                 record.detail = "Paused for an update. It carries on by itself after the app starts again."
@@ -525,6 +548,79 @@ public final class ArchiveRunner {
             directory: archivePath, destination: destination,
             roots: [], slug: "", filesDone: 0, filesTotal: 0, bytesDone: 0, bytesTotal: 0,
             detail: nil
+        )
+    }
+
+    // MARK: freeing space, and archiving again
+
+    /// Moves the archived channel folder(s) to the Trash — never deleted here, and only when the
+    /// archive's own manifest says it was verified. Emptying the Trash is the person's step.
+    public struct Freed {
+        public var moved: [String]
+        public var bytes: Int64
+    }
+
+    public enum FreeError: Error, CustomStringConvertible {
+        case notVerified(String)
+        case missing(String)
+        public var description: String {
+            switch self {
+            case .notVerified(let path):
+                return "\(path) has no verified archive manifest, so nothing was moved. Run Archive and let it finish first."
+            case .missing(let path):
+                return "\(path) isn't there any more, so nothing was moved."
+            }
+        }
+    }
+
+    public static func freeSpace(afterArchiveAt directory: String) throws -> Freed {
+        let folder = URL(fileURLWithPath: directory, isDirectory: true)
+        guard let data = try? Data(contentsOf: folder.appendingPathComponent("manifest.json")),
+              let manifest = try? JSONDecoder().decode(Manifest.self, from: data),
+              manifest.state == "verified"
+        else { throw FreeError.notVerified(directory) }
+        var moved: [String] = []
+        let manager = FileManager.default
+        for root in manifest.roots {
+            let source = URL(fileURLWithPath: root.source, isDirectory: true)
+            guard manager.fileExists(atPath: source.path) else { throw FreeError.missing(root.source) }
+        }
+        // Tests must never write the owner's Trash: with the override set the folder moves into
+        // that folder instead. The product path is the real Trash, one call, nothing deleted.
+        let override = ProcessInfo.processInfo.environment["STORAGE_STUDIO_TRASH_DIR"] ?? ""
+        let trashDir = override.isEmpty ? nil : URL(fileURLWithPath: override, isDirectory: true)
+        if let trashDir { try manager.createDirectory(at: trashDir, withIntermediateDirectories: true) }
+        for root in manifest.roots {
+            let source = URL(fileURLWithPath: root.source, isDirectory: true)
+            if let trashDir {
+                var target = trashDir.appendingPathComponent(source.lastPathComponent, isDirectory: true)
+                if manager.fileExists(atPath: target.path) {
+                    target = trashDir.appendingPathComponent("\(source.lastPathComponent)-\(Int(Date().timeIntervalSince1970))", isDirectory: true)
+                }
+                try manager.moveItem(at: source, to: target)
+            } else {
+                try manager.trashItem(at: source, resultingItemURL: nil)
+            }
+            moved.append(root.source)
+        }
+        return Freed(moved: moved, bytes: manifest.totals.bytes)
+    }
+
+    /// The spec an archive's own manifest describes, so "Archive again" works when the row that
+    /// made it is gone: the roots and the archive root come from the manifest, not from memory.
+    public static func spec(fromManifestAt directory: String, id: String) throws -> ArchiveSpec {
+        let folder = URL(fileURLWithPath: directory, isDirectory: true)
+        guard let data = try? Data(contentsOf: folder.appendingPathComponent("manifest.json")),
+              let manifest = try? JSONDecoder().decode(Manifest.self, from: data)
+        else { throw FreeError.notVerified(directory) }
+        // <destination>/<slug>/<archive id>
+        let destination = folder.deletingLastPathComponent().deletingLastPathComponent().path
+        return ArchiveSpec(
+            id: id,
+            name: manifest.channel.name,
+            slug: manifest.channel.slug,
+            roots: manifest.roots.map(\.source),
+            destination: destination
         )
     }
 
@@ -840,6 +936,7 @@ public final class ArchiveRunner {
 
     static func reason(_ error: Error) -> String {
         if let copy = error as? CopyError { return copy.description }
+        if let free = error as? FreeError { return free.description }
         return (error as NSError).localizedDescription
     }
 

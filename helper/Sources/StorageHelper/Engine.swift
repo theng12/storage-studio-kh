@@ -184,6 +184,58 @@ public final class Engine {
                 return
             }
             startRestore(path: path, destination: destination)
+        case "archive_cancel":
+            // The escape for a running archive: it ends at the next file boundary and names what
+            // it kept, so the row is never left at "Archiving…" with nothing to press.
+            if runner != nil {
+                runner?.requestStop()
+            } else {
+                emit(Event.log(level: "warn", message: "no archive is running").json)
+            }
+        case "archive_trash":
+            let directory = (command.archivePath ?? "").trimmingCharacters(in: .whitespaces)
+            guard !directory.isEmpty else {
+                emit(Event.log(level: "warn", message: "freeing space needs the archive folder").json)
+                return
+            }
+            archiveQueue.async { [weak self] in
+                guard let self else { return }
+                let view: JobView
+                do {
+                    let freed = try ArchiveRunner.freeSpace(afterArchiveAt: directory)
+                    view = JobView(
+                        id: "free", kind: "archive", name: URL(fileURLWithPath: directory).lastPathComponent,
+                        state: "freed",
+                        filesDone: freed.moved.count, filesTotal: freed.moved.count,
+                        bytesDone: freed.bytes, bytesTotal: freed.bytes,
+                        detail: "Moved \(freed.moved.count) folder\(freed.moved.count == 1 ? "" : "s") (\(ArchiveRunner.size(freed.bytes))) to the Trash. Empty the Trash to free the space.",
+                        path: directory
+                    )
+                } catch {
+                    view = JobView(
+                        id: "free", kind: "archive", name: URL(fileURLWithPath: directory).lastPathComponent,
+                        state: "failed",
+                        filesDone: 0, filesTotal: 0, bytesDone: 0, bytesTotal: 0,
+                        detail: ArchiveRunner.reason(error), path: directory
+                    )
+                }
+                self.queue.async { self.emit(Event.archive(view).json) }
+            }
+        case "archive_again":
+            let path = (command.archivePath ?? "").trimmingCharacters(in: .whitespaces)
+            guard !path.isEmpty else {
+                emit(Event.log(level: "warn", message: "archiving again needs the archive folder").json)
+                return
+            }
+            do {
+                let spec = try ArchiveRunner.spec(
+                    fromManifestAt: path,
+                    id: "a\(Int(Date().timeIntervalSince1970 * 1000))"
+                )
+                startArchive(spec)
+            } catch {
+                emit(Event.archive(Self.refused("again", "Archive again", ArchiveRunner.reason(error))).json)
+            }
         case "hold":
             hold(ceiling: command.ceiling)
         case "resume":

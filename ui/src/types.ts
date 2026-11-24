@@ -112,7 +112,7 @@ export interface JobView {
   id: string;
   kind: "archive" | "restore";
   name: string;
-  state: "copying" | "verifying" | "archived" | "restoring" | "restored" | "paused" | "failed";
+  state: "copying" | "verifying" | "archived" | "restoring" | "restored" | "paused" | "failed" | "cancelled" | "freed";
   filesDone: number;
   filesTotal: number;
   bytesDone: number;

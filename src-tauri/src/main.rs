@@ -1460,7 +1460,7 @@ fn migrate_legacy_hold_token(legacy: &Path, own: &Path, marker: &Path) {
         Ok(()) => {
             let _ = std::fs::write(marker, "");
             log(&format!(
-                "the hold token moved from {} to {}; the updater's shared file is no longer read",
+                "the hold token was copied from {} to {}; the updater's shared file is left in place",
                 legacy.display(),
                 own.display()
             ));
@@ -2182,6 +2182,41 @@ fn restore_start(
             "archivePath": archive_path,
             "destination": destination,
         }),
+    )
+}
+
+/// Stop a running archive at its next file boundary. The part-copied archive stays on the
+/// destination, and the job says where it is, so the row never sits at "Archiving…" with no control.
+#[tauri::command]
+fn archive_cancel(state: State<'_, AppState>) -> Result<(), String> {
+    send_to_helper(&state, &serde_json::json!({ "type": "archive_cancel" }))
+}
+
+/// Free up space: move the archived channel folder(s) to the Trash. The helper refuses unless the
+/// archive's own manifest says it was verified, and it never deletes — emptying the Trash is the
+/// person's step.
+#[tauri::command]
+fn archive_free_space(state: State<'_, AppState>, path: String) -> Result<(), String> {
+    refuse_new_work(&state)?;
+    if !Path::new(&path).is_dir() {
+        return Err(format!("{path} is not available right now."));
+    }
+    send_to_helper(
+        &state,
+        &serde_json::json!({ "type": "archive_trash", "archivePath": path }),
+    )
+}
+
+/// Archive a channel again from an archive's own manifest, for when the row that made it is gone.
+#[tauri::command]
+fn archive_again(state: State<'_, AppState>, path: String) -> Result<(), String> {
+    refuse_new_work(&state)?;
+    if !Path::new(&path).is_dir() {
+        return Err(format!("{path} is not available right now."));
+    }
+    send_to_helper(
+        &state,
+        &serde_json::json!({ "type": "archive_again", "archivePath": path }),
     )
 }
 
@@ -3233,6 +3268,9 @@ fn main() {
             archive_remove,
             archive_start,
             archive_reveal,
+            archive_cancel,
+            archive_free_space,
+            archive_again,
             restore_scan,
             restore_start,
         ])

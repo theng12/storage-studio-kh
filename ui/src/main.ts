@@ -788,6 +788,11 @@ function renderJobBanner(job: JobView): string {
       <p class="banner-text">${esc(jobLine(job))}</p>
       <div class="job-bar" aria-hidden="true"><span style="width: ${done}%"></span></div>
     </div>
+    ${
+      job.kind === "archive"
+        ? `<button type="button" class="btn banner-btn" data-action="archive-cancel" data-fk="job-stop">Stop</button>`
+        : ""
+    }
   </div>`;
 }
 
@@ -849,6 +854,7 @@ function renderArchives(): string {
     ${renderHoldBannerIfNeeded()}
     ${renderEngineBannerIfNeeded()}
     ${banner}
+    ${freeSpaceAsk ? renderFreeSpaceAsk() : ""}
     ${
       archives.length
         ? `<section class="group archive-group" aria-label="Archives">${archives.map(renderArchiveRow).join("")}</section>`
@@ -864,6 +870,52 @@ function renderArchives(): string {
     }`;
 }
 
+/** The one destructive step on this page, so it gets its own confirmation that names what moves. */
+let freeSpaceAsk: { id: string; path: string; roots: string[]; bytes: number } | null = null;
+
+function renderFreeSpaceAsk(): string {
+  if (!freeSpaceAsk) return "";
+  const ask = freeSpaceAsk;
+  return `<div class="banner" role="alertdialog" aria-labelledby="free-space-title">
+    ${icons.warning}
+    <div>
+      <p class="banner-title" id="free-space-title">Move ${esc(ask.roots.map((root) => root.split("/").pop() ?? root).join(" and "))} to the Trash?</p>
+      <p class="banner-text">The archive at ${esc(ask.path)} stays where it is, and it was checked file by file. The folder moves to the Trash — empty it to free ${sizeLabel(ask.bytes)}.</p>
+    </div>
+    <button type="button" class="btn banner-btn" data-action="archive-free-confirm" data-fk="free-confirm">Move to Trash</button>
+    <button type="button" class="btn banner-btn" data-action="archive-free-cancel" data-fk="free-cancel">Keep it</button>
+  </div>`;
+}
+
+async function cancelArchive(): Promise<void> {
+  try {
+    await backend.invoke("archive_cancel");
+  } catch (error) {
+    toast(String(error), { error: true });
+  }
+}
+
+async function confirmFreeSpace(): Promise<void> {
+  const ask = freeSpaceAsk;
+  freeSpaceAsk = null;
+  renderMain();
+  if (!ask) return;
+  try {
+    await backend.invoke("archive_free_space", { path: ask.path });
+  } catch (error) {
+    toast(String(error), { error: true });
+  }
+}
+
+async function archiveAgainFrom(path: string): Promise<void> {
+  if (!path) return;
+  try {
+    await backend.invoke("archive_again", { path });
+  } catch (error) {
+    toast(String(error), { error: true });
+  }
+}
+
 function renderArchiveMenu(archive: Archive): void {
   const running = Boolean(runningJob());
   const job = jobFor(archive.id);
@@ -875,6 +927,7 @@ function renderArchiveMenu(archive: Archive): void {
     ${item("archive-start", job && job.state === "paused" ? "Resume" : "Archive now", running || !snapshot?.engineRunning)}
     ${item("restore-open", "Restore a channel…", running)}
     ${item("archive-reveal", "Show on the NAS", !archive.last)}
+    ${item("archive-free", "Free up space...", running || !archive.last || !snapshot?.engineRunning)}
     ${item("archive-edit", "Edit…", false)}
     ${item("archive-forget", "Forget this row", running)}`;
 }
@@ -1130,6 +1183,9 @@ function renderRestoreSheet(): void {
                                 )} · ${item.files.toLocaleString()} files · from ${esc(item.machine)}</span>
                                 <span class="archive-choice-roots">${esc(item.roots.join(" + "))}</span>
                               </label>
+                              <button type="button" class="btn btn-small" data-action="archive-again" data-path="${esc(
+                                item.path,
+                              )}" data-fk="archive-again-${esc(item.path)}"${restoreSheet?.busy ? " disabled" : ""}>Archive again</button>
                             </li>`,
                           )
                           .join("")}</ul>`
@@ -2692,6 +2748,8 @@ function applySnapshot(next: Snapshot): void {
       announcedJob = key;
       if (job.state === "archived") {
         toast(archivedSentence(job));
+      } else if (job.state === "cancelled" || job.state === "freed") {
+        toast(job.detail ?? (job.state === "freed" ? "Moved to the Trash." : "Stopped."));
       } else if (job.state === "restored") {
         toast(job.detail ?? "Restored, and every check passed.");
         toast("YouTube sign-in, Content Packs and the Gateway address belong to each Mac: set them again in Story Studio KH here.");
@@ -2795,6 +2853,19 @@ function wireEvents(): void {
         const archive = snapshot?.archives.find((item) => item.id === id);
         if (archive) openArchiveSheet(archive);
       } else if (action === "archive-forget") void forgetArchive(id);
+      else if (action === "archive-cancel") void cancelArchive();
+      else if (action === "archive-free") {
+        const archive = snapshot?.archives.find((item) => item.id === id);
+        if (archive?.last) {
+          freeSpaceAsk = { id: archive.id, path: archive.last.path, roots: archive.roots, bytes: archive.last.bytes };
+          renderMain();
+        }
+      } else if (action === "archive-free-confirm") void confirmFreeSpace();
+      else if (action === "archive-again") void archiveAgainFrom(actionButton.dataset.path ?? "");
+      else if (action === "archive-free-cancel") {
+        freeSpaceAsk = null;
+        renderMain();
+      }
       else if (action === "show-warning") showWarningRow(id);
       else if (action === "remove") {
         const storage = snapshot?.storages.find((item) => item.id === id);
