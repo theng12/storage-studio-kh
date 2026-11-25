@@ -14,11 +14,11 @@ scan: sha256=7a5c560bcc8e298756653b958519f0a9c3e11303781d66eabfc33584c5a0a853 cl
 gate config: $HOME/Developer/_orchestra/tools/gate-configs/storage-0.1.31.sh
 gate exit: 0 — `GATE PASS storage eacaf25fbc47fbc0156f66e3a4124e18f8e1be5a 2026-11-25T17:15:22Z`
 gate runner: `gate-run.sh 8df512ad14da` — SHA-256 `8df512ad14da721f9e48e19d6be58fa100abf6f00b02df177e4ffd288492de70`, 49,914 B, as this gate's own summary recorded it; byte-identical to the plugin copy at `Shared Tools/studio-orchestration/plugins/studio-orchestration/scripts/gate-run.sh` (`cmp` clean). **The canonical runner changed since 0.1.30** — that release ran `528de9fe53d0`, this one `8df512ad14da`; the only pin in `tools/pinned/` is still `gate-run-528de9fe53d0c0de.sh`, so this run's bytes are named by hash above rather than by a pin
-feed readback: **appcast** — `https://theng12.github.io/storage-studio-kh/appcast.xml` serves `0.1.31` (length 5,604,910) and `0.1.30`; the served text's signature was verified over the anonymously downloaded 0.1.31 DMG with `docs/verify-appcast.swift` → **SIGNATURE OK** (rc 0). Pages build `2f181bd` — `built`. **Estate row `storage-studio`: NOT YET SERVED** — `feed-verify.sh` reads `version 0.1.30 != 0.1.31` at the time of writing; the row was handed to developer-system (S001) with the sha and is that pass's to publish
+feed readback: **appcast** — `https://theng12.github.io/storage-studio-kh/appcast.xml` serves `0.1.31` (length 5,604,910) and `0.1.30`; the served text's signature was verified over the anonymously downloaded 0.1.31 DMG with `docs/verify-appcast.swift` → **SIGNATURE OK** (rc 0). Pages build `2f181bd` — `built`. **Estate row `storage-studio`: SERVED `0.1.31`** — `published_at 2026-11-25T17:25:33.810Z`, sha `7a5c560b…`, `5,604,910` B, file `Storage Studio KH-0.1.31.dmg`, tagline present, envelope sha256 `9304d2fe4e62e2df3e4cfef8fcb0941a9a722531b9330afb8c2c852614c5f38d`, Pages commit `kh-releases ae20a16e`, `url` = the 0.1.31 release asset. **Re-verified here, not taken on report**: `feed-verify.sh storage-studio --expect-version 0.1.31 --expect-sha 7a5c560b… --public-key <fleet key>` → `PASS signature — Ed25519 verified against key <fingerprint>` then `PASS`; and `check-dist-retention.sh storage-studio dist` → `PASS every dist artifact is on the feed: 0.1.30, 0.1.31`
 page state: release page live at `theng12/storage-studio-kh` tag `0.1.31`, non-draft, one asset
 dirty: false
 retired: `Storage Studio KH-0.1.28.dmg` moved to `~/Desktop/_trash/storage-studio-kh/2026-11-25 0.1.28 dmg retired at 0.1.30 publish/` (by 0.1.30); **this release retires `Storage Studio KH-0.1.29.dmg`** — see Retention
-not proven: **NAS credential recovery — `not exercised — no NAS exists to test against`** (measured: `nc -z 100.69.137.42 445` refuses, `ping` 100% packet loss, `smbutil statshares -a` lists no share; `tests/mount-check.sh` printed 4 SKIP lines naming the reason and exited 0); **live Sparkle self-update click-through on an installed copy**: UNMEASURED; **estate feed row**: UNMEASURED (S001's pass)
+not proven: **NAS credential recovery — `not exercised — no NAS exists to test against`** (measured: `nc -z 100.69.137.42 445` refuses, `ping` 100% packet loss, `smbutil statshares -a` lists no share; `tests/mount-check.sh` printed 4 SKIP lines naming the reason and exited 0); **live Sparkle self-update click-through on an installed copy**: UNMEASURED; **estate feed row**: served and verified above (S001's pass; re-read here)
 
 ## What shipped
 
@@ -146,8 +146,8 @@ The appcast now offers 0.1.31 + 0.1.30.
 - **NAS credential recovery**: `not exercised — no NAS exists to test against`. The single most
   important line in this receipt: the feature ships unproven against real hardware.
 - **Live Sparkle self-update click-through on an installed copy**: **UNMEASURED**.
-- **Estate feed row**: **UNMEASURED** at the time of writing — served value is still 0.1.30; handed to
-  S001.
+- **Estate feed row**: **served** — see the feed readback above; verified here with `feed-verify.sh`
+  against the fleet key, and the row's `url` is the 0.1.31 release asset.
 
 ## Evidence
 
