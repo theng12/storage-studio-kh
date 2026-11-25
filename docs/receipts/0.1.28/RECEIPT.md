@@ -12,11 +12,11 @@ bytes: 5597951
 scan: sha256=e367a51b2f01ae88cc75ce3d4a4818b54c3ba4765ae7e6b8be5298493add6411 clean — scan-dmg/2026-11-20, exit 0, 96 files, `scan-dmg: clean`
 gate config: $HOME/Developer/_orchestra/tools/gate-configs/storage-0.1.28.sh
 gate exit: 0 — `GATE PASS storage c58923d6be8418802e93e372fdd08ed73556f046 2026-11-24T13:39:42Z`
-feed readback: appcast read back from GitHub Pages after the push — item `0.1.28` served, signature verified over the anonymously downloaded asset (`appcast-verify.sh` PASS, `docs/verify-appcast.swift` SIGNATURE OK). Estate row for `storage` in `kh-releases/release.json`: **UNMEASURED — the feed answers 200 with no `storage` row**; it is the publisher's own pass that writes it, not this release.
+feed readback: appcast read back from GitHub Pages after the push — item `0.1.28` served, signature verified over the anonymously downloaded asset (`docs/verify-appcast.swift` → SIGNATURE OK against the app's own `SUPublicEDKey`). Estate row `storage-studio` in `kh-releases/release.json`: **served `0.1.28`, sha256 `e367a51b…`, `5,597,951` B at `published_at 2026-11-25T01:32:08.853Z`**, read back anonymously and verified with `feed-verify.sh storage-studio --expect-version 0.1.28 --expect-sha e367a51b… --public-key <fleet feed key>` → `PASS signature — Ed25519 verified … PASS`. (An earlier draft of this line said UNMEASURED because it looked for a row named `storage`; the row is keyed `storage-studio`.)
 page state: release page live at `theng12/storage-studio-kh` tag `0.1.28`, non-draft, one asset
 dirty: false
 retired: 0.1.26 DMG moved to `~/Desktop/_trash/storage-studio-kh/2026-11-25 0.1.26 dmg retired at 0.1.28 publish/` with a MANIFEST; `dist/` now holds 0.1.28 + 0.1.27
-not proven: live Sparkle self-update click-through on an installed copy; the estate feed row (publisher's pass); the archive helper's residue after a large archive (mem-finding, next release)
+not proven: live Sparkle self-update click-through on an installed copy; the archive helper's residue after a large archive (mem-finding, next release); `-nobrowse` disk-image free-space fallback (row `20261125-23`, next release)
 
 ## What shipped
 
