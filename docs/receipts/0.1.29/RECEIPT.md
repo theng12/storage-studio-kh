@@ -12,12 +12,14 @@ sha256: 1568c4cb95db8a01a9f5f6019152c05e91aa366e7dd4c763962ba64a8853fc08
 bytes: 5603564
 scan: sha256=1568c4cb95db8a01a9f5f6019152c05e91aa366e7dd4c763962ba64a8853fc08 clean — scan-dmg/2026-11-20, exit 0, 96 files, `scan-dmg: clean`
 gate config: $HOME/Developer/_orchestra/tools/gate-configs/storage-0.1.29.sh
+gate runner: `gate-run.sh 528de9fe53d0` — SHA-256 `528de9fe53d0c0de552d30dca1b21092b073a24fac76daf53e21da738b3b6f46`, 48,065 B, as the gate's own `summary.txt` recorded it at run time and as the canonical file hashes now. Pinned since: `$HOME/Developer/_orchestra/tools/pinned/gate-run-528de9fe53d0c0de.sh`, byte-identical (`cmp` clean). The pin is not standalone-runnable — the runner resolves its companion checks beside itself, so run the canonical and quote the pin for attribution.
 gate exit: 0 — `GATE PASS storage b4b1e08600181c3f0765dca69964f305a1944d49 2026-11-25T02:30:55Z`
 feed readback: appcast read back from GitHub Pages after the push — item `0.1.29` served with `length="5603564"` and the signature made over the anonymously downloaded asset; `docs/verify-appcast.swift` re-run over the **served** text → `SIGNATURE OK` (rc 0). Estate row `storage-studio` in `kh-releases/release.json`: **served `0.1.29`, sha256 `1568c4cb…`, `5,603,564` B, `published 2026-11-25T03:05:18.835Z`, tagline present**, read back anonymously and verified here with `feed-verify.sh storage-studio --expect-version 0.1.29 --expect-sha 1568c4cb… --public-key <fleet feed key from the Launcher's PinnedKey>` → `PASS signature — Ed25519 verified against key <fingerprint>` (the value `PinnedKey.fingerprint` prints for that key) and `PASS`
 page state: release page live at `theng12/storage-studio-kh` tag `0.1.29`, non-draft, one asset
 dirty: false
 retired: `Storage Studio KH-0.1.27.dmg` (5,575,640 B) moved to `~/Desktop/_trash/storage-studio-kh/2026-11-25 0.1.27 retired at 0.1.29 publish/` with a MANIFEST; `dist/` now holds 0.1.29 + 0.1.28
 not proven: live Sparkle self-update click-through on an installed copy (no installed 0.1.28 was walked through an update in this run)
+runner behaviour change: this gate ran `528de9fe53d0`, not the `f05b010c16e5` every earlier receipt on this line named. A step failing on a high-swap, low-load, memory-rich machine now reads `GATE FAILED` where `f05b010c` read `GATE INVALID`, and a gate that `f05b010c` refused at ≥90% swap now starts. Compare this receipt against older Storage receipts with that in mind (Release Tooling, 2026-11-25).
 
 ## What shipped
 
