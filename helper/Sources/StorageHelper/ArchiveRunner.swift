@@ -933,9 +933,16 @@ public final class ArchiveRunner {
         return formatter.string(from: date)
     }
 
+    /// Fallback order: important usage, then the volume's own available capacity, then free size.
+    /// macOS returns 0 for important usage on `-nobrowse` disk images while the other two report the
+    /// real figure (row 20261125-23), so a non-positive answer at a step means "unknown", not "no
+    /// room", and the next step answers. Only free size itself is believed when it says 0.
     static func freeSpace(at url: URL) -> Int64? {
-        let values = try? url.resourceValues(forKeys: [.volumeAvailableCapacityForImportantUsageKey])
-        if let capacity = values?.volumeAvailableCapacityForImportantUsage { return capacity }
+        let values = try? url.resourceValues(forKeys: [
+            .volumeAvailableCapacityForImportantUsageKey, .volumeAvailableCapacityKey,
+        ])
+        if let capacity = values?.volumeAvailableCapacityForImportantUsage, capacity > 0 { return capacity }
+        if let capacity = values?.volumeAvailableCapacity, capacity > 0 { return Int64(capacity) }
         let attributes = try? FileManager.default.attributesOfFileSystem(forPath: url.path)
         return (attributes?[.systemFreeSize] as? NSNumber)?.int64Value
     }

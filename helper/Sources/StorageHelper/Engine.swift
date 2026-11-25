@@ -50,6 +50,11 @@ public final class Engine {
     /// A job that stopped at a file boundary for an update: it restarts when the hold resumes.
     private var pausedArchive: ArchiveSpec?
     private var listedLeftoverJobs = false
+    /// Given by the CLI target: re-executes this binary in place. Returns only if that failed.
+    public var recycleInPlace: (() -> Void)?
+    private var archivedSinceStart = 0
+    private var archivedBytesSinceStart: Int64 = 0
+    private var recycleFailed = false
 
     private var ticker: DispatchSourceTimer?
     private var monitor: NWPathMonitor?
@@ -404,7 +409,71 @@ public final class Engine {
         if view.state == "archived" || view.state == "restored" {
             pausedArchive = nil
         }
+        if view.state == "archived" {
+            archivedSinceStart += 1
+            archivedBytesSinceStart += view.bytesTotal
+        }
         announce()
+        recycleIfBounded()
+    }
+
+    // MARK: bounded lifetime
+
+    /// The setup a restarted process re-applies; it is the same JSON the app sends, so one path reads it.
+    private struct SavedSetup: Codable {
+        var type = "configure"
+        var retries: Int
+        var storages: [Storage]
+        var archives: [ArchiveSpec]
+    }
+
+    private func setupURL() -> URL {
+        Secrets.fileURL.deletingLastPathComponent().appendingPathComponent("recycle-state.json")
+    }
+
+    /// A recycled helper comes up with its setup already applied, and does not re-offer the leftover
+    /// jobs the process before it announced.
+    public func resumeSavedSetup() {
+        let url = setupURL()
+        guard let data = try? Data(contentsOf: url),
+              let command = try? JSONDecoder().decode(Command.self, from: data)
+        else { return }
+        try? FileManager.default.removeItem(at: url)
+        queue.async {
+            self.listedLeftoverJobs = true
+            self.handleOnQueue(command)
+        }
+    }
+
+    /// Bound the process, not the line: freed malloc regions are never handed back (measured
+    /// 2026-11-24, `lead/0.1.28/MEMORY-FINDING.md`), so after one very large archive or a run of them
+    /// the helper starts itself again in place — fresh heap, same pid and pipes — but only between
+    /// jobs, never while paused for an update, and only when nothing is in flight or queued.
+    /// A command written inside the restart itself (microseconds) is handled by the process being
+    /// replaced and is lost; nothing is left half-done, and the app's row stays as it was.
+    private func recycleIfBounded() {
+        guard !recycleFailed, let recycleInPlace, !paused, runner == nil,
+              inFlight.isEmpty, queued.isEmpty, deferred.isEmpty, scheduled.isEmpty,
+              slowDue.isEmpty, unmounting.isEmpty, listToken.isEmpty else { return }
+        let bytesCap = Int64(environment["STORAGE_STUDIO_RECYCLE_BYTES"] ?? "") ?? (256 << 20)
+        let countCap = Int(environment["STORAGE_STUDIO_RECYCLE_ARCHIVES"] ?? "") ?? 20
+        let why: String
+        if archivedBytesSinceStart >= bytesCap {
+            why = "it has archived \(ArchiveRunner.size(archivedBytesSinceStart)) since it started, and the system does not give that memory back"
+        } else if archivedSinceStart >= countCap {
+            why = "it has finished \(archivedSinceStart) archives since it started, and each one leaves memory the system does not give back"
+        } else {
+            return
+        }
+        let setup = SavedSetup(retries: retries, storages: storages, archives: archives)
+        if let data = try? JSONEncoder().encode(setup) {
+            try? data.write(to: setupURL(), options: .atomic)
+        }
+        emit(Event.log(level: "info", message: "starting this helper again in place because \(why). Same process; no job was interrupted.").json)
+        recycleInPlace()
+        // Only reached if the restart itself failed: say it once and keep working as before.
+        recycleFailed = true
+        emit(Event.log(level: "warn", message: "could not start this helper again in place, so it keeps running with \(ArchiveRunner.size(archivedBytesSinceStart)) archived.").json)
     }
 
     private static func refused(_ id: String, _ name: String, _ detail: String) -> JobView {

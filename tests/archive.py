@@ -13,6 +13,7 @@ Prints one PASS line per check; any failure prints FAIL and exits 1.
 import hashlib
 import json
 import os
+import select
 import shutil
 import signal
 import subprocess
@@ -72,7 +73,7 @@ def make_channel(folder, files):
         write_bytes(os.path.join(folder, relative), payload)
 
 
-def start_helper(log_path):
+def start_helper(log_path, extra=None):
     environment = dict(os.environ)
     environment["HOME"] = DATA
     environment["STORAGE_STUDIO_TEST_DATA_DIR"] = DATA
@@ -80,6 +81,7 @@ def start_helper(log_path):
     environment["STORAGE_STUDIO_NO_LOGIN_ITEM"] = "1"
     # Free up space must never write the owner's Trash: the helper moves into this folder instead.
     environment["STORAGE_STUDIO_TRASH_DIR"] = os.path.join(DATA, "Trash")
+    environment.update(extra or {})
     log = open(log_path, "w", encoding="utf-8")
     process = subprocess.Popen(
         [HELPER], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=log,
@@ -109,9 +111,13 @@ def configure(process, destination, channel=None):
 
 
 def wait_for(process, predicate, timeout, what, events):
-    """Reads events until predicate(event) is true. Bounded by its own ceiling."""
+    """Reads events until predicate(event) is true. Bounded by its own ceiling — a plain
+    `readline` blocks past the deadline, which once hid a job that had already failed."""
     deadline = time.time() + timeout
     while time.time() < deadline:
+        # select first: a helper that says nothing must not hold this past its ceiling.
+        if not select.select([process.stdout], [], [], 0.5)[0]:
+            continue
         line = process.stdout.readline()
         if not line:
             if process.poll() is not None:
@@ -135,6 +141,12 @@ def wait_for(process, predicate, timeout, what, events):
 def is_job(state):
     def check(event):
         return event.get("type") == "archive" and event.get("job", {}).get("state") == state
+    return check
+
+
+def is_log(fragment):
+    def check(event):
+        return event.get("type") == "log" and fragment in (event.get("message") or "")
     return check
 
 
@@ -451,6 +463,82 @@ def main():
         process.kill()
         process.wait()
         log.close()
+
+    # 9. A `-nobrowse` disk image reads 0 for important-usage capacity and the real figure for the
+    #    other two keys (row 20261125-23); the destination must still be accepted.
+    image = os.path.join(WORK, "project.dmg")
+    mount = os.path.join(WORK, "project-disk")
+    subprocess.run(["diskutil", "image", "create", "blank", "--size", "256m",
+                    "--volumeName", "Project Disk", "--fs", "APFS", image],
+                   capture_output=True, check=True)
+    attached = subprocess.run(["diskutil", "image", "attach", "--mountOptions", "nobrowse", image],
+                              capture_output=True, text=True)
+    for line in attached.stdout.splitlines():
+        if "/Volumes/Project Disk" in line:
+            mount = "/Volumes/Project Disk"
+    if not os.path.isdir(mount):
+        fail("the -nobrowse disk image did not mount: %r" % attached.stdout)
+        return finish()
+    process, log = start_helper(os.path.join(WORK, "helper-9.log"))
+    try:
+        tiny = os.path.join(WORK, "image-channel")
+        make_channel(tiny, {"episodes/EP01/part.bin": b"x" * 96})
+        image_destination = os.path.join(mount, "Channel Archives")
+        os.makedirs(image_destination, exist_ok=True)
+        configure(process, image_destination, channel=tiny)
+        events = []
+        send(process, {"type": "archive_start", "id": "a1"})
+        event = wait_for(process, is_job("archived"), 120, "an archive onto a -nobrowse disk image", events)
+        if not event:
+            failed = [e for e in events if is_job("failed")(e)]
+            fail("the -nobrowse disk image was refused: %r"
+                 % (failed[-1]["job"].get("detail") if failed else None))
+        else:
+            ok("an archive onto a -nobrowse disk image is accepted (important usage reads 0 there)")
+
+        # 10. Bounded lifetime: with the byte cap at zero every archive ends in an in-place restart —
+        #     same pid and pipes, fresh heap — and the next archive runs without the app re-sending
+        #     its setup, which is what proves the restart carried the setup across.
+        recycle_channel = os.path.join(WORK, "recycle-channel")
+        make_channel(recycle_channel, {"episodes/EP01/part.bin": b"y" * (2 * 1024 * 1024)})
+        recycle_destination = os.path.join(WORK, "Channel Archives 4")
+        os.makedirs(recycle_destination, exist_ok=True)
+        recycler, recycle_log = start_helper(
+            os.path.join(WORK, "helper-10.log"), extra={"STORAGE_STUDIO_RECYCLE_BYTES": "0"})
+        try:
+            recycler_pid = recycler.pid
+            configure(recycler, recycle_destination, channel=recycle_channel)
+            events = []
+            send(recycler, {"type": "archive_start", "id": "a1"})
+            if not wait_for(recycler, is_job("archived"), 180, "an archive before the restart", events):
+                return finish()
+            if wait_for(recycler, is_log("starting this helper again in place"), 60,
+                        "the helper restarting itself in place", events):
+                ok("the helper starts itself again in place after a large archive")
+            if recycler.poll() is not None:
+                fail("the helper exited instead of starting itself again in place")
+            elif recycler.pid != recycler_pid:
+                fail("the helper restarted as a new process (%d -> %d)" % (recycler_pid, recycler.pid))
+            else:
+                ok("it is the same process afterwards (pid %d, no new pid)" % recycler_pid)
+            # The restarted image says it started, and only then is it reading commands: a command
+            # written inside the restart itself belongs to the process being replaced.
+            if wait_for(recycler, is_log("helper started"), 60, "the restarted helper starting up", events):
+                ok("the restarted helper comes up on the same pipes")
+            send(recycler, {"type": "archive_start", "id": "a1"})
+            event = wait_for(recycler, is_job("archived"), 180,
+                             "the archive after the in-place restart", events)
+            if event:
+                ok("the archive after the in-place restart finishes without the app re-sending its setup")
+        finally:
+            recycler.kill()
+            recycler.wait()
+            recycle_log.close()
+    finally:
+        process.kill()
+        process.wait()
+        log.close()
+        subprocess.run(["diskutil", "eject", mount], capture_output=True)
 
     return finish()
 

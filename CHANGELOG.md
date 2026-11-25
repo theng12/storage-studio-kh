@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.29 — 2026-11-25
+
+- **Archiving onto a disk image works.** A copy onto a mounted disk image could be refused with "There isn't room for 96 bytes. The destination has Zero KB free" when the disk had plenty; the room check believed one figure macOS reports as zero there, and now reads the others before it believes a zero.
+- **A very large archive no longer weighs on the helper afterwards.** Once an archive has moved 256 MB or more (or twenty archives have run), the helper quietly starts itself again with an empty slate between jobs — same process, nothing interrupted — so the memory a huge file leaves behind goes back to the system instead of being held until the app quits.
+
 ## 0.1.28 — 2026-11-24
 
 - **Stop a copy that is taking too long.** While a channel is being archived the window has a Stop button; it ends at the next checked file, says where the part copy is kept, and "Archive again" carries on from there instead of starting over.
