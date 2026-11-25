@@ -131,7 +131,7 @@ run, but this is the second release to log the line and it belongs in the next o
   fixed it in the Launcher's repo. **Corrected 2026-11-25 by developer-system (S001): the fix is
   committed at `20c71fc` on the Launcher's `main`, shipped in 0.1.85 and carried by every producer
   since — the tree is clean, and it was only briefly uncommitted.** So a tag's description comes from
-  the tag. Issue row `20261125-24` describes the fault, not an outstanding edit.
+  the tag. Issue row `20261125-25` describes the fault, not an outstanding edit.
 - **`Cargo.lock` at the tag** names `0.1.28` for the app package: the build rewrites it, so the bump
   landed one commit later (`51e18a1`). Metadata only — `git diff b4b1e08..51e18a1 -- src helper` is
   empty.

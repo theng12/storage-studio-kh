@@ -2,19 +2,19 @@
   "apps": {
     "Storage Studio KH": {
       "files": {
-        "Storage Studio KH-0.1.29.dmg": {
-          "bytes": 5603564,
-          "sha256": "1568c4cb95db8a01a9f5f6019152c05e91aa366e7dd4c763962ba64a8853fc08",
-          "version": "0.1.29",
-          "provenance": "gated 2026-11-25 at b4b1e08 (tag 0.1.29); release asset Storage.Studio.KH-0.1.29.dmg on theng12/storage-studio-kh, non-draft; appcast item live 2026-11-25T02:33:33Z; estate row storage-studio published 2026-11-25T03:05:18.835Z",
-          "evidence": "docs/receipts/0.1.29/RECEIPT.md; anonymous download 5,603,564 B same sha; verify-appcast SIGNATURE OK over the downloaded bytes; feed-verify PASS"
-        },
         "Storage Studio KH-0.1.30.dmg": {
           "bytes": 5604199,
           "sha256": "44cfdf924fba9306bd3da47994ae9e6f609e116e0517b1ef1e6fe288b2dbcc9a",
           "version": "0.1.30",
           "provenance": "gated 2026-11-25 at 59a1149 (tag 0.1.30); release asset Storage.Studio.KH-0.1.30.dmg on theng12/storage-studio-kh, non-draft; appcast item live over the anonymous download",
           "evidence": "docs/receipts/0.1.30/RECEIPT.md; anonymous download 5,604,199 B same sha; verify-appcast SIGNATURE OK"
+        },
+        "Storage Studio KH-0.1.31.dmg": {
+          "bytes": 5604910,
+          "sha256": "7a5c560bcc8e298756653b958519f0a9c3e11303781d66eabfc33584c5a0a853",
+          "version": "0.1.31",
+          "provenance": "gated 2026-11-25 at eacaf25 (tag 0.1.31); release asset Storage.Studio.KH-0.1.31.dmg on theng12/storage-studio-kh, non-draft; appcast item live over the anonymous download",
+          "evidence": "docs/receipts/0.1.31/RECEIPT.md; anonymous download 5,604,910 B same sha; verify-appcast SIGNATURE OK. NAS credential recovery is NOT EXERCISED (no NAS on this Mac)."
         }
       }
     }
