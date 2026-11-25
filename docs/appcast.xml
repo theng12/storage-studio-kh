@@ -6,6 +6,21 @@
     <description>Storage Studio KH updates</description>
     <language>en</language>
     <item>
+      <title>Version 0.1.28</title>
+      <pubDate>Wed, 25 Nov 2026 01:30:04 +0000</pubDate>
+      <sparkle:version>0.1.28</sparkle:version>
+      <sparkle:shortVersionString>0.1.28</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
+      <description><![CDATA[<ul>
+<li><b>Stop a copy that is taking too long.</b> While a channel is being archived the window has a Stop button; it ends at the next checked file, says where the part copy is kept, and Archive again carries on from there instead of starting over.</li>
+<li><b>Free up space once a copy is safely archived.</b> Each archived channel offers Free up space, which moves that channel's folder to the Trash only after the archive's own manifest says every file was checked. Nothing is deleted: emptying the Trash is yours to do, and the archive stays where it is.</li>
+<li><b>Archive again from a manifest.</b> A channel found by its archive can be archived again from what the archive recorded, even when the row that made it is gone.</li>
+<li><b>The startup log tells the truth about the update key.</b> It said the key had moved; it is copied, and the updater's shared file is left in place for the other apps that still read it.</li>
+</ul>]]></description>
+      <enclosure url="https://github.com/theng12/storage-studio-kh/releases/download/0.1.28/Storage.Studio.KH-0.1.28.dmg"
+                 length="5597951" type="application/octet-stream" sparkle:edSignature="aur1oJt0NkWxQDkP1ZignCVk8dHzH8r4oBdqbWwl6yDeLlC+AmQCYUAJFBj5Gaf5QIg/rUcJu+hRsmUmo6hlAw=="/>
+    </item>
+    <item>
       <title>Version 0.1.27</title>
       <pubDate>Mon, 23 Nov 2026 17:45:47 +0000</pubDate>
       <sparkle:version>0.1.27</sparkle:version>
@@ -17,19 +32,6 @@
 </ul>]]></description>
       <enclosure url="https://github.com/theng12/storage-studio-kh/releases/download/0.1.27/Storage.Studio.KH-0.1.27.dmg"
                  length="5575640" type="application/octet-stream" sparkle:edSignature="s4k9vJR2CJcQPHbYHCcHM+9uBQKpflGyA9BZp09OXUwAhkvEOCIWoUanYfapCi1hGXycLn5rdO8/LitOvNZNCg=="/>
-    </item>
-    <item>
-      <title>Version 0.1.26</title>
-      <pubDate>Mon, 23 Nov 2026 11:41:56 +0000</pubDate>
-      <sparkle:version>0.1.26</sparkle:version>
-      <sparkle:shortVersionString>0.1.26</sparkle:shortVersionString>
-      <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
-      <description><![CDATA[<ul>
-<li><b>The update hold only trusts a properly protected key file.</b> The token must be readable by you alone (mode 600) and be exactly 64 hex characters; anything else is refused, and the refusal now says why — on the route and in the log.</li>
-<li><b>The update key moves into the app's own folder.</b> A key still in the updater's shared folder is copied into the app's support folder once, kept readable by you alone, and the move is logged; after that the shared copy is never read again.</li>
-</ul>]]></description>
-      <enclosure url="https://github.com/theng12/storage-studio-kh/releases/download/0.1.26/2cebeb77dd42-Storage.Studio.KH-0.1.26.dmg"
-                 length="4672493" type="application/octet-stream" sparkle:edSignature="S5Xn7Gm5P1VxkRJCEj61QldpUZkoCPPFgBo9RofOgzpZ4wxreVrJj2x1jXKwlT/OD20lVAMYxTLIwYAVUc89AA=="/>
     </item>
   </channel>
 </rss>
