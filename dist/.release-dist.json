@@ -2,19 +2,19 @@
   "apps": {
     "Storage Studio KH": {
       "files": {
+        "Storage Studio KH-0.1.28.dmg": {
+          "bytes": 5597951,
+          "sha256": "e367a51b2f01ae88cc75ce3d4a4818b54c3ba4765ae7e6b8be5298493add6411",
+          "version": "0.1.28",
+          "provenance": "gated 2026-11-24 at c58923d (tag 0.1.28); release asset Storage.Studio.KH-0.1.28.dmg on theng12/storage-studio-kh, non-draft; appcast item live 2026-11-25T01:30:04Z",
+          "evidence": "docs/receipts/0.1.28/RECEIPT.md; anonymous download 5,597,951 B same sha; verify-appcast SIGNATURE OK over the downloaded bytes"
+        },
         "Storage Studio KH-0.1.27.dmg": {
           "bytes": 5575640,
           "sha256": "387ea5b5d6ee53b039c3135659e896d87994473942d57082fb486b009467a0cb",
           "version": "0.1.27",
           "provenance": "gated 2026-11-23 at 46b37d5 (tag 0.1.27); release asset Storage.Studio.KH-0.1.27.dmg on theng12/storage-studio-kh; appcast item live 2026-11-24T17:47:17Z",
           "evidence": "docs/receipts/0.1.27/RECEIPT.md; anonymous download 5,575,640 B same sha; verify-appcast SIGNATURE OK"
-        },
-        "Storage Studio KH-0.1.26.dmg": {
-          "bytes": 4672493,
-          "sha256": "2cebeb77dd42e3fc6885ab51b0b407409b25486c5f738e27364bad51ac4686df",
-          "version": "0.1.26",
-          "provenance": "built 2026-11-23 from commit d39d28f; release asset 2cebeb77dd42-Storage.Studio.KH-0.1.26.dmg",
-          "evidence": "lead/0.1.26/RECEIPT-0.1.26.md; appcast signature verified"
         }
       }
     }

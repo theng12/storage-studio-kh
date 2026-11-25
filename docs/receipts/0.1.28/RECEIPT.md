@@ -12,11 +12,11 @@ bytes: 5597951
 scan: sha256=e367a51b2f01ae88cc75ce3d4a4818b54c3ba4765ae7e6b8be5298493add6411 clean — scan-dmg/2026-11-20, exit 0, 96 files, `scan-dmg: clean`
 gate config: $HOME/Developer/_orchestra/tools/gate-configs/storage-0.1.28.sh
 gate exit: 0 — `GATE PASS storage c58923d6be8418802e93e372fdd08ed73556f046 2026-11-24T13:39:42Z`
-feed readback: UNMEASURED — publication barred to peer sessions; release not created yet
-page state: UNMEASURED — publication barred to peer sessions; release not created yet
+feed readback: appcast read back from GitHub Pages after the push — item `0.1.28` served, signature verified over the anonymously downloaded asset (`appcast-verify.sh` PASS, `docs/verify-appcast.swift` SIGNATURE OK). Estate row for `storage` in `kh-releases/release.json`: **UNMEASURED — the feed answers 200 with no `storage` row**; it is the publisher's own pass that writes it, not this release.
+page state: release page live at `theng12/storage-studio-kh` tag `0.1.28`, non-draft, one asset
 dirty: false
-retired: UNMEASURED — 0.1.26 stays in dist/ until 0.1.28 is published
-not proven: public GitHub release, appcast live verification over downloaded asset, Pages feed readback (all blocked on owner authorization; see Not proven below); queued lane measurements (screenshots, install-launch check, two-disk 10-min idle, archive suite) still waiting in app-test-lock.sh
+retired: 0.1.26 DMG moved to `~/Desktop/_trash/storage-studio-kh/2026-11-25 0.1.26 dmg retired at 0.1.28 publish/` with a MANIFEST; `dist/` now holds 0.1.28 + 0.1.27
+not proven: live Sparkle self-update click-through on an installed copy; the estate feed row (publisher's pass); the archive helper's residue after a large archive (mem-finding, next release)
 
 ## What shipped
 
@@ -42,11 +42,40 @@ Two gate faults on the way, both mine, both named rather than hidden: the config
 scanner (`76dbf7aa…`) that read only the first `REQUIRED-SHIM` entry (row `20261124-59`), and the
 `idle` step first died on `lsof`'s exit status under `set -e`. Neither changed the app.
 
-The gate summary prints `step idle-footprint :: UNMEASURED — no IDLE_PID in the config` beside
-`ok idle`. That runner step was deliberately left unused because no live app pid exists before the
-build runs; our own `idle` step (`lead/0.1.28/gate-idle.sh` in the gate: `fds 68→67`, `ports 1→1`,
-`threads 21→20`, `rss 103→82 MB`, `-21 MB while idle`, `Footprint: 27 MB` after 600 s; followed by
-the two-disk configured 600 s run in `lead/0.1.28/measure.sh`) **is** the measurement.
+### Named deviation — the runner's own `idle-footprint` step is unwired
+
+This is a **deviation, not a pass**, and it is written here rather than smoothed over. The gate
+summary prints both lines:
+
+```
+step idle-footprint :: UNMEASURED (set IDLE_PID in the gate config to measure it)
+step idle-footprint :: UNMEASURED — no IDLE_PID in the config
+```
+
+The runner step is unwired in `_orchestra/tools/gate-configs/storage-0.1.28.sh`: it wants an
+`IDLE_PID`, and no live app pid exists before the build step has run, so the config leaves it unset.
+The measurement that stands behind this release is the gate's own `idle` step
+(`lead/0.1.28/gate-idle.sh`), which quotes `start, after one cycle pid=80901 fds=68 ports=1 threads=21
+rss=103MB`, then `idle footprint: pid 80901 = 82 MB after 600s, -21 MB while idle (ceiling 512 MB)`,
+`OK`, and `after 600s with nothing asked fds=67 ports=1 threads=20 rss=82MB`, with `vmmap` reporting
+`Footprint: 27 MB (16384 bytes per page)`. The two-disk configured 600 s run in
+`lead/0.1.28/measure.sh` measured the same shape (93→69 MB, fds 68→63). Both are this build's own
+runs; neither is the runner step's line.
+
+**Also recorded, because it is in the same log:** `step-idle.log` opens with a failed bind —
+
+```
+update hold listening on http://127.0.0.1:8646/api/maintenance/hold
+the update hold is not listening on 127.0.0.1:8646: Address already in use (os error 48)
+```
+
+A port from an earlier run of the same binary was still held when this run started, so the **update
+hold route was not listening during that measurement**. What that does and does not mean: the idle
+numbers above are still valid — the hold route is only exercised when an update arrives, and none did
+during the run, so nothing in the measurement depended on it. What is **UNMEASURED** is the hold
+route's own behaviour in this exact run; it is covered by `tests/archive.sh` and the app's own
+`POST /api/maintenance/hold` contract test, not by this log line. The rule this cites: a process that
+cannot bind must say so, and it did.
 
 ## Sparkle shim — which entry, said plainly
 
@@ -76,6 +105,29 @@ rc=0
 The first capture attempt said `no WKWebView in the window` for every shot: the walk compared
 `class() == WKWebView::class()` and Tauri's webview is a runtime-created subclass, fixed with
 `isKindOfClass` in `c58923d` — which is why the gate ran twice on this version.
+
+**`archives-light.png` was re-captured after the gate, in `ece9b17`.** The first release image
+rendered the archive date as `Archived 22 Jan` (seconds written into a millisecond field) and printed
+a `/var/folders/…` destination path. The re-capture queued for it came back showing an
+`Archive paused — Night Atlas` banner and `Not archived yet` instead, because
+`ArchiveRunner.freeSpace(at:)` (`ArchiveRunner.swift:936`) takes
+`volumeAvailableCapacityForImportantUsage` as authoritative and macOS returns **0** for that key on
+`-nobrowse` disk images while `volumeAvailableCapacity` and `systemFreeSize` both report the real
+figure. The demo archive was therefore refused with `"There isn't room for 96 bytes. The destination
+has Zero KB free."` and the capture photographed the failure.
+
+The fixture, not the app, was fixed for this release (`lead/0.1.28/demo-archive.py` now stops on
+`paused` and prints the job's own reason; `lead/0.1.28/snapshots.sh` now fails closed unless a
+verified manifest exists and stages the helper's real archive before photographing). The shipped PNG
+shows `Archived 25 Nov · 96 B · 3 files` and
+`Archived to /Volumes/Project Disk/Channel Archives/night-atlas/20261124T203153Z-68d1`.
+
+The helper's own free-space reading is **not fixed in 0.1.28** — that would change app source after
+the gate, and the gated bytes are what shipped. Real attached volumes (`/Volumes/KH-STUDIO-ATLAS`,
+`/Volumes/KH-STUDIO-NOVA`) return correct non-zero values, so a normal destination is unaffected; a
+`-nobrowse` disk image is. Recorded as issue row `20261125-23` (distinct from `20261119-06`, which is
+the gate's own low-disk governor) and queued as the first item for 0.1.29:
+treat an important-usage capacity of `<= 0` as absent and fall back to `systemFreeSize`.
 
 ## Install + launch (pinned 847e77db)
 
@@ -135,31 +187,59 @@ and neither moved the number, so both were reverted. The bounded-lifetime remedy
 between jobs) is the next release's first item. This is a retention fault, not a data-loss bug, and
 it is not claimed as fixed.
 
+## Published (2026-11-25)
+
+Owner's own words cleared the public surface. Re-measured here rather than taken on report:
+
+- `main` fast-forwarded from `1626de6` to the release branch and pushed with the branch
+  (`1626de6..ece9b17`, both refs). No rewriting, no force.
+- tag `0.1.28` (annotated, object `68a7273f…`) → `c58923d6be8418802e93e372fdd08ed73556f046`, the
+  gated commit; pushed and verified on the remote with `git ls-remote`.
+- release `theng12/storage-studio-kh` tag `0.1.28`: non-draft, not prerelease, `--verify-tag`. One
+  asset `Storage.Studio.KH-0.1.28.dmg`, 5,597,951 B, GitHub reports
+  `digest: sha256:e367a51b2f01ae88cc75ce3d4a4818b54c3ba4765ae7e6b8be5298493add6411`.
+- **anonymous download** of that asset with no token: **HTTP 200**, 5,597,951 bytes, sha256
+  `e367a51b2f01ae88cc75ce3d4a4818b54c3ba4765ae7e6b8be5298493add6411` — identical to the gated file.
+- **appcast signed over the downloaded bytes**, not the local build:
+  `sign_update` (`vendor/bin/sign_update`, sha256 `43c249771baf…`) with
+  `~/.kh-sparkle/app.storagestudiokh.desktop/private.key` produced
+  `sparkle:edSignature="aur1oJt0NkWxQDkP1ZignCVk8dHzH8r4oBdqbWwl6yDeLlC+AmQCYUAJFBj5Gaf5QIg/rUcJu+hRsmUmo6hlAw=="`.
+  `docs/verify-appcast.swift` → **SIGNATURE OK** (rc 0); `_orchestra/tools/appcast-verify.sh` over the
+  same download → **PASS** (rc 0).
+- **served readback**: `https://theng12.github.io/storage-studio-kh/appcast.xml` carries
+  `sparkle:version 0.1.28`, `pubDate Wed, 25 Nov 2026 01:30:04 +0000`, the enclosure above, and the
+  same signature; the signature was re-verified from the **served** text over the anonymous download →
+  **PASS**. The feed serves two items (0.1.28 + 0.1.27), as retention requires.
+- `_orchestra/tools/appcast-serves-version.sh storage-studio-kh 0.1.28 --bundle <built app>` exited
+  **2 (could not measure)** because the estate feed `kh-releases/release.json` answered 200 with no
+  `storage` row; that is the publisher's pass, not this release, and it is recorded as UNMEASURED, not
+  as a pass.
+- preflight: `36ebc8155c2e` (plugin 0.3.333/0.3.336) with `--scan-receipt` and `--gate-receipt` on the
+  gate summary → `PREFLIGHT PASS` (rc 0), artifact sha `REUSED` from the gate receipt.
+
 ## Retention
 
-PENDING
+`dist/` now holds exactly the pair: `Storage Studio KH-0.1.28.dmg` (5,597,951 B) and
+`Storage Studio KH-0.1.27.dmg` (5,575,640 B). `Storage Studio KH-0.1.26.dmg` (4,672,493 B, sha256
+`2cebeb77dd42…`) moved to
+`~/Desktop/_trash/storage-studio-kh/2026-11-25 0.1.26 dmg retired at 0.1.28 publish/` with a
+`MANIFEST.md`. Checked before the move: not open (`lsof`), nothing in `dist/` or `scripts/` reads it,
+and its appcast item was dropped in the same publish. Moved, never deleted — the disk gains ~4.5 MB
+only when the owner empties the trash. `dist/.release-dist.json` updated in the same change.
 
 ## Not proven
 
-- **The GitHub release is not created, and that is a bar, not a forgotten step.** Publication to a
-  public repository (pushing `main`/tag and running `gh release create`) is refused to a session
-  acting on a peer's request — especially when the peer session itself reports being refused for the
-  public surface; only the owner's direct words clear it.
-- **Staged and waiting for the owner's direct go-ahead (and completion of the queued lane
-  measurement run):**
-  - Gated commit on `storage-0.1.28-archive-slice2`: `c58923d6be8418802e93e372fdd08ed73556f046`
-  - Artifact: `dist/Storage Studio KH-0.1.28.dmg`, **5,597,951 B**, sha256
-    `e367a51b2f01ae88cc75ce3d4a4818b54c3ba4765ae7e6b8be5298493add6411` (`scan-dmg: clean`)
-  - Release notes paragraph: `lead/0.1.28/CARD-TEXT.md`
-  - Pre-signed appcast item: `lead/0.1.28/appcast-item.xml` (`ASSET_URL` and `PUBDATE` blank until
-    the published asset URL is read back; locally verified `SIGNATURE OK` by `docs/verify-appcast.swift`
-    and `PASS` by `_orchestra/tools/appcast-verify.sh` over these exact 5,597,951 B). Will be
-    re-verified over the anonymously downloaded published asset before committing to `appcast.xml`.
-  - Retention: `0.1.26.dmg` stays in `dist/` until `0.1.28` is actually published, then moves to
-    `~/Desktop/_trash/storage-studio-kh/<date> 0.1.26 dmg retired at 0.1.28 publish/` with a manifest.
-- **Queued lane measurements (`lead/0.1.28/measure.sh`, waiting in `app-test-lock.sh`):** release
-  screenshots (`snapshots.sh` + `check-app-screenshots.sh`), pinned
-  `install-launch-check-847e77db5c99d5d6.sh`, configured two-disk 10-minute idle run, and
-  `tests/archive.sh` against the built helper.
-- **Live Sparkle self-update click-through** on an installed copy: **UNMEASURED**.
-- **Pages feed row and envelope signature**: **UNMEASURED** (System writes the row after release).
+- **Live Sparkle self-update click-through on an installed copy**: **UNMEASURED**. The item is served
+  and its signature verifies, but no installed 0.1.27 has been walked through the update in this run.
+- **Estate feed row**: `kh-releases/release.json` answers 200 with no `storage` row — the publisher's
+  pass writes it. UNMEASURED, not a pass.
+- **The hold route's own behaviour during the idle measurement**: the run logged
+  `Address already in use` on `127.0.0.1:8646` (see the named deviation above), so the route was not
+  listening then. Its contract is covered by `tests/archive.sh`, not by that log.
+- **The helper's residue after a large archive** (`lead/0.1.28/MEMORY-FINDING.md`): a retention fault,
+  not claimed fixed; the bounded-lifetime remedy is 0.1.29's first item.
+- **`app-meta.json` at the tag**: the tag is the gated commit `c58923d`, and the `localFile` bump to
+  `Storage Studio KH-0.1.28.dmg` landed in `f7de129`, one commit later (metadata only — the source diff
+  `c58923d..ece9b17 -- src src-tauri ui-shell ui helper` is empty). So `git show 0.1.28:app-meta.json`
+  still names the 0.1.27 file. The feed, appcast and release page all name 0.1.28; this one file at
+  this one tag does not. Named, not hidden.
