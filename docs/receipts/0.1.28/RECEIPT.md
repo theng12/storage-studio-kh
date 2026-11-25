@@ -211,9 +211,9 @@ Owner's own words cleared the public surface. Re-measured here rather than taken
   same signature; the signature was re-verified from the **served** text over the anonymous download →
   **PASS**. The feed serves two items (0.1.28 + 0.1.27), as retention requires.
 - `_orchestra/tools/appcast-serves-version.sh storage-studio-kh 0.1.28 --bundle <built app>` exited
-  **2 (could not measure)** because the estate feed `kh-releases/release.json` answered 200 with no
-  `storage` row; that is the publisher's pass, not this release, and it is recorded as UNMEASURED, not
-  as a pass.
+  **2 (could not measure)** at publish time because it looked for a row named `storage`; the estate feed
+  keys this app `storage-studio`. Re-read after the publisher's pass: the row is served (see the feed
+  readback above), so this line is a wrong-key-name artefact of the tool call, not a missing row.
 - preflight: `36ebc8155c2e` (plugin 0.3.333/0.3.336) with `--scan-receipt` and `--gate-receipt` on the
   gate summary → `PREFLIGHT PASS` (rc 0), artifact sha `REUSED` from the gate receipt.
 
@@ -231,8 +231,11 @@ only when the owner empties the trash. `dist/.release-dist.json` updated in the 
 
 - **Live Sparkle self-update click-through on an installed copy**: **UNMEASURED**. The item is served
   and its signature verifies, but no installed 0.1.27 has been walked through the update in this run.
-- **Estate feed row**: `kh-releases/release.json` answers 200 with no `storage` row — the publisher's
-  pass writes it. UNMEASURED, not a pass.
+- **Estate feed row**: **PROVEN, not owed.** `kh-releases/release.json` serves `storage-studio 0.1.28`,
+  `5,597,951` B, sha256 `e367a51b…`, hold pair `http://127.0.0.1:8646/api/maintenance/hold` with
+  `holdSince 0.1.11`, at `published_at 2026-11-25T01:32:08.853Z`; `feed-verify.sh --public-key <fleet
+  feed key>` returned `PASS signature`. (An earlier draft said UNMEASURED because it looked for a row
+  named `storage`.)
 - **The hold route's own behaviour during the idle measurement**: the run logged
   `Address already in use` on `127.0.0.1:8646` (see the named deviation above), so the route was not
   listening then. Its contract is covered by `tests/archive.sh`, not by that log.
