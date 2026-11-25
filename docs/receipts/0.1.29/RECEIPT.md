@@ -74,7 +74,7 @@ accepted sha — accepted-previous` (the same pin as 0.1.28; the current rebuild
 
 ### Named deviation — the runner's own `idle-footprint` step is unwired
 
-Same form as 0.1.28, and written here rather than smoothed over. The summary prints
+Same form as 0.1.28 (issue row `20261125-16`), and written here rather than smoothed over. The summary prints
 `step idle-footprint :: UNMEASURED — no IDLE_PID in the config`: the step wants a live pid and no app
 is running before the build step. The measurement that stands behind this release is the gate's own
 `idle` step:
