@@ -6,6 +6,19 @@
     <description>Storage Studio KH updates</description>
     <language>en</language>
     <item>
+      <title>Version 0.1.30</title>
+      <pubDate>Wed, 25 Nov 2026 16:14:43 +0000</pubDate>
+      <sparkle:version>0.1.30</sparkle:version>
+      <sparkle:shortVersionString>0.1.30</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
+      <description><![CDATA[<ul>
+<li><b>The app carries the newest shared update library.</b> The copy built into the app was the previous accepted one; it is now the current build every new release is made against, so what this version ships is what the studio pins today.</li>
+<li><b>A build says which tools it used.</b> Started from a shell that is not a login shell, the build scripts could pick up an old Python or not find pkg-config at all; they now look in Homebrew's folders first, and the build prints the Python, Node and Rust it found, so a broken build names the tool instead of ending in a traceback nobody can act on.</li>
+</ul>]]></description>
+      <enclosure url="https://github.com/theng12/storage-studio-kh/releases/download/0.1.30/Storage.Studio.KH-0.1.30.dmg"
+                 length="5604199" type="application/octet-stream" sparkle:edSignature="cDiDh2O2hRP/7w93pszWLycoUbPNS9lTOY1izit88bQZT0ql5Sw6cZQA//5esu64UvH+gTvS3bVzjJdlfT0MCQ=="/>
+    </item>
+    <item>
       <title>Version 0.1.29</title>
       <pubDate>Wed, 25 Nov 2026 02:33:33 +0000</pubDate>
       <sparkle:version>0.1.29</sparkle:version>
@@ -17,21 +30,6 @@
 </ul>]]></description>
       <enclosure url="https://github.com/theng12/storage-studio-kh/releases/download/0.1.29/Storage.Studio.KH-0.1.29.dmg"
                  length="5603564" type="application/octet-stream" sparkle:edSignature="2DzeCWW30372Y/WqjRUyMPLOK7ZTXe1wK0pLfa6/DUFb/e9Q/HRUUc1ZkUZMX/g/+r6OeVW4rKtmKfCCMgLkBQ=="/>
-    </item>
-    <item>
-      <title>Version 0.1.28</title>
-      <pubDate>Wed, 25 Nov 2026 01:30:04 +0000</pubDate>
-      <sparkle:version>0.1.28</sparkle:version>
-      <sparkle:shortVersionString>0.1.28</sparkle:shortVersionString>
-      <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
-      <description><![CDATA[<ul>
-<li><b>Stop a copy that is taking too long.</b> While a channel is being archived the window has a Stop button; it ends at the next checked file, says where the part copy is kept, and Archive again carries on from there instead of starting over.</li>
-<li><b>Free up space once a copy is safely archived.</b> Each archived channel offers Free up space, which moves that channel's folder to the Trash only after the archive's own manifest says every file was checked. Nothing is deleted: emptying the Trash is yours to do, and the archive stays where it is.</li>
-<li><b>Archive again from a manifest.</b> A channel found by its archive can be archived again from what the archive recorded, even when the row that made it is gone.</li>
-<li><b>The startup log tells the truth about the update key.</b> It said the key had moved; it is copied, and the updater's shared file is left in place for the other apps that still read it.</li>
-</ul>]]></description>
-      <enclosure url="https://github.com/theng12/storage-studio-kh/releases/download/0.1.28/Storage.Studio.KH-0.1.28.dmg"
-                 length="5597951" type="application/octet-stream" sparkle:edSignature="aur1oJt0NkWxQDkP1ZignCVk8dHzH8r4oBdqbWwl6yDeLlC+AmQCYUAJFBj5Gaf5QIg/rUcJu+hRsmUmo6hlAw=="/>
     </item>
   </channel>
 </rss>
