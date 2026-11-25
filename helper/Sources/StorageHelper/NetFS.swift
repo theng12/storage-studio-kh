@@ -32,7 +32,11 @@ enum NetFS {
     }
 
     /// Returns nil on success, or the person-facing reason it failed.
-    static func mountSMB(storage: Storage, credentials: Secrets.Credentials?) -> MountFailure? {
+    ///
+    /// `savedLogin` asks NetAuth to use a credential the person already saved in the login keychain:
+    /// no user or password is passed, and no Guest option, so NetAuth consults its own store instead
+    /// of being told "this is a guest mount". `NoUserPrompt` keeps a failure off the screen.
+    static func mountSMB(storage: Storage, credentials: Secrets.Credentials?, savedLogin: Bool = false) -> MountFailure? {
         guard let mountSync else {
             return MountFailure(message: "The system's network mounter isn't available on this Mac.")
         }
@@ -64,7 +68,9 @@ enum NetFS {
         var pairs: [(CFString, CFBoolean)] = [(noUserPrompt, kCFBooleanTrue)]
         // Only loopback shares need this, and it is harmless for the rest.
         pairs.append((allowLoopback, kCFBooleanTrue))
-        if credentials == nil { pairs.append((useGuest, kCFBooleanTrue)) }
+        // Guest only when nobody is being asked to authenticate: with a saved login NetAuth must be
+        // free to use the keychain item, and asking for Guest would skip it.
+        if credentials == nil && !savedLogin { pairs.append((useGuest, kCFBooleanTrue)) }
         let openOptions = options(pairs)
         // MountAtMountDir belongs to the mount-options dictionary (NetFS.h); in the open
         // options NetFS answers a chosen folder with EINVAL (22).
@@ -75,9 +81,18 @@ enum NetFS {
         let code = mountSync(cleanURL as CFURL, mountPath, user, password, openOptions, mountOptions, nil)
         if code == 0 { return nil }
 
-        let needsCredentials = code == 1 || code == 13 || code == 80 || code == -6003
+        // NetAuth's own denials (NetFS.h: `-128` is userCanceledErr, and the kNetAuthError* family
+        // starts at `-6003`) mean no saved credential worked. With `NoUserPrompt` nothing appeared on
+        // screen, so the row, not a dialog, has to carry it.
+        // A saved-login denial is a credential answer too, so the row offers Settings either way.
+        let savedLoginDenied = savedLogin && (code == -128 || (code <= -6000 && code >= -6600))
+        let needsCredentials = code == 1 || code == 13 || code == 80 || code == -6003 || savedLoginDenied
         let message: String
-        if needsCredentials {
+        if savedLoginDenied {
+            // Neutral wording on purpose: this path also runs when no saved login exists, and the
+            // helper cannot tell the two apart, so it must not claim one did.
+            message = "This device needs a user name and password."
+        } else if needsCredentials {
             message = "The device refused the user name or password."
         } else {
             switch code {

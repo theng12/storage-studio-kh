@@ -625,8 +625,10 @@ public final class Engine {
             guard Reachability.tcp(host: host, port: 445) else {
                 return MountFailure(message: "Can't reach \(host) right now.", unreachable: true)
             }
-            // Only this app's own item is ever read. A missing password goes straight to the
-            // in-window prompt; nothing consults another app's saved credential.
+            // This app's own item is read first. With no password of our own and a user name set, a
+            // credential the person already saved in the login keychain is offered to NetAuth before
+            // the row asks for a password: the prompt-free attempt costs nothing when there is none,
+            // and it is the only way a share saved in Finder ever connects.
             switch Secrets.load(host: host, username: storage.username) {
             case .found(let credentials):
                 return NetFS.mountSMB(storage: storage, credentials: credentials)
@@ -640,6 +642,10 @@ public final class Engine {
                 if user.isEmpty {
                     return NetFS.mountSMB(storage: storage, credentials: nil) // guest share
                 }
+                // A denial already says "enter the password in Settings"; anything else (unreachable
+                // share, missing share) is the real answer and is returned as it came.
+                let saved = NetFS.mountSMB(storage: storage, credentials: nil, savedLogin: true)
+                if saved == nil || saved?.needsCredentials == true { return saved }
                 return MountFailure(
                     message: "The device needs a user name and password. Enter them in Settings — Storage Studio KH will remember them.",
                     needsCredentials: true

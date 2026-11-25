@@ -13,7 +13,7 @@ scan: sha256=44cfdf924fba9306bd3da47994ae9e6f609e116e0517b1ef1e6fe288b2dbcc9a cl
 gate config: $HOME/Developer/_orchestra/tools/gate-configs/storage-0.1.30.sh
 gate exit: 0 — `GATE PASS storage 59a1149d0bd3c6b43da4a9a74a85b453a423bb75 2026-11-25T16:07:33Z`
 gate runner: `gate-run.sh 528de9fe53d0` — SHA-256 `528de9fe53d0c0de552d30dca1b21092b073a24fac76daf53e21da738b3b6f46`, 48,065 B, as the gate's own summary records it; pinned at `$HOME/Developer/_orchestra/tools/pinned/gate-run-528de9fe53d0c0de.sh`, byte-identical (`cmp` clean), not standalone-runnable
-feed readback: appcast read back from GitHub Pages after the push — `https://theng12.github.io/storage-studio-kh/appcast.xml` serves items `0.1.30` (length 5,604,199, the enclosure above) and `0.1.29`; the served text's signature was re-verified over the anonymously downloaded 0.1.30 DMG with `docs/verify-appcast.swift` → **SIGNATURE OK** (rc 0). Pages build `46c322f` — `built`. Estate row `storage-studio`: handed to developer-system (S001) with the sha; still serving 0.1.29 when this receipt was written
+feed readback: appcast read back from GitHub Pages after the push — `https://theng12.github.io/storage-studio-kh/appcast.xml` serves items `0.1.30` (length 5,604,199, the enclosure above) and `0.1.29`; the served text's signature was re-verified over the anonymously downloaded 0.1.30 DMG with `docs/verify-appcast.swift` → **SIGNATURE OK** (rc 0). Pages build `46c322f` — `built`. Estate row `storage-studio`: **served `0.1.30`** — `published_at 2026-11-25T16:13:39.741Z`, sha `44cfdf92…`, 5,604,199 B, envelope sha256 `62d477c7…`, Pages commit `9970b699`, `PASS signature` against the fleet key (S001's pass)
 page state: release page live at `theng12/storage-studio-kh` tag `0.1.30`, non-draft, one asset
 dirty: false
 retired: UNMEASURED
@@ -124,8 +124,11 @@ Checked before the move: not open (`lsof`). The appcast now serves 0.1.30 + 0.1.
 ## Not proven
 
 - **Live Sparkle self-update click-through on an installed copy**: **UNMEASURED**.
-- **Estate feed row**: handed to developer-system (S001) with app, version and sha; the row still serves
-  0.1.29 and `check-dist-retention.sh` therefore says `the feed serves 0.1.29`. Not a defect of this build.
+- **Estate feed row**: **served** — developer-system (S001) published it at
+  `published_at 2026-11-25T16:13:39.741Z`, row `0.1.30` / `44cfdf92…` / 5,604,199 B, envelope sha256
+  `62d477c7d82a66d970b8e66dc44f039e50fe9978d77d281ce7584a17d0a3329d`, Pages commit `kh-releases 9970b699`,
+  `PASS signature — Ed25519 against <fleet key>`. Four other apps' rows moved in the same pass; only
+  `storage-studio` is this line's.
 - **Pages build failures**: two consecutive Pages builds of receipts-only commits reported
   `Page build failed` (`70ed378`, `620e6ea`), and a later push built (`46c322f`). The appcast is served
   correctly now; the intermittent failure is named here rather than hidden.

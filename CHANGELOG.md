@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.31 — 2026-11-25
+
+- **A share you saved in Finder connects without asking again.** When Storage Studio KH has no password of its own for a device, it now offers the login macOS already saved to the system before it asks you for one — so a NAS mounted once in Finder connects on its own, with nothing appearing on screen. If that saved login is refused, the row says the device needs a user name and password and opens Settings, the same as before.
+
 ## 0.1.30 — 2026-11-25
 
 - **The app carries the newest shared update library.** The copy built into the app was the previous accepted one; it is now the current build every new release is made against, so what this version ships is what the studio pins today.
