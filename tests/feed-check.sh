@@ -2,6 +2,8 @@
 # The readback must fail on a row that lost a field it was told to expect. No network: fixtures.
 set -uo pipefail
 cd "$(dirname "$0")/.."
+. scripts/toolchain.sh
+
 CHECK="packaging/feed-check.py"
 T=$(mktemp -d "${TMPDIR:-/tmp}/feed-check.XXXXXX"); trap 'rm -rf "$T"' EXIT
 

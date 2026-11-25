@@ -21,7 +21,8 @@ retire() {
   printf 'Retired %s -> %s\n' "$target" "$dest"
 }
 
-for p in /opt/homebrew/bin /opt/homebrew/opt/rustup/bin "$HOME/.cargo/bin" /usr/local/bin; do
+. "$(dirname "$0")/toolchain.sh"
+for p in /opt/homebrew/opt/rustup/bin "$HOME/.cargo/bin"; do
   [ -d "$p" ] && [[ ":$PATH:" != *":$p:"* ]] && export PATH="$p:$PATH"
 done
 
@@ -29,6 +30,12 @@ command -v swift >/dev/null || fail "Swift is missing; install the Xcode command
 command -v node >/dev/null || fail "Node.js is missing."
 command -v cargo >/dev/null || fail "Rust (cargo) is missing."
 command -v python3 >/dev/null || fail "Python 3 is missing."
+# A failure here must name what was searched and found, not a traceback from a 3.9 that was never
+# meant to run this (row 20261122-318).
+printf 'Toolchain: python3 %s at %s; node %s; cargo %s\n' \
+  "$(python3 -V 2>&1 | awk '{print $2}')" "$(command -v python3)" \
+  "$(node -v)" "$(cargo --version | awk '{print $2}')"
+printf 'PATH searched: %s\n' "$PATH"
 command -v hdiutil >/dev/null || fail "hdiutil is missing."
 [ -f src-tauri/vendor/khsparkle/libkhsparkle.a ] || fail "the vendored libkhsparkle.a is missing"
 [ -d src-tauri/vendor/khsparkle/Sparkle.framework ] || fail "the vendored Sparkle.framework is missing"

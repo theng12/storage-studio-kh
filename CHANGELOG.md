@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.30 — 2026-11-25
+
+- **The app carries the newest shared update library.** The copy built into the app was the previous accepted one; it is now the current build every new release is made against, so what this version ships is what the studio pins today.
+- **A build says which tools it used.** Started from a shell that is not a login shell, the build scripts could pick up an old Python or not find `pkg-config` at all; they now look in Homebrew's folders first, and the build prints the Python, Node and Rust it found, so a broken build names the tool instead of ending in a traceback nobody can act on.
+
 ## 0.1.29 — 2026-11-25
 
 - **Archiving onto a disk image works.** A copy onto a mounted disk image could be refused with "There isn't room for 96 bytes. The destination has Zero KB free" when the disk had plenty; the room check believed one figure macOS reports as zero there, and now reads the others before it believes a zero.

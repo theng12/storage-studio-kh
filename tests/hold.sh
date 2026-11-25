@@ -6,6 +6,8 @@
 #
 #   bash tests/hold.sh [path/to/Storage Studio KH.app]
 set -euo pipefail
+. scripts/toolchain.sh
+
 cd "$(dirname "$0")/.."
 
 APP="${1:-src-tauri/target/release/bundle/macos/Storage Studio KH.app}"
