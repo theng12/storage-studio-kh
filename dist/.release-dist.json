@@ -9,12 +9,12 @@
           "provenance": "gated 2026-11-24 at c58923d (tag 0.1.28); release asset Storage.Studio.KH-0.1.28.dmg on theng12/storage-studio-kh, non-draft; appcast item live 2026-11-25T01:30:04Z",
           "evidence": "docs/receipts/0.1.28/RECEIPT.md; anonymous download 5,597,951 B same sha; verify-appcast SIGNATURE OK over the downloaded bytes"
         },
-        "Storage Studio KH-0.1.27.dmg": {
-          "bytes": 5575640,
-          "sha256": "387ea5b5d6ee53b039c3135659e896d87994473942d57082fb486b009467a0cb",
-          "version": "0.1.27",
-          "provenance": "gated 2026-11-23 at 46b37d5 (tag 0.1.27); release asset Storage.Studio.KH-0.1.27.dmg on theng12/storage-studio-kh; appcast item live 2026-11-24T17:47:17Z",
-          "evidence": "docs/receipts/0.1.27/RECEIPT.md; anonymous download 5,575,640 B same sha; verify-appcast SIGNATURE OK"
+        "Storage Studio KH-0.1.29.dmg": {
+          "bytes": 5603564,
+          "sha256": "1568c4cb95db8a01a9f5f6019152c05e91aa366e7dd4c763962ba64a8853fc08",
+          "version": "0.1.29",
+          "provenance": "gated 2026-11-25 at b4b1e08 (tag 0.1.29); release asset Storage.Studio.KH-0.1.29.dmg on theng12/storage-studio-kh, non-draft; appcast item live 2026-11-25T02:33:33Z; estate row storage-studio published 2026-11-25T03:05:18.835Z",
+          "evidence": "docs/receipts/0.1.29/RECEIPT.md; anonymous download 5,603,564 B same sha; verify-appcast SIGNATURE OK over the downloaded bytes; feed-verify PASS"
         }
       }
     }
