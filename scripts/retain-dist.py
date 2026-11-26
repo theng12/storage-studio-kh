@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Keep the newest three released DMGs in dist/ and retire older ones to _trash.
+"""Keep the current and previous released DMGs in dist/ and retire older ones to _trash.
 
-Owner rule 2026-11-12: the newest three stay; anything older is moved recoverably to the
+Owner rule 2026-11-16: current + previous stay (KEEP = 2); anything older is moved recoverably to the
 app's own `~/Desktop/_trash/storage-studio-kh/<date> retention/`, never deleted in place and never ~/.Trash. A version
 named by a local receipt, release.json, previous-release.json or the retention ledger is
 never moved, and neither is the version being released now.

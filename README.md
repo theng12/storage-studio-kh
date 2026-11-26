@@ -28,7 +28,7 @@ bash scripts/build-mac.sh
 ```
 
 Builds and signs on this Mac with `KH Studio Local Signing`, runs the helper tests, and keeps
-the newest three DMGs in `dist/`. The helper (`Contents/Helpers/Storage Studio KH Helper.app`)
+the previous and current DMGs in `dist/`. The helper (`Contents/Helpers/Storage Studio KH Helper.app`)
 is built from `helper/` and lives only inside the app.
 
 ## Layout
