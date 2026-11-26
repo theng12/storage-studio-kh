@@ -25,7 +25,7 @@ if [ -n "$DMG" ]; then
   codesign --verify --deep --strict "$mounted" || fail "the mounted app's signature is broken"
   [ -x "$mounted/Contents/Helpers/Storage Studio KH Helper.app/Contents/MacOS/Storage Studio KH Helper" ] || fail "the mounted app has no helper"
   if [ -d "$APP" ]; then
-    trash="$HOME/Developer/_trash/storage-studio-kh/installed-$(date +%Y%m%d-%H%M%S)"
+    trash="$HOME/Desktop/_trash/storage-studio-kh/installed-$(date +%Y%m%d-%H%M%S)"
     mkdir -p "$(dirname "$trash")"
     mv "$APP" "$trash"
     printf 'Previous install moved to %s\n' "$trash"
